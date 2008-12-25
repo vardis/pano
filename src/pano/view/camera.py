@@ -107,5 +107,5 @@ class CameraMouseControl:
                 # Rotate around the global Y axis in a clockwise fashion            
                 y_rot = -self.mouseHSpeed * millisElapsed
             
-            hpr = base.camera.getHpr()
-            base.camera.setHpr(hpr[0] + y_rot, hpr[1] + x_rot, hpr[2])            
+            hpr = base.camera.getHpr()            
+            base.camera.setHpr((hpr[0] + y_rot) % 360, (hpr[1] + x_rot) % 360, hpr[2])            
