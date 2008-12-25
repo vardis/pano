@@ -20,6 +20,7 @@ class InitGameState(FSMState):
 
         # add the default locations
         nodesRes = DirectoryResourcesLocation(directory='data/nodes', name='nodesLoc', description='Nodes resources', resTypes=PanoConstants.RES_TYPE_NODES)
+        modelsRes = DirectoryResourcesLocation(directory='data/models', name='modelsLoc', description='Models resources', resTypes=PanoConstants.RES_TYPE_MODELS)
         texturesRes = DirectoryResourcesLocation(directory='data/textures', name='texturesLoc', description='Textures resources', resTypes=PanoConstants.RES_TYPE_TEXTURES)
         fontsRes = DirectoryResourcesLocation(directory='data/fonts', name='fontsLoc', description='Fonts resources', resTypes=PanoConstants.RES_TYPE_FONTS) 
         soundsRes = DirectoryResourcesLocation(directory='data/sounds', name='soundsLoc', description='Sounds resources', resTypes=PanoConstants.RES_TYPE_SOUNDS)
@@ -27,6 +28,7 @@ class InitGameState(FSMState):
 
         res = self.getGame().getResources()        
         res.addResourcesLocation(nodesRes)
+        res.addResourcesLocation(modelsRes)
         res.addResourcesLocation(texturesRes)
         res.addResourcesLocation(fontsRes)
         res.addResourcesLocation(soundsRes)
