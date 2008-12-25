@@ -74,7 +74,9 @@ class PanoGame:
                 
         #update input, graphics, sound, auditing, ai and state
         millis = globalClock.getDt()
-        self.fsm.update(millis)            
+        self.fsm.update(millis)       
+        
+        self.gameView.update(millis)     
         
         return Task.cont
             
