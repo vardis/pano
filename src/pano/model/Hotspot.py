@@ -38,24 +38,24 @@ class Hotspot:
         self.face = face
 
     def getXo(self):
-        return self.xo
+        return float(self.xo)
 
     def setXo(self, xo):
         self.xo = xo
         self.xe = xo + self.width
 
     def getYo(self):
-        return self.yo
+        return float(self.yo)
     
     def setYo(self, yo):
         self.yo = yo
         self.ye = yo + self.height
 
     def getXe(self):
-        return self.xe
+        return float(self.xe)
 
     def getYe(self):
-        return self.ye
+        return float(self.ye)
 
     def getWidth(self):
         return self.width
