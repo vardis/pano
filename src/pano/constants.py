@@ -26,6 +26,7 @@ class PanoConstants:
     RES_TYPE_FONTS = 3
     RES_TYPE_SOUNDS = 4
     RES_TYPE_POINTERS = 5
+    RES_TYPE_MODELS = 6
     RES_TYPE_ALL = 100
     
     #Constants for the predefined mouse pointers
