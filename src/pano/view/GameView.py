@@ -73,3 +73,7 @@ class GameView:
         base.closeWindow(self.window)
                      
         
+    def update(self, millis):
+        self.panoRenderer.render(millis)
+        
+    
