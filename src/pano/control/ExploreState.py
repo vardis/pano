@@ -1,5 +1,6 @@
 from direct.showbase import DirectObject
 
+from constants import PanoConstants
 from control.fsm import FSMState
 from view.camera import CameraMouseControl
 
@@ -22,7 +23,9 @@ class ExploreState(FSMState, DirectObject.DirectObject):
         # enable rotation of camera by mouse
         self.cameraControl.enable()
 
-        self.activeNode = self.getGame().getView().getActiveNode()        
+        self.activeNode = self.getGame().getView().getActiveNode()
+        
+        self.getGame().getView().panoRenderer.drawDebugHotspots(True)        
     
     def onLeftClick(self):
         # returns the face code and image space coordinates of the hit point    
@@ -32,7 +35,15 @@ class ExploreState(FSMState, DirectObject.DirectObject):
         for h in self.activeNode.getHotspots():
             if h.getFace() == face and x >= h.getXo() and x <= h.getXe() and y >= h.getYo() and y <= h.getYe():
                 print 'Clicked on hotspot ' + h.getName() + ', (' + h.getDescription() + ')'
-                self.getGame().actions().execute(h.getAction(), h.getActionParams())                 
+                self.getGame().actions().execute(h.getAction(), h.getActionParams())
+                
+#        print 'face culling test:\n'
+#        print 'testing isFaceInFrustum from front: ', self.getGame().getView().panoRenderer.isFaceInFrustum(PanoConstants.CBM_FRONT_FACE)
+#        print 'testing isFaceInFrustum from back: ', self.getGame().getView().panoRenderer.isFaceInFrustum(PanoConstants.CBM_BACK_FACE)
+#        print 'testing isFaceInFrustum from left: ', self.getGame().getView().panoRenderer.isFaceInFrustum(PanoConstants.CBM_LEFT_FACE)
+#        print 'testing isFaceInFrustum from right: ', self.getGame().getView().panoRenderer.isFaceInFrustum(PanoConstants.CBM_RIGHT_FACE)
+#        print 'testing isFaceInFrustum from top: ', self.getGame().getView().panoRenderer.isFaceInFrustum(PanoConstants.CBM_TOP_FACE)
+#        print 'testing isFaceInFrustum from bottom: ', self.getGame().getView().panoRenderer.isFaceInFrustum(PanoConstants.CBM_BOTTOM_FACE)
     
     def exit(self):     
         # unregister from Panda's event system   
