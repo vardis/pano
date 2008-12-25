@@ -4,6 +4,7 @@ import math
 from pandac.PandaModules import Texture
 from pandac.PandaModules import TextureAttrib
 from pandac.PandaModules import GeomVertexReader
+from pandac.PandaModules import LineSegs
 from pandac.PandaModules import Filename
 from direct.showbase.PythonUtil import *
 from pandac.PandaModules import Mat4, VBase3
@@ -14,6 +15,14 @@ from constants import PanoConstants
 # http://www.panda3d.net/phpbb2/viewtopic.php?t=2022&highlight=projection
 # http://www.panda3d.net/phpbb2/viewtopic.php?t=851&highlight=skybox
 class NodeRenderer:
+
+    FRUSTUM_NEAR   = 0
+    FRUSTUM_FAR    = 1
+    FRUSTUM_RIGHT  = 2
+    FRUSTUM_LEFT   = 3
+    FRUSTUM_TOP    = 4
+    FRUSTUM_BOTTOM = 5
+    
 
     def __init__(self, resources):   
                 
@@ -29,23 +38,93 @@ class NodeRenderer:
         #The cubemap model
         self.cmap = None
         
-        # matricex that transform from world space to the faces' image space
+        # the names of the geoms that correspond to the cube's faces
+        self.cubeGeomsNames = {
+                     PanoConstants.CBM_TOP_FACE    : 'top',
+                     PanoConstants.CBM_LEFT_FACE   : 'left',
+                     PanoConstants.CBM_BOTTOM_FACE : 'bottom',
+                     PanoConstants.CBM_RIGHT_FACE  : 'right',
+                     PanoConstants.CBM_BACK_FACE   : 'back',
+                     PanoConstants.CBM_FRONT_FACE  : 'front'                     
+        }
+        
+        # matrices that transform from world space to the faces' image space
         self.worldToFaceMatrices = {}
+        
+        # matrices that transform from the faces' image space to world space  
+        self.faceToWorldMatrices = {}
         
         #Stores the textures of the faces. E.g.:
         #frontTexture = self.faceTextures[CBM_FRONT_FACE]
         self.faceTextures = { }
         
+        # AABBs of the cube's faces.
+        # indexed by the face constands (e.g. PanoConstants.CBM_TOP_FACE) and contains a tuple containing the min and max points each as a tuble
+        # e.g: 
+        #    minTop, maxTop = self.facesAABBs[PanoConstants.CBM_TOP_FACE]
+        #    minx, miny, minz = minTop        
+        self.facesAABBs = {}        
+        
         base.camLens.setFar(100000)
         base.camLens.setFocalLength(1)
         
         self.loadCubeModel()
+
+        # the parent scenegraph node of the hotspots debug geometries
+        self.debugGeomsParent = None
+        
+        # if True then the debug geometries for the hotspots will be drawn
+        self.drawHotspots = False
         
     def getNode(self):
         """
         Returns the Node object that we are currently rendering.
         """
         return self.node
+
+    def drawDebugHotspots(self, flag):
+        self.drawHotspots = flag
+        if flag and self.node is not None:
+            for hp in self.node.getHotspots():
+                print hp
+                tex = self.faceTextures[hp.getFace()]            
+                mat = self.faceToWorldMatrices[hp.getFace()]
+                
+                fo = VBase3(hp.getXo() / tex.getXSize(), 0.0, hp.getYo() / tex.getYSize())
+                print 'fo ', fo
+                wvo = mat.xformPoint(fo) 
+                print wvo 
+                
+                
+                fe = VBase3(hp.getXe() / tex.getXSize(), 0.0, hp.getYe() / tex.getYSize())
+                print 'fe ', fe
+                wve = mat.xformPoint(fe) 
+                print wve                                                 
+                                
+#                box = loader.loadModel(self.resources.getResourceFullPath(PanoConstants.RES_TYPE_MODELS, 'box.egg.pz'))
+                box = loader.loadModelCopy('/c/Documents and Settings/Fidel/workspace/Panorama/demo/data/models/box.egg.pz')                
+                
+                box.setName('debug_geom_' + hp.getName())
+                box.setPos(wvo[0], wvo[1], wve[2])
+                box.setScale(
+                             max(0.1, math.fabs(wve[0] - wvo[0])), 
+                             max(0.1, math.fabs(wve[1] - wvo[1])), 
+                             max(0.1, math.fabs(wve[2] - wvo[2])))                
+                box.setRenderModeWireframe()
+                
+                self.debugGeomsParent = self.cmap.attachNewNode('debug_geoms')
+                box.reparentTo(self.debugGeomsParent)
+            
+        elif flag:
+            debugGeoms = self.debugGeomsParent.getChildrenAsList()
+            for box in debugGeoms:
+                box.removeNode()
+                
+        print self.cmap.ls()
+        
+    def render(self, millis):
+        pass
+            
 
     def displayNode(self, node):
         """
@@ -87,23 +166,57 @@ class NodeRenderer:
         self.faceTextures[PanoConstants.CBM_BOTTOM_FACE].setWrapU(Texture.WMClamp)
         self.faceTextures[PanoConstants.CBM_BOTTOM_FACE].setWrapV(Texture.WMClamp)
         
+    def buildWorldToFaceMatrices(self):
+        """
+        Builds the 4x4 matrices that transform a point from the world coordinates system
+        to the system that has its origin at the centre of a face, has the positive x axis running left to right
+        along the face, has the positive y axis running top to bottom along the face and extends between [-1.0, 1.0]
+        inside the boundary of the face. 
+        """
+        facesCoords = {
+                       PanoConstants.CBM_FRONT_FACE: (-self.faceHalfDim, self.faceHalfDim, self.faceHalfDim, 1, 0, -1), 
+                       PanoConstants.CBM_BACK_FACE: (self.faceHalfDim, -self.faceHalfDim, self.faceHalfDim, -1, 0, -1), 
+                       PanoConstants.CBM_RIGHT_FACE: (self.faceHalfDim, self.faceHalfDim, self.faceHalfDim, 0, -1, -1), 
+                       PanoConstants.CBM_LEFT_FACE: (-self.faceHalfDim, -self.faceHalfDim, self.faceHalfDim, 0, 1, -1), 
+                       PanoConstants.CBM_TOP_FACE: (-self.faceHalfDim, -self.faceHalfDim, self.faceHalfDim, 1, 1, 0), 
+                       PanoConstants.CBM_BOTTOM_FACE: (-self.faceHalfDim, self.faceHalfDim, -self.faceHalfDim, 1, -1, 0)
+        }
+        for face, coords in facesCoords.items():
+            matOffset = Mat4()
+            matOffset.setTranslateMat(VBase3(-coords[0], -coords[1], -coords[2]))
+            matScale = Mat4()
+            matScale.setScaleMat(VBase3(coords[3] / self.faceDim, coords[4] / self.faceDim, coords[5] / self.faceDim))
+            self.worldToFaceMatrices[face] = matOffset * matScale
+                                    
+            scale = [ coords[3], coords[4], coords[5] ]
+            for i in range(0, 3):
+                if scale[i] == 0.0: scale[i] = 1
+                
+            matInvOffset = Mat4()
+            matInvOffset.setTranslateMat(VBase3(coords[0], coords[1], coords[2]))
+            matInvScale = Mat4()
+            matInvScale.setScaleMat(VBase3(self.faceDim / scale[0], self.faceDim / scale[1], self.faceDim / scale[2]))
+            self.faceToWorldMatrices[face] = matInvScale * matInvOffset
+
+    
     def loadCubeModel(self):   
         """
         Loads the egg file that contains the cube model for displaying the cubic
         panorama. 
-        After loading we extract references to the faces' textures in order to alter
-        the in-game and we also measure the dimensions of the cubemap after taking into
-        account the face dimension as specified in the .egg file, the model scale applied
+        After loading it extracts references to the faces' textures in order to alter
+        the in-game. It also measures the dimensions of the cubemap after taking into
+        account the faces' dimensions as specified in the .egg file, the model scale applied
         by the model creator and finally the scale set on the respective nodepath.
         
-        Note: There exists a convention that the name of the cube model must be 'cubemap.egg'.
-        
-        Note:  There exists a convention regarding the order of the geoms definitions in
-        the .egg file. Specifically the cubemap model must list the faces in the following 
-        order:   top, left, bottom, right, back, front        
+        Conventions: 
+            a) There exists a convention that the name of the cube model must be 'cubemap.egg'.
+            b) The names of the geoms definitions inside the .egg file must be: 
+               top, left, bottom, right, back, front
+            c) The model scale must be 1, 1, 1        
         """
         resourcesDir = '/c/Documents and Settings/Fidel/workspace/Panorama/demo/data/models'
         self.cmap = loader.loadModel(os.path.join(resourcesDir, 'cubemap-5.egg'))
+        self.cmap.setName('cmap')
         self.cmap.reparentTo(render)
         self.cmap.setScale(10, 10, 10)
         self.cmap.setPos(0,0,0)
@@ -111,43 +224,34 @@ class NodeRenderer:
         # Disable depth write for the cube map
         self.cmap.setDepthWrite(False)    
         
-        #Examine the geoms to extract references to their textures.
-        #The cubemap model lists the faces inside the egg file in the following order:
-        # top, left, bottom, right, back, front
         print self.cmap.ls()
 
         self.faceDim = 2.0 * self.cmap.getScale()[0]        
         self.faceHalfDim = self.cmap.getScale()[0]          
-                        
-        cubeGeoms = {
-                     PanoConstants.CBM_TOP_FACE : 'top',
-                     PanoConstants.CBM_LEFT_FACE : 'left',
-                     PanoConstants.CBM_BOTTOM_FACE : 'bottom',
-                     PanoConstants.CBM_RIGHT_FACE : 'right',
-                     PanoConstants.CBM_BACK_FACE : 'back',
-                     PanoConstants.CBM_FRONT_FACE : 'front',
-                     
-        }
-        for i, n in cubeGeoms.items():
+        
+        self.facesAABBs = {
+                           PanoConstants.CBM_FRONT_FACE  : ((-self.faceHalfDim, self.faceHalfDim, -self.faceHalfDim), (self.faceHalfDim, self.faceHalfDim, self.faceHalfDim)), 
+                           PanoConstants.CBM_BACK_FACE   : ((-self.faceHalfDim, -self.faceHalfDim, -self.faceHalfDim), (self.faceHalfDim, -self.faceHalfDim, self.faceHalfDim)),
+                           PanoConstants.CBM_RIGHT_FACE  : ((self.faceHalfDim, -self.faceHalfDim, -self.faceHalfDim), (self.faceHalfDim, self.faceHalfDim, self.faceHalfDim)),
+                           PanoConstants.CBM_LEFT_FACE   : ((-self.faceHalfDim, -self.faceHalfDim, -self.faceHalfDim), (-self.faceHalfDim, self.faceHalfDim, self.faceHalfDim)),
+                           PanoConstants.CBM_TOP_FACE    : ((-self.faceHalfDim, -self.faceHalfDim, self.faceHalfDim), (self.faceHalfDim, self.faceHalfDim, self.faceHalfDim)),
+                           PanoConstants.CBM_BOTTOM_FACE : ((-self.faceHalfDim, -self.faceHalfDim, -self.faceHalfDim), (self.faceHalfDim, self.faceHalfDim, -self.faceHalfDim))
+                           }
+                                
+        for i, n in self.cubeGeomsNames.items():
             geomNode = self.cmap.find("**/Cube/=name=" + n)     
             state = geomNode.node().getGeomState(0)
             tex = state.getAttrib(TextureAttrib.getClassType()).getTexture()
             self.faceTextures[i] = tex 
                                     
-        facesCoords = {
-            PanoConstants.CBM_FRONT_FACE : (-self.faceHalfDim, self.faceHalfDim, self.faceHalfDim, 1, 0, -1),
-            PanoConstants.CBM_BACK_FACE : (self.faceHalfDim, -self.faceHalfDim, self.faceHalfDim, -1, 0, -1),
-            PanoConstants.CBM_RIGHT_FACE : (self.faceHalfDim, self.faceHalfDim, self.faceHalfDim, 0, -1, -1),
-            PanoConstants.CBM_LEFT_FACE : (-self.faceHalfDim, -self.faceHalfDim, self.faceHalfDim, 0, 1, -1),
-            PanoConstants.CBM_TOP_FACE : (-self.faceHalfDim, self.faceHalfDim, self.faceHalfDim, 1, -1, 0),
-            PanoConstants.CBM_BOTTOM_FACE : (-self.faceHalfDim, self.faceHalfDim, self.faceHalfDim, 1, -1, 0)
-        }
-        for face, coords in facesCoords.items():            
-            matOffset = Mat4()
-            matOffset.setTranslateMat(VBase3(-coords[0], -coords[1], -coords[2]))
-            matScale = Mat4()
-            matScale.setScaleMat(VBase3(coords[3] / self.faceDim, coords[4] / self.faceDim, coords[5] / self.faceDim))
-            self.worldToFaceMatrices[face] = matOffset * matScale 
+        self.buildWorldToFaceMatrices() 
+        
+        print 'testing isFaceInFrustum from front: ', self.isFaceInFrustum(PanoConstants.CBM_FRONT_FACE)
+        print 'testing isFaceInFrustum from back: ', self.isFaceInFrustum(PanoConstants.CBM_BACK_FACE)
+        print 'testing isFaceInFrustum from left: ', self.isFaceInFrustum(PanoConstants.CBM_LEFT_FACE)
+        print 'testing isFaceInFrustum from right: ', self.isFaceInFrustum(PanoConstants.CBM_RIGHT_FACE)
+        print 'testing isFaceInFrustum from top: ', self.isFaceInFrustum(PanoConstants.CBM_TOP_FACE)
+        print 'testing isFaceInFrustum from bottom: ', self.isFaceInFrustum(PanoConstants.CBM_BOTTOM_FACE)
             
     """
     Translates the given world space point in the local 2D coordinate system
@@ -155,33 +259,17 @@ class NodeRenderer:
     and horizontal axis, thus the method returns a tuple of x, y values in the
     [0..1] range.
     """
-    def getFaceLocalCoords(self, face, p):        
-#        coords = facesCoords[face]                 
-#        lp_x, lp_y, lp_z = (p.getX() + self.faceHalfDim) / self.faceDim, (p.getY() + self.faceHalfDim) / self.faceDim, (p.getZ() + self.faceHalfDim) / self.faceDim
-#        if coords[3] < 0: lp_x = 1.0 - lp_x
-#        if coords[4] < 0: lp_y = 1.0 - lp_y
-#        if coords[5] < 0: lp_z = 1.0 - lp_z
-#        print 'lp_x, lp_y, lp_z  ', lp_x, ' ', lp_y, '  ', lp_z
-        
-#        lp_x, lp_y, lp_z = p.getX() - coords[0], p.getY() - coords[1], p.getZ() - coords[2]
-#        lp_x = (coords[3] * lp_x) / self.faceDim
-#        lp_y = (coords[4] * lp_y) / self.faceDim
-#        lp_z = (coords[5] * lp_z) / self.faceDim
-#        
-#        print 'old ', lp_x, ' ', lp_y, ' ', lp_z
-        
+    def getFaceLocalCoords(self, face, p):    
+        print 'getFaceLocalCoords for point ', p    
         mat = self.worldToFaceMatrices[face]        
         fp = mat.xformPoint(p)        
+        print 'face point is ', fp, ' while inversed transformed back to world is ', self.faceToWorldMatrices[face].xformPoint(fp)
         if fp.getX() < 0.00001:
             return (fp.getY(), fp.getZ())
         elif fp.getY() < 0.00001:
             return (fp.getX(), fp.getZ())
         else:
             return (fp.getX(), fp.getY())                
-        
-#        if coords[3] == 0:    return (lp_y, lp_z)
-#        elif coords[4] == 0:    return (lp_x, lp_z)
-#        else:    return (lp_x, lp_y)
 
     """
       Finds the face of the cubemap on which lies the given normal vector.
@@ -218,5 +306,48 @@ class NodeRenderer:
     """
     def nodepath(self):
         return self.cmap
+    
+    
+    def isFaceInFrustum(self, face):
+        """
+        Returns True if the given face passes the frustum culling check.
+        It works by accessing the vertex data of the face and for each vertex it evaluates
+        each of the frustum's planes equations and if a single vertex yields a positive result
+        then the face is considered inside the frustum.
+        """
+        
+        if face != PanoConstants.CBM_TOP_FACE and face != PanoConstants.CBM_BOTTOM_FACE:        
+            # read camera's heading angle
+            camHeading = base.camera.getH()                         
+            print 'camHeading: ', camHeading
+            
+            if (camHeading < 90.0 or camHeading > 270.0) and face == PanoConstants.CBM_FRONT_FACE:
+                return True
+            
+            if (camHeading < 180.0 and camHeading > 0.0) and face == PanoConstants.CBM_LEFT_FACE:
+                return True
+            
+            if camHeading > 180.0 and face == PanoConstants.CBM_RIGHT_FACE:
+                return True
+            
+            if camHeading < 270.0 and camHeading > 90.0 and face == PanoConstants.CBM_BACK_FACE:
+                return True
+        else:
+            camPitch = base.camera.getP() 
+            print 'camPitch: ', camPitch
+            
+            aspect = 1.0 / base.camLens.getAspectRatio()
+            pitchLimit = (180.0 /math.pi) * math.atan(aspect*0.5)
+            print 'pitchLimit: ', pitchLimit
+            
+            if camPitch > pitchLimit and camPitch < 180.0 and face == PanoConstants.CBM_TOP_FACE:
+                return True
+            
+            if camPitch > 270.0 and camPitch < (360.0 - pitchLimit) and face == PanoConstants.CBM_BOTTOM_FACE:
+                return True
+            
+        return False
+            
+                        
     
     
