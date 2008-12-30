@@ -5,7 +5,7 @@ class ResourcesTypes:
 	A registry of all supported resource types.
 	"""
 	resTypesExtensions = { 
-			PanoConstants.RES_TYPE_NODES : ('.xml'),
+			PanoConstants.RES_TYPE_NODES : ('.node'),
 			PanoConstants.RES_TYPE_MODELS : ('.egg', '.egg.pz' ),
 			PanoConstants.RES_TYPE_TEXTURES : ('.jpg', '.bmp', '.tga', '.tif', '.png', '.dds'),
 			PanoConstants.RES_TYPE_FONTS : ('.font'),
