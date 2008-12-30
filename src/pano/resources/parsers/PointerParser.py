@@ -23,7 +23,7 @@ class PointerParser:
     def __init__(self):
         pass
     
-    def parse(self, istream):
+    def parse(self, pointer, istream):
         """
         Parses a .pointer file whose contents will be read by the given input stream
         """
@@ -33,8 +33,7 @@ class PointerParser:
         cfg.readfp(istream)
         section = cfg.sections()[0]
         assert section is not None and section == 'Pointer', 'pointer file must contain the "Pointer" section header'
-        
-        pointer = MousePointer()
+                
         if cfg.has_option(section, PointerParser.EGG_FILE_OPTION):
             pointer.setEggFile(cfg.get(section, PointerParser.EGG_FILE_OPTION))
             

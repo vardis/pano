@@ -2,7 +2,10 @@ import os
 
 from constants import PanoConstants
 from DirectoryResourcesLocation import DirectoryResourcesLocation
+from model.Node import Node
+from model.MousePointer import MousePointer
 from parsers.PointerParser import PointerParser 
+from parsers.NodeParser import NodeParser
 
 class ResourceLoader:
     """
@@ -12,7 +15,8 @@ class ResourceLoader:
 		# locations of resources indexed by their supported resource types
         self.resLocations = {}		       
         self.parsers = {
-                        PanoConstants.RES_TYPE_POINTERS : PointerParser()
+                        PanoConstants.RES_TYPE_POINTERS : PointerParser(),
+                        PanoConstants.RES_TYPE_NODES    : NodeParser()
         }
         
     def addResourcesLocation(self, resLoc):
@@ -43,23 +47,30 @@ class ResourceLoader:
                         return loc.getResourceFullPath(filename)
         return None
     
-    def loadPointer(self, filename):
+    def loadNode(self, name):
+        node = Node(name=name)
+        self.loadGeneric(PanoConstants.RES_TYPE_NODES, node, name + '.node')
+        return node
+    
+    def loadPointer(self, name):
         """
         Loads the pointer specified by the given filename. If the pointer was loaded successfully a model.MousePointer
         instance will be returned, otherwise None.
         """
-        pointer = self.loadGeneric(PanoConstants.RES_TYPE_POINTERS, filename)
-        pointer.setName(filename)
+        pointer = MousePointer()
+        pointer.setName(name)
+        self.loadGeneric(PanoConstants.RES_TYPE_POINTERS, pointer, name + '.pointer')
+        
         return pointer
         
-    def loadGeneric(self, resType, filename):
+    def loadGeneric(self, resType, resObj, filename):
         assert resType is not None and resType != PanoConstants.RES_TYPE_ALL, 'invalid resource type in loadGeneric'
         resPath = self.getResourceFullPath(resType, filename)
         if resPath is not None:
             istream = None
             try:
                 istream = open(resPath, 'r')
-                resource = self.parsers[resType].parse(istream)
+                resource = self.parsers[resType].parse(resObj, istream)
                 return resource
             finally:
                 if istream is not None:
