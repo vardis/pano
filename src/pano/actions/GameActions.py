@@ -1,3 +1,6 @@
+import sys
+import logging
+
 from actions.names import BuiltInActionsNames
 from actions.VoidAction import VoidAction
 from actions.ExitGameAction import ExitGameAction
@@ -5,6 +8,7 @@ from actions.ExitGameAction import ExitGameAction
 class GameActions:
     
     def __init__(self, game):
+        self.log = logging.getLogger('pano.actions')
         self.game = game
         self.builtins = BuiltInActionsNames()
         self.actions = { }
@@ -27,7 +31,8 @@ class GameActions:
             if act is not None:
                 act.execute(self.game)
         except: 
-            print 'unexpected error: ', sys.exc_info()[0]
+            self.log.exception('unexpected error')
+#            print ': ', sys.exc_info()[0]
             
     def builtinNames(self):
         return self.builtins
