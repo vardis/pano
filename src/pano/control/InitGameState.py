@@ -1,4 +1,9 @@
+import logging
+import os
 
+from pandac.PandaModules import getModelPath
+from pandac.PandaModules import getTexturePath
+from pandac.PandaModules import getSoundPath
 from pandac.PandaModules import ConfigVariableString
 from pandac.PandaModules import Filename
 from pandac.PandaModules import Notify
@@ -14,9 +19,17 @@ from resources.DirectoryResourcesLocation import DirectoryResourcesLocation
 class InitGameState(FSMState):
     def __init__(self, gameRef):
         FSMState.__init__(self, gameRef, 'InitGameState')
+        
+        self.log = logging.getLogger('pano.initState')        
         self.millis = 0
         
     def setupResourcesLocations(self):
+
+        # as the resource paths are relative to the currently working directory, we add '.' to the model path
+        print os.getcwd()
+        getModelPath( ).appendPath( os.getcwd( ) )
+        getTexturePath( ).appendPath( os.getcwd( ) )
+        getSoundPath( ).appendPath( os.getcwd( ) )
 
         # add the default locations
         nodesRes = DirectoryResourcesLocation(directory='data/nodes', name='nodesLoc', description='Nodes resources', resTypes=PanoConstants.RES_TYPE_NODES)
@@ -35,7 +48,8 @@ class InitGameState(FSMState):
         res.addResourcesLocation(pointersRes)    
         
     def enter(self):
-        print 'entered initial state' 
+        if self.log.isEnabledFor(logging.DEBUG):
+            self.log.debug('entered initial state') 
         
 		# configure resource locations
         self.setupResourcesLocations()
@@ -47,16 +61,16 @@ class InitGameState(FSMState):
         # disables Panda's mouse based camera control
         base.disableMouse()
                     
-        self.initialNode = Node('node1')
+        self.initialNode = self.getGame().getResources().loadNode('node1')        
         
         # create a hotspot for the door exit
-        exitDoor = Hotspot('exitDoor', 
-                           'exits the room and ends the game',  
-                           PanoConstants.CBM_FRONT_FACE, 
-                           444, 444,  # x, y 
-                           122, 258) # width, height
-        exitDoor.setAction(self.getGame().actions().builtinNames().ExitGameAction)
-        self.initialNode.addHotspot(exitDoor)
+#        exitDoor = Hotspot('exitDoor', 
+#                           'exits the room and ends the game',  
+#                           PanoConstants.CBM_FRONT_FACE, 
+#                           444, 444,  # x, y 
+#                           122, 258) # width, height
+#        exitDoor.setAction(self.getGame().actions().builtinNames().ExitGameAction)
+#        self.initialNode.addHotspot(exitDoor)
         
         self.getGame().getView().displayNode(self.initialNode)
         
@@ -67,7 +81,8 @@ class InitGameState(FSMState):
         pass            
         
     def update(self, millis):
-        print 'initial state update ', millis                    
+        if self.log.isEnabledFor(logging.DEBUG):
+            self.log.debug('initial state update %d', millis)                    
         self.millis += millis
         if self.millis > 2:
             self.getGame().getState().changeState(ExploreState.NAME)
