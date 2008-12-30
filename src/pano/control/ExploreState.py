@@ -1,3 +1,5 @@
+import logging
+
 from direct.showbase import DirectObject
 
 from constants import PanoConstants
@@ -8,8 +10,10 @@ class ExploreState(FSMState, DirectObject.DirectObject):
 
     NAME = 'ExploreState'
     
-    def __init__(self, gameRef = None, node = None):
+    def __init__(self, gameRef = None, node = None):        
         FSMState.__init__(self, gameRef, 'ExploreState')
+        
+        self.log = logging.getLogger('pano.exploreState')
         self.activeNode = None
         self.cameraControl = CameraMouseControl(self.getGame())
         
@@ -34,8 +38,9 @@ class ExploreState(FSMState, DirectObject.DirectObject):
         y *= 1024
         for h in self.activeNode.getHotspots():
             if h.getFace() == face and x >= h.getXo() and x <= h.getXe() and y >= h.getYo() and y <= h.getYe():
-                print 'Clicked on hotspot ' + h.getName() + ', (' + h.getDescription() + ')'
-                self.getGame().actions().execute(h.getAction(), h.getActionParams())
+                if self.log.isEnabledFor(logging.DEBUG):                    
+                    self.log.debug('Clicked on hotspot %s, (%s)', h.getName(), h.getDescription()) 
+                self.getGame().actions().execute(h.getAction(), h.getActionArgs())
                 
 #        print 'face culling test:\n'
 #        print 'testing isFaceInFrustum from front: ', self.getGame().getView().panoRenderer.isFaceInFrustum(PanoConstants.CBM_FRONT_FACE)
