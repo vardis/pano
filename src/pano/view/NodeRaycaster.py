@@ -1,3 +1,5 @@
+import logging
+
 from pandac.PandaModules import CollisionTraverser
 from pandac.PandaModules import CollisionHandlerQueue
 from pandac.PandaModules import CollisionNode
@@ -6,6 +8,9 @@ from pandac.PandaModules import GeomNode
 
 class NodeRaycaster:
     def __init__(self, renderer):
+        
+        self.log = logging.getLogger('pano.raycaster')
+        
         self.renderer = renderer
         
         #Stores the collisions of the camera ray with the cubemap
@@ -60,20 +65,24 @@ class NodeRaycaster:
             self.collisionsQueue.sortEntries()
             cEntry = self.collisionsQueue.getEntry(0)
             
-            print cEntry
+            if self.log.isEnabledFor(logging.DEBUG):
+                self.log.debug(cEntry)
             
             #We have the point and normal of the collision
             p = cEntry.getSurfacePoint(render)
             n = cEntry.getSurfaceNormal(render)
-            print p, n
+            if self.log.isEnabledFor(logging.DEBUG):
+                self.log.debug("%s, %s", p, n)
             
             face = self.renderer.findFaceFromNormal(n)
-            print face
+            if self.log.isEnabledFor(logging.DEBUG):
+                self.log.debug("%d", face)
             
             # get the coordinates of the hit point in the local coordinate
             # system of the respective cubemap face
             x, y = self.renderer.getFaceLocalCoords(face, p)
-            print x, y
+            if self.log.isEnabledFor(logging.DEBUG):
+                self.log.debug("%f, %f", x, y)
             
             return face, x, y
             

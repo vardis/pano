@@ -1,4 +1,5 @@
 import sys
+import logging.config
  
 # defer opening of the main window until we read the window properties from the
 # configuration and setup a WindowProperties to initialise the window.
@@ -24,7 +25,12 @@ class PanoGame:
     Runs the game and manages the game tasks and rendering. 
     """
     def __init__(self, name='PanoGame'):
-        self.name = name
+        
+        # setup logging
+        logging.config.fileConfig('game.cfg')
+        self.log = logging.getLogger('pano')
+        
+        self.name = name                
         self.config = None
         self.parameters = PanoParameters()
         self.resources = ResourceLoader()
@@ -38,9 +44,10 @@ class PanoGame:
         self.fsm = None          
         self.gameTask = None
         
-        self.quitRequested = False            
+        self.quitRequested = False
         
     def initialise(self, task):
+                                
         self.config = loadPrcFile(PanoConstants.CONFIG_FILE)
         
         # override setting for the mouse cursor and let the other window properties

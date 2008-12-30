@@ -1,3 +1,4 @@
+import logging
 
 from parameters import PanoParameters
 
@@ -45,6 +46,7 @@ class CameraMouseControl:
     rightHeight = 0.7
     
     def __init__(self, gameRef):
+        self.log = logging.getLogger('pano.camera')
         self.game = gameRef
         self.isActive = False
         self.mouseHSpeed = self.game.parameters.getParam(PanoParameters.CAM_CONTROL_HROT_SPEED)

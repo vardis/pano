@@ -1,3 +1,5 @@
+import logging
+
 from direct.gui.OnscreenImage import OnscreenImage
 from pandac.PandaModules import TransparencyAttrib
 from direct.task.Task import Task
@@ -6,6 +8,8 @@ from constants import PanoConstants
 
 class MousePointerDisplay:
     def __init__(self, game):
+        
+        self.log = logging.getLogger('pano.mouseDisplay')
         
         self.game = game
         self.resources = game.getResources()
@@ -93,9 +97,9 @@ class MousePointerDisplay:
             self.hide()
             
         if pointerChanged:
-            self.pointer = self.game.getResources().loadPointer(pointerName + '.pointer')
+            self.pointer = self.game.getResources().loadPointer(pointerName)
             if self.pointer is None:
-                print "Could'nt find pointer: ", pointerName
+                self.log.error("Could'nt find pointer: %s", pointerName)
                 return False
              
             if self.pointer.getEggFile() is not None:
