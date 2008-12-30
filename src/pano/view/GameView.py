@@ -1,5 +1,6 @@
-from pandac.PandaModules import WindowProperties
+import logging
 
+from pandac.PandaModules import WindowProperties
 from NodeRenderer import NodeRenderer
 from constants import PanoConstants
 from MousePointerDisplay import MousePointerDisplay
@@ -8,6 +9,8 @@ from model.Node import Node
 
 class GameView:    
     def __init__(self, gameRef = None, title = ''):
+        
+        self.log = logging.getLogger('pano.view')
         self.game = gameRef
         self.window = None
         self.windowProperties = None
@@ -53,7 +56,8 @@ class GameView:
             wp.setFullscreen(props[PanoConstants.WIN_FULLSCREEN])
             
         if props.has_key(PanoConstants.WIN_MOUSE_POINTER):
-            print 'hiding mouse pointer'
+            if self.log.isEnabledFor(logging.DEBUG):
+                self.log.debug('hiding mouse pointer')
             wp.setCursorHidden(not props[PanoConstants.WIN_MOUSE_POINTER])
             
         if props.has_key(PanoConstants.WIN_ICON):

@@ -1,5 +1,6 @@
 import os
 import math
+import logging
 
 from pandac.PandaModules import Texture
 from pandac.PandaModules import TextureAttrib
@@ -25,7 +26,9 @@ class NodeRenderer:
     
 
     def __init__(self, resources):   
-                
+                   
+        self.log = logging.getLogger('pano.render')     
+
         self.resources = resources
         
         #The node that is displayed
@@ -86,20 +89,20 @@ class NodeRenderer:
         self.drawHotspots = flag
         if flag and self.node is not None:
             for hp in self.node.getHotspots():
-                print hp
+#                print hp
                 tex = self.faceTextures[hp.getFace()]            
                 mat = self.faceToWorldMatrices[hp.getFace()]
                 
                 fo = VBase3(hp.getXo() / tex.getXSize(), 0.0, hp.getYo() / tex.getYSize())
-                print 'fo ', fo
+#                print 'fo ', fo
                 wvo = mat.xformPoint(fo) 
-                print wvo 
+#                print wvo 
                 
                 
                 fe = VBase3(hp.getXe() / tex.getXSize(), 0.0, hp.getYe() / tex.getYSize())
-                print 'fe ', fe
+#                print 'fe ', fe
                 wve = mat.xformPoint(fe) 
-                print wve                                                 
+#                print wve                                                 
                                 
 #                box = loader.loadModel(self.resources.getResourceFullPath(PanoConstants.RES_TYPE_MODELS, 'box.egg.pz'))
                 box = loader.loadModelCopy('/c/Documents and Settings/Fidel/workspace/Panorama/demo/data/models/box.egg.pz')                
@@ -138,31 +141,36 @@ class NodeRenderer:
         # load the 6 textures of the node
         resourcesDir = '/c/Documents and Settings/Fidel/workspace/Panorama/demo/data/nodes/' + self.node.getName()
         
-        prefixFilename = os.path.join(resourcesDir, self.node.getName())
-
-        #self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, self.node.getName() + '_fr.jpg')                
+        prefixFilename = self.node.getCubemap() # os.path.join(resourcesDir, self.node.getName())
         
-        self.faceTextures[PanoConstants.CBM_FRONT_FACE].read(Filename(prefixFilename + '_fr.jpg'))
+        self.log.debug('full path to resource: %s', self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_fr.jpg'))
+        filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_fr.jpg')        
+        self.faceTextures[PanoConstants.CBM_FRONT_FACE].read(Filename(filename))
         self.faceTextures[PanoConstants.CBM_FRONT_FACE].setWrapU(Texture.WMClamp)
         self.faceTextures[PanoConstants.CBM_FRONT_FACE].setWrapV(Texture.WMClamp)
         
-        self.faceTextures[PanoConstants.CBM_BACK_FACE].read(Filename(prefixFilename + '_bk.jpg'))
+        filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_bk.jpg')
+        self.faceTextures[PanoConstants.CBM_BACK_FACE].read(Filename(filename))
         self.faceTextures[PanoConstants.CBM_BACK_FACE].setWrapU(Texture.WMClamp)
         self.faceTextures[PanoConstants.CBM_BACK_FACE].setWrapV(Texture.WMClamp)
         
-        self.faceTextures[PanoConstants.CBM_LEFT_FACE].read(Filename(prefixFilename + '_lt.jpg'))
+        filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_lt.jpg')
+        self.faceTextures[PanoConstants.CBM_LEFT_FACE].read(Filename(filename))
         self.faceTextures[PanoConstants.CBM_LEFT_FACE].setWrapU(Texture.WMClamp)
         self.faceTextures[PanoConstants.CBM_LEFT_FACE].setWrapV(Texture.WMClamp)
         
-        self.faceTextures[PanoConstants.CBM_RIGHT_FACE].read(Filename(prefixFilename + '_rt.jpg'))
+        filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_rt.jpg')
+        self.faceTextures[PanoConstants.CBM_RIGHT_FACE].read(Filename(filename))
         self.faceTextures[PanoConstants.CBM_RIGHT_FACE].setWrapU(Texture.WMClamp)
         self.faceTextures[PanoConstants.CBM_RIGHT_FACE].setWrapV(Texture.WMClamp)
         
-        self.faceTextures[PanoConstants.CBM_TOP_FACE].read(Filename(prefixFilename + '_top.jpg'))
+        filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_top.jpg')
+        self.faceTextures[PanoConstants.CBM_TOP_FACE].read(Filename(filename))
         self.faceTextures[PanoConstants.CBM_TOP_FACE].setWrapU(Texture.WMClamp)
         self.faceTextures[PanoConstants.CBM_TOP_FACE].setWrapV(Texture.WMClamp)
         
-        self.faceTextures[PanoConstants.CBM_BOTTOM_FACE].read(Filename(prefixFilename + '_bt.jpg'))
+        filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_bt.jpg')
+        self.faceTextures[PanoConstants.CBM_BOTTOM_FACE].read(Filename(filename))
         self.faceTextures[PanoConstants.CBM_BOTTOM_FACE].setWrapU(Texture.WMClamp)
         self.faceTextures[PanoConstants.CBM_BOTTOM_FACE].setWrapV(Texture.WMClamp)
         
@@ -213,7 +221,7 @@ class NodeRenderer:
             b) The names of the geoms definitions inside the .egg file must be: 
                top, left, bottom, right, back, front
             c) The model scale must be 1, 1, 1        
-        """
+        """        
         resourcesDir = '/c/Documents and Settings/Fidel/workspace/Panorama/demo/data/models'
         self.cmap = loader.loadModel(os.path.join(resourcesDir, 'cubemap-5.egg'))
         self.cmap.setName('cmap')
@@ -224,7 +232,8 @@ class NodeRenderer:
         # Disable depth write for the cube map
         self.cmap.setDepthWrite(False)    
         
-        print self.cmap.ls()
+        if self.log.isEnabledFor(logging.DEBUG):
+            self.log.debug(self.cmap.ls())
 
         self.faceDim = 2.0 * self.cmap.getScale()[0]        
         self.faceHalfDim = self.cmap.getScale()[0]          
@@ -246,12 +255,13 @@ class NodeRenderer:
                                     
         self.buildWorldToFaceMatrices() 
         
-        print 'testing isFaceInFrustum from front: ', self.isFaceInFrustum(PanoConstants.CBM_FRONT_FACE)
-        print 'testing isFaceInFrustum from back: ', self.isFaceInFrustum(PanoConstants.CBM_BACK_FACE)
-        print 'testing isFaceInFrustum from left: ', self.isFaceInFrustum(PanoConstants.CBM_LEFT_FACE)
-        print 'testing isFaceInFrustum from right: ', self.isFaceInFrustum(PanoConstants.CBM_RIGHT_FACE)
-        print 'testing isFaceInFrustum from top: ', self.isFaceInFrustum(PanoConstants.CBM_TOP_FACE)
-        print 'testing isFaceInFrustum from bottom: ', self.isFaceInFrustum(PanoConstants.CBM_BOTTOM_FACE)
+        if self.log.isEnabledFor(logging.DEBUG):
+            self.log.debug('testing isFaceInFrustum from front: %d', self.isFaceInFrustum(PanoConstants.CBM_FRONT_FACE))
+            self.log.debug('testing isFaceInFrustum from back: %d', self.isFaceInFrustum(PanoConstants.CBM_BACK_FACE))
+            self.log.debug('testing isFaceInFrustum from left: %d', self.isFaceInFrustum(PanoConstants.CBM_LEFT_FACE))
+            self.log.debug('testing isFaceInFrustum from right: %d', self.isFaceInFrustum(PanoConstants.CBM_RIGHT_FACE))
+            self.log.debug('testing isFaceInFrustum from top: %d', self.isFaceInFrustum(PanoConstants.CBM_TOP_FACE))
+            self.log.debug('testing isFaceInFrustum from bottom: %d', self.isFaceInFrustum(PanoConstants.CBM_BOTTOM_FACE))
             
     """
     Translates the given world space point in the local 2D coordinate system
@@ -260,10 +270,14 @@ class NodeRenderer:
     [0..1] range.
     """
     def getFaceLocalCoords(self, face, p):    
-        print 'getFaceLocalCoords for point ', p    
+        
+        if self.log.isEnabledFor(logging.DEBUG):
+            self.log.debug('getFaceLocalCoords for point %s', p)    
         mat = self.worldToFaceMatrices[face]        
-        fp = mat.xformPoint(p)        
-        print 'face point is ', fp, ' while inversed transformed back to world is ', self.faceToWorldMatrices[face].xformPoint(fp)
+        fp = mat.xformPoint(p)
+        
+        if self.log.isEnabledFor(logging.DEBUG):        
+            self.log.debug('face point is %s while inversed transformed back to world is %s', str(fp), str(self.faceToWorldMatrices[face].xformPoint(fp)))
         if fp.getX() < 0.00001:
             return (fp.getY(), fp.getZ())
         elif fp.getY() < 0.00001:
@@ -318,8 +332,10 @@ class NodeRenderer:
         
         if face != PanoConstants.CBM_TOP_FACE and face != PanoConstants.CBM_BOTTOM_FACE:        
             # read camera's heading angle
-            camHeading = base.camera.getH()                         
-            print 'camHeading: ', camHeading
+            camHeading = base.camera.getH()
+            
+            if self.log.isEnabledFor(logging.DEBUG):                         
+                self.log.debug('camHeading: %f', camHeading)
             
             if (camHeading < 90.0 or camHeading > 270.0) and face == PanoConstants.CBM_FRONT_FACE:
                 return True
@@ -333,12 +349,14 @@ class NodeRenderer:
             if camHeading < 270.0 and camHeading > 90.0 and face == PanoConstants.CBM_BACK_FACE:
                 return True
         else:
-            camPitch = base.camera.getP() 
-            print 'camPitch: ', camPitch
+            camPitch = base.camera.getP()
+            if self.log.isEnabledFor(logging.DEBUG): 
+                self.log.debug('camPitch: %f', camPitch)
             
             aspect = 1.0 / base.camLens.getAspectRatio()
             pitchLimit = (180.0 /math.pi) * math.atan(aspect*0.5)
-            print 'pitchLimit: ', pitchLimit
+            if self.log.isEnabledFor(logging.DEBUG):
+                self.log.debug('pitchLimit: %f', pitchLimit)
             
             if camPitch > pitchLimit and camPitch < 180.0 and face == PanoConstants.CBM_TOP_FACE:
                 return True
