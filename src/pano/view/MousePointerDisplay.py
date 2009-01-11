@@ -2,6 +2,7 @@ import logging
 
 from direct.gui.OnscreenImage import OnscreenImage
 from pandac.PandaModules import TransparencyAttrib
+from pandac.PandaModules import CullBinManager
 from direct.task.Task import Task
 
 from constants import PanoConstants
@@ -19,7 +20,7 @@ class MousePointerDisplay:
         self.pointer = None
         
         #the parent node of the mouse pointer
-        self.pointerParentNP = aspect2d.attachNewNode('mousePointer')
+        self.pointerParentNP = None
         
         #the mouse pointer node, it can be a ModelNode if the cursor is animated and was read by an .egg file
         #or it can be a OnScreenImage if the cursor is static
@@ -29,7 +30,13 @@ class MousePointerDisplay:
         self.isImagePointer = False
         
         #True if the mouse pointer is hidden
-        self.mouseHidden = True
+        self.mouseHidden = True                                
+        
+    def initialize(self):        
+        self.pointerParentNP = aspect2d.attachNewNode('mousePointer')
+        
+        # create a GUI Layer for the pointer
+        CullBinManager.getGlobalPtr().addBin('mouse_pointer', CullBinManager.BTUnsorted, 60)
         
         # add task that updates the location of the mouse pointer
         taskMgr.add(self.updatePointerLocationTask, "Mouse Pointer Task")
@@ -42,7 +49,7 @@ class MousePointerDisplay:
             if self.mousePointer is not None:
                 if self.isImagePointer:
                     # trigger the actual display of the mouse pointer
-                    self.mouseHidden = self.setMousePointer(self.pointerName)
+                    self.mouseHidden = self.setByName(self.pointerName)
                 else:
                     # bring the mouse node back in the scenegraph
                     self.mousePointer.reparentTo(aspect2d)
@@ -111,7 +118,10 @@ class MousePointerDisplay:
                 texPath = self.game.getResources().getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, self.pointer.getTexture())
                 self.mousePointer = OnscreenImage(image = texPath, pos = (0.5, 0, 0.5), scale=self.scale, parent=self.pointerParentNP)
                 self.mousePointer.setTransparency(TransparencyAttrib.MAlpha)
-                            
+                
+            self.mousePointer.setBin('mouse_pointer', 0)
+            self.mousePointer.setDepthTest(False)
+            self.mousePointer.setDepthWrite(False)            
             self.mouseHidden = False
             
         return True            
