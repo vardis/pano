@@ -1,6 +1,7 @@
 from ConfigParser import SafeConfigParser
 
-from pano.constants import PanoConstants
+from constants import PanoConstants
+from pano.exceptions.ParseException import ParseException
 from model.Node import Node
 from model.Hotspot import Hotspot
 
@@ -42,69 +43,76 @@ class NodeParser:
         """
         cfg = SafeConfigParser()
         
-#        try:
-        cfg.readfp(istream)
-        
-        assert cfg.has_section(NodeParser.NODE_SECTION), 'Invalid .node file, a node section hasn''t been defined'            
-        
-        # read node's options
-        if cfg.has_option(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_DESC):
-            node.setDescription(cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_DESC))
+        try:
+            cfg.readfp(istream)
             
-        if cfg.has_option(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_CUBEMAP):
-            node.setCubemap(cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_CUBEMAP))
+            assert cfg.has_section(NodeParser.NODE_SECTION), 'Invalid .node file, a node section hasn''t been defined'            
             
-        if cfg.has_option(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_IMAGE):
-            node.setImage(cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_IMAGE))
-            
-        for s in cfg.sections():
-            if s.startswith('hotspot_'):
-                hp = Hotspot(name = s[8:])
+            # read node's options
+            if cfg.has_option(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_DESC):
+                node.setDescription(cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_DESC))
                 
-                if cfg.has_option(s, NodeParser.HOTSPOT_OPT_FACE):
-                    face = cfg.get(s, NodeParser.HOTSPOT_OPT_FACE)
-                    assert self.__facesCodes.has_key(face), 'invalid face name: ' + face                    
-                    hp.setFace(self.__facesCodes[face])
-                    
-                if cfg.has_option(s, NodeParser.HOTSPOT_OPT_LOOKTEXT):
-                    hp.setDescription(cfg.get(s, NodeParser.HOTSPOT_OPT_LOOKTEXT))
-                    
-                if cfg.has_option(s, NodeParser.HOTSPOT_OPT_XO):
-                    hp.setXo(cfg.getint(s, NodeParser.HOTSPOT_OPT_XO))
-                    
-                if cfg.has_option(s, NodeParser.HOTSPOT_OPT_YO):
-                    hp.setYo(cfg.getint(s, NodeParser.HOTSPOT_OPT_YO))
-                    
-                if cfg.has_option(s, NodeParser.HOTSPOT_OPT_XE):
-                    hp.setXe(cfg.getint(s, NodeParser.HOTSPOT_OPT_XE))
-                    
-                if cfg.has_option(s, NodeParser.HOTSPOT_OPT_YE):
-                    hp.setYe(cfg.getint(s, NodeParser.HOTSPOT_OPT_YE))
-                                    
-                if cfg.has_option(s, NodeParser.HOTSPOT_OPT_WIDTH):
-                    hp.setWidth(cfg.getint(s, NodeParser.HOTSPOT_OPT_WIDTH))
-                    
-                if cfg.has_option(s, NodeParser.HOTSPOT_OPT_HEIGHT):
-                    hp.setHeight(cfg.getint(s, NodeParser.HOTSPOT_OPT_HEIGHT))
-                    
-                if cfg.has_option(s, NodeParser.HOTSPOT_OPT_ACTION):
-                    hp.setAction(cfg.get(s, NodeParser.HOTSPOT_OPT_ACTION))                            
-                    
-                if cfg.has_option(s, NodeParser.HOTSPOT_OPT_ACTIONARGS):
-                    hp.setActionArgs(cfg.get(s, NodeParser.HOTSPOT_OPT_ACTIONARGS))
-                    
-                if cfg.has_option(s, NodeParser.HOTSPOT_OPT_ACTIVE):
-                    hp.setActive(cfg.getboolean(s, NodeParser.HOTSPOT_OPT_ACTIVE))
-                    
-                if cfg.has_option(s, NodeParser.HOTSPOT_OPT_CURSOR):
-                    hp.setCursor(cfg.get(s, NodeParser.HOTSPOT_OPT_CURSOR))
-                    
-                if cfg.has_option(s, NodeParser.HOTSPOT_OPT_SPRITE):
-                    hp.setSprite(cfg.get(s, NodeParser.HOTSPOT_OPT_SPRITE))
-                    
-                node.addHotspot(hp)
+            if cfg.has_option(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_CUBEMAP):
+                node.setCubemap(cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_CUBEMAP))
                 
-        return node
+            if cfg.has_option(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_IMAGE):
+                node.setImage(cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_IMAGE))
+                
+            for s in cfg.sections():
+                if s.startswith('hotspot_'):
+                    hp = Hotspot(name = s[8:])
+                    
+                    if cfg.has_option(s, NodeParser.HOTSPOT_OPT_FACE):
+                        face = cfg.get(s, NodeParser.HOTSPOT_OPT_FACE)
+                        assert self.__facesCodes.has_key(face), 'invalid face name: ' + face                    
+                        hp.setFace(self.__facesCodes[face])
+                        
+                    if cfg.has_option(s, NodeParser.HOTSPOT_OPT_LOOKTEXT):
+                        hp.setDescription(cfg.get(s, NodeParser.HOTSPOT_OPT_LOOKTEXT))
+                        
+                    if cfg.has_option(s, NodeParser.HOTSPOT_OPT_XO):
+                        hp.setXo(cfg.getint(s, NodeParser.HOTSPOT_OPT_XO))
+                        
+                    if cfg.has_option(s, NodeParser.HOTSPOT_OPT_YO):
+                        hp.setYo(cfg.getint(s, NodeParser.HOTSPOT_OPT_YO))
+                        
+                    if cfg.has_option(s, NodeParser.HOTSPOT_OPT_XE):
+                        hp.setXe(cfg.getint(s, NodeParser.HOTSPOT_OPT_XE))
+                        
+                    if cfg.has_option(s, NodeParser.HOTSPOT_OPT_YE):
+                        hp.setYe(cfg.getint(s, NodeParser.HOTSPOT_OPT_YE))
+                                        
+                    if cfg.has_option(s, NodeParser.HOTSPOT_OPT_WIDTH):
+                        hp.setWidth(cfg.getint(s, NodeParser.HOTSPOT_OPT_WIDTH))
+                        
+                    if cfg.has_option(s, NodeParser.HOTSPOT_OPT_HEIGHT):
+                        hp.setHeight(cfg.getint(s, NodeParser.HOTSPOT_OPT_HEIGHT))
+                        
+                    if cfg.has_option(s, NodeParser.HOTSPOT_OPT_ACTION):
+                        hp.setAction(cfg.get(s, NodeParser.HOTSPOT_OPT_ACTION))                            
+                        
+                    if cfg.has_option(s, NodeParser.HOTSPOT_OPT_ACTIONARGS):
+                        hp.setActionArgs(cfg.get(s, NodeParser.HOTSPOT_OPT_ACTIONARGS))
+                        
+                    if cfg.has_option(s, NodeParser.HOTSPOT_OPT_ACTIVE):
+                        hp.setActive(cfg.getboolean(s, NodeParser.HOTSPOT_OPT_ACTIVE))
+                        
+                    if cfg.has_option(s, NodeParser.HOTSPOT_OPT_CURSOR):
+                        hp.setCursor(cfg.get(s, NodeParser.HOTSPOT_OPT_CURSOR))
+                        
+                    if cfg.has_option(s, NodeParser.HOTSPOT_OPT_SPRITE):
+                        hp.setSprite(cfg.get(s, NodeParser.HOTSPOT_OPT_SPRITE))
+                        
+                    node.addHotspot(hp)
+                
+        except (MissingSectionHeaderError, ParsingError):
+            raise ParseException(error='error.parse.invalid', resFile=node.getName() + '.node')
+        
+        except IOError, e:
+            raise ParseException(error='error.parse.io', resFile=node.getName() + '.node', args=(str(e)))
+        
+        else:
+            return node
                     
                 
                 

@@ -1,5 +1,6 @@
 from ConfigParser import SafeConfigParser
 
+from pano.exceptions.ParseException import ParseException
 from model.MousePointer import MousePointer
 
 class PointerParser:    
@@ -29,25 +30,29 @@ class PointerParser:
         """
         cfg = SafeConfigParser()
         
-#        try:
-        cfg.readfp(istream)
-        section = cfg.sections()[0]
-        assert section is not None and section == 'Pointer', 'pointer file must contain the "Pointer" section header'
+        try:
+            cfg.readfp(istream)
+            section = cfg.sections()[0]
+            assert section is not None and section == 'Pointer', 'pointer file must contain the "Pointer" section header'
+                    
+            if cfg.has_option(section, PointerParser.EGG_FILE_OPTION):
+                pointer.setEggFile(cfg.get(section, PointerParser.EGG_FILE_OPTION))
                 
-        if cfg.has_option(section, PointerParser.EGG_FILE_OPTION):
-            pointer.setEggFile(cfg.get(section, PointerParser.EGG_FILE_OPTION))
+            if cfg.has_option(section, PointerParser.TEXTURE_OPTION):
+                pointer.setTexture(cfg.get(section, PointerParser.TEXTURE_OPTION))
             
-        if cfg.has_option(section, PointerParser.TEXTURE_OPTION):
-            pointer.setTexture(cfg.get(section, PointerParser.TEXTURE_OPTION))
-        
-        if cfg.has_option(section, PointerParser.ALPHA_OPTION):
-            pointer.setEnableAlpha(cfg.getboolean(section, PointerParser.ALPHA_OPTION))
-        
-        assert pointer.getEggFile() is not None or pointer.getTexture() is not None, 'either an egg file or a texture file must be specified for the pointer'
-        
-        return pointer
+            if cfg.has_option(section, PointerParser.ALPHA_OPTION):
+                pointer.setEnableAlpha(cfg.getboolean(section, PointerParser.ALPHA_OPTION))
             
-#        except:
-#            print 'error while parsing pointer file'
+            assert pointer.getEggFile() is not None or pointer.getTexture() is not None, 'either an egg file or a texture file must be specified for the pointer'
+                
+            
+        except (MissingSectionHeaderError, ParsingError):
+            raise ParseException(error='error.parse.invalid', resFile=pointer.getName() + '.pointer')
         
+        except IOError, e:
+            raise ParseException(error='error.parse.io', resFile=pointer.getName() + '.pointer', args=(str(e)))
+        
+        else:
+            return pointer
         
