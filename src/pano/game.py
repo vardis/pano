@@ -1,9 +1,12 @@
-import sys
+import sys, os
 import logging.config
  
 # defer opening of the main window until we read the window properties from the
 # configuration and setup a WindowProperties to initialise the window.
-#loadPrcFileData("", "window-type none")
+from pandac.PandaModules import loadPrcFileData
+#loadPrcFileData("", "want-directtools #t")
+#loadPrcFileData("", "want-tk #t")
+loadPrcFileData("", "window-type none")
 import direct.directbase.DirectStart
  
 from pandac.PandaModules import loadPrcFile
@@ -12,13 +15,14 @@ from pandac.PandaModules import WindowProperties
 from direct.task.Task import Task
 
 from constants import PanoConstants
-from parameters import PanoParameters 
+from cvars import ConfigVars 
 from resources.ResourceLoader import ResourceLoader
 from view.GameView import GameView
 from control.InitGameState import InitGameState
 from control.ExploreState import ExploreState
 from control.fsm import FSM
 from actions.GameActions import GameActions
+from resources.i18n import i18n
 
 class PanoGame:
     """
@@ -31,10 +35,12 @@ class PanoGame:
         self.log = logging.getLogger('pano')
         
         self.name = name                
-        self.config = None
-        self.parameters = PanoParameters()
+        self.config = ConfigVars()
+        self.windowProperties = {}
+        self.parameters = ConfigVars()
         self.resources = ResourceLoader()
         self.gameView = GameView(gameRef = self, title = name)
+        self.i18n = i18n(self)
         self.initialNode = None
         self.mouseMode = PanoConstants.MOUSE_UI_MODE
         self.paused = False
@@ -47,14 +53,7 @@ class PanoGame:
         self.quitRequested = False
         
     def initialise(self, task):
-                                
-        self.config = loadPrcFile(PanoConstants.CONFIG_FILE)
-        
-        # override setting for the mouse cursor and let the other window properties
-        # get their values from the configuration file or the default Panda values
-        winProps = { PanoConstants.WIN_MOUSE_POINTER : False }
-        self.gameView.setWindowProperties(winProps)
-        
+                        
         # setup the game's FSM
         self.fsm = FSM()
         
@@ -70,6 +69,14 @@ class PanoGame:
         
         return Task.done
         
+    def getConfigVar(self, var, default):
+        if self.config.has_key(var):
+            return self.config[var]
+        else:
+            return default
+        
+    def setConfigVar(self, var, value):
+        self.config[var] = value
         
     def gameLoop(self, task):
         """
@@ -89,6 +96,9 @@ class PanoGame:
             
     def setInitialNode(self, nodeName):
         self.initialNode = nodeName
+
+    def getConfig(self):
+        return self.config
         
     def getResources(self):
         return self.resources
@@ -99,6 +109,9 @@ class PanoGame:
     def getView(self):
         return self.gameView
 
+    def getI18n(self):
+        return self.i18n
+
     def actions(self):
         return self.gameActions
     
@@ -108,10 +121,10 @@ class PanoGame:
     def quit(self):
         self.quitRequested = True
 
+#os.chdir('/host/Documents and Settings/Fidel/workspace/Panorama/demo')
+
 game = PanoGame()
 taskMgr.add(game.initialise, "Game initialisation task")
         
 run()
 
-print 'exit'            
-            
