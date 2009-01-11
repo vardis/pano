@@ -22,7 +22,7 @@ class NodeRaycaster:
         self.pickerRay = None
         self.traverser = None
         
-    def initialise(self):
+    def initialize(self):
         """
         To setup collision detection we need:
             a. A CollisionNode having a ray as its solid and placed at the position
