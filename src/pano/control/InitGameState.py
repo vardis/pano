@@ -1,5 +1,6 @@
 import logging
 import os
+from ConfigParser import SafeConfigParser
 
 from pandac.PandaModules import getModelPath
 from pandac.PandaModules import getTexturePath
@@ -25,57 +26,92 @@ class InitGameState(FSMState):
         
     def setupResourcesLocations(self):
 
-        # as the resource paths are relative to the currently working directory, we add '.' to the model path
-        print os.getcwd()
+        # as the resource paths are relative to the currently working directory, we add '.' to the model path	
         getModelPath( ).appendPath( os.getcwd( ) )
         getTexturePath( ).appendPath( os.getcwd( ) )
-        getSoundPath( ).appendPath( os.getcwd( ) )
+        getSoundPath( ).appendPath( os.getcwd( ) )        
 
-        # add the default locations
-        nodesRes = DirectoryResourcesLocation(directory='data/nodes', name='nodesLoc', description='Nodes resources', resTypes=PanoConstants.RES_TYPE_NODES)
-        modelsRes = DirectoryResourcesLocation(directory='data/models', name='modelsLoc', description='Models resources', resTypes=PanoConstants.RES_TYPE_MODELS)
-        texturesRes = DirectoryResourcesLocation(directory='data/textures', name='texturesLoc', description='Textures resources', resTypes=PanoConstants.RES_TYPE_TEXTURES)
-        fontsRes = DirectoryResourcesLocation(directory='data/fonts', name='fontsLoc', description='Fonts resources', resTypes=PanoConstants.RES_TYPE_FONTS) 
-        soundsRes = DirectoryResourcesLocation(directory='data/sounds', name='soundsLoc', description='Sounds resources', resTypes=PanoConstants.RES_TYPE_SOUNDS)
-        pointersRes = DirectoryResourcesLocation(directory='data/pointers', name='pointersLoc', description='Pointers resources', resTypes=PanoConstants.RES_TYPE_POINTERS)
+        # add resource locations
+        configs_to_types = {
+                              PanoConstants.CVAR_RESOURCES_NODES : PanoConstants.RES_TYPE_NODES,
+                              PanoConstants.CVAR_RESOURCES_TEXTURES : PanoConstants.RES_TYPE_TEXTURES,
+                              PanoConstants.CVAR_RESOURCES_FONTS : PanoConstants.RES_TYPE_FONTS,
+                              PanoConstants.CVAR_RESOURCES_POINTERS : PanoConstants.RES_TYPE_POINTERS,
+                              PanoConstants.CVAR_RESOURCES_LANGS : PanoConstants.RES_TYPE_LANGS,
+                              PanoConstants.CVAR_RESOURCES_MODELS : PanoConstants.RES_TYPE_MODELS
+                              }
 
-        res = self.getGame().getResources()        
-        res.addResourcesLocation(nodesRes)
-        res.addResourcesLocation(modelsRes)
-        res.addResourcesLocation(texturesRes)
-        res.addResourcesLocation(fontsRes)
-        res.addResourcesLocation(soundsRes)
-        res.addResourcesLocation(pointersRes)    
+        res = self.getGame().getResources()
+        for config in configs_to_types.keys():
+            locations = self.game.getConfig().get(config)
+            if locations:
+                for path in [str.strip(s) for s in locations.split(',')]:                    
+                    loc = DirectoryResourcesLocation(directory=path, name=path, description='', resTypes=configs_to_types[config])
+                    res.addResourcesLocation(loc)
+                    
+        print res.listResources(PanoConstants.RES_TYPE_TEXTURES)
+        
+    def configure(self):
+        
+        vars = self.game.getConfig()        
+        istream = None        
+        try:
+            istream = open('game.cfg', 'r')
+            cfg = SafeConfigParser()
+            cfg.readfp(istream)
+            
+            sections = cfg.sections()
+            for s in sections:
+                if not (s.startswith('logger') or s.startswith('handler') or s.startswith('formatter')):                 
+                    options = cfg.options(s)
+                    for opt in options:                        
+                        vars.add(s + '_' + opt, cfg.get(s, opt))
+                
+        finally:
+            if istream is not None:
+                istream.close()
+                
         
     def enter(self):
         if self.log.isEnabledFor(logging.DEBUG):
             self.log.debug('entered initial state') 
         
+        self.configure()
+        
 		# configure resource locations
         self.setupResourcesLocations()
-        
-        # setup input mappings, initialise components        
-        
-        #enter UI mode and show the mouse
-        
+                
         # disables Panda's mouse based camera control
         base.disableMouse()
+        
+        self.getGame().getI18n().initialize()
+        
+        # sets window settings and hides the system mouse
+        winProps = { 
+                    PanoConstants.WIN_MOUSE_POINTER : False,
+                    PanoConstants.WIN_SIZE : (self.game.getConfig().getInt(PanoConstants.CVAR_WIN_WIDTH), self.game.getConfig().getInt(PanoConstants.CVAR_WIN_HEIGHT)),
+                    PanoConstants.WIN_FULLSCREEN : self.game.getConfig().getBool(PanoConstants.CVAR_WIN_FULLSCREEN),
+                    PanoConstants.WIN_TITLE : self.game.getConfig().get(PanoConstants.CVAR_WIN_TITLE)
+        }
+        self.getGame().getView().setWindowProperties(winProps)
+        self.getGame().getView().openWindow()
+        self.getGame().getView().initialize()        
                     
         self.initialNode = self.getGame().getResources().loadNode('node1')        
+                
         
-        # create a hotspot for the door exit
-#        exitDoor = Hotspot('exitDoor', 
-#                           'exits the room and ends the game',  
-#                           PanoConstants.CBM_FRONT_FACE, 
-#                           444, 444,  # x, y 
-#                           122, 258) # width, height
-#        exitDoor.setAction(self.getGame().actions().builtinNames().ExitGameAction)
-#        self.initialNode.addHotspot(exitDoor)
-        
-        self.getGame().getView().displayNode(self.initialNode)
-        
-        #self.game.setMouseMode(PanoConstants.MOUSE_UI_MODE)
-        self.game.gameView.mousePointer.setByName(PanoConstants.SELECT_POINTER)
+        self.getGame().getView().displayNode(self.initialNode)                
+        self.getGame().getView().mousePointer.setByName('select')
+        talkBox = self.getGame().getView().getTalkBox()
+#        talkBox.showText(
+#"""
+#Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et 
+#dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip 
+#ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore 
+#eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia 
+#deserunt mollit anim id est laborum.
+#""", (1,0,0,1))
+#        talkBox.showText("A small line of code through: \nself.getGame().getView().getTalkBox().showText(...)")
         
     def exit(self):
         pass            
