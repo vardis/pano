@@ -6,6 +6,7 @@ from constants import PanoConstants
 from MousePointerDisplay import MousePointerDisplay
 from NodeRaycaster import NodeRaycaster
 from model.Node import Node
+from TalkBox import TalkBox
 
 class GameView:    
     def __init__(self, gameRef = None, title = ''):
@@ -16,10 +17,25 @@ class GameView:
         self.windowProperties = None
         self.title = title
         self.panoRenderer = NodeRenderer(self.game.resources)
-        self.raycaster = NodeRaycaster(self.panoRenderer)
-        self.raycaster.initialise()
-        self.mousePointer = MousePointerDisplay(gameRef)        
-        self.activeNode = None                
+        self.raycaster = NodeRaycaster(self.panoRenderer)        
+        self.mousePointer = MousePointerDisplay(gameRef)
+        self.__talkBox = TalkBox(gameRef)         
+        self.activeNode = None   
+        
+    def initialize(self):
+        base.setFrameRateMeter(self.game.getConfig().getBool(PanoConstants.CVAR_DEBUG_FPS))
+        self.panoRenderer.initialize()
+        self.mousePointer.initialize()
+        self.raycaster.initialize()
+        self.__talkBox.initialize()
+                     
+
+    def getTalkBox(self):
+        return self.__talkBox
+
+    def setTalkBox(self, value):
+        self.__talkBox = value
+
         
     def displayNode(self, node):
         self.activeNode = node
@@ -47,6 +63,7 @@ class GameView:
             
         if props.has_key(PanoConstants.WIN_SIZE):
             size = props[PanoConstants.WIN_SIZE]
+            print size
             wp.setSize(size[0], size[1])
             
         if props.has_key(PanoConstants.WIN_TITLE):
@@ -64,14 +81,15 @@ class GameView:
             wp.setIconFilename(props[PanoConstants.WIN_ICON])
             
         self.windowProperties = wp
-        base.win.requestProperties(self.windowProperties)
+        if self.window is not None:
+            base.win.requestProperties(self.windowProperties)
     
     def openWindow(self):        
-        if base.openMainWindow(props = self.windowProperties, gsg=base.win.getGsg()):
-            self.window = base.win
-            self.windowProperties = WindowProperties(self.window.getProperties())
+        if base.win is not None:
+            base.openMainWindow(props = self.windowProperties, gsg=base.win.getGsg())        
         else:
-            self.window = None
+            base.openMainWindow(props = self.windowProperties, type='onscreen')        
+        self.window = base.win
     
     def closeWindow(self):
         base.closeWindow(self.window)
@@ -79,5 +97,7 @@ class GameView:
         
     def update(self, millis):
         self.panoRenderer.render(millis)
+
+    talkBox = property(getTalkBox, setTalkBox, None, "TalkBox's Docstring")
         
     
