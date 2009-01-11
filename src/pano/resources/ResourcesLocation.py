@@ -1,4 +1,4 @@
-from pano.constants import PanoConstants
+from constants import PanoConstants
 
 class AbstractResourceLocation:
 	"""
@@ -53,6 +53,12 @@ class AbstractResourceLocation:
 		Temporary until streams are incorporated.
 		"""
 		return None
+	
+	def listResources(self, resType, fullPaths=True):
+		"""
+		List all filenames of type that matches resType. 
+		"""
+		return []
 
 	def openResource(self, name):
 		"""
