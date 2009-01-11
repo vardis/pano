@@ -66,18 +66,18 @@ class NodeRenderer:
         # e.g: 
         #    minTop, maxTop = self.facesAABBs[PanoConstants.CBM_TOP_FACE]
         #    minx, miny, minz = minTop        
-        self.facesAABBs = {}        
+        self.facesAABBs = {}                        
         
-        base.camLens.setFar(100000)
-        base.camLens.setFocalLength(1)
-        
-        self.loadCubeModel()
-
         # the parent scenegraph node of the hotspots debug geometries
         self.debugGeomsParent = None
         
         # if True then the debug geometries for the hotspots will be drawn
         self.drawHotspots = False
+        
+    def initialize(self):
+        base.camLens.setFar(100000)
+        base.camLens.setFocalLength(1)
+        self.loadCubeModel()
         
     def getNode(self):
         """
@@ -89,23 +89,17 @@ class NodeRenderer:
         self.drawHotspots = flag
         if flag and self.node is not None:
             for hp in self.node.getHotspots():
-#                print hp
                 tex = self.faceTextures[hp.getFace()]            
                 mat = self.faceToWorldMatrices[hp.getFace()]
                 
                 fo = VBase3(hp.getXo() / tex.getXSize(), 0.0, hp.getYo() / tex.getYSize())
-#                print 'fo ', fo
                 wvo = mat.xformPoint(fo) 
-#                print wvo 
-                
                 
                 fe = VBase3(hp.getXe() / tex.getXSize(), 0.0, hp.getYe() / tex.getYSize())
-#                print 'fe ', fe
-                wve = mat.xformPoint(fe) 
-#                print wve                                                 
+                wve = mat.xformPoint(fe)                                                 
                                 
-#                box = loader.loadModel(self.resources.getResourceFullPath(PanoConstants.RES_TYPE_MODELS, 'box.egg.pz'))
-                box = loader.loadModelCopy('/c/Documents and Settings/Fidel/workspace/Panorama/demo/data/models/box.egg.pz')                
+                box = loader.loadModel(self.resources.getResourceFullPath(PanoConstants.RES_TYPE_MODELS, 'box.egg.pz'))
+#                box = loader.loadModelCopy('/c/Documents and Settings/Fidel/workspace/Panorama/demo/data/models/box.egg.pz')                
                 
                 box.setName('debug_geom_' + hp.getName())
                 box.setPos(wvo[0], wvo[1], wve[2])
@@ -113,17 +107,15 @@ class NodeRenderer:
                              max(0.1, math.fabs(wve[0] - wvo[0])), 
                              max(0.1, math.fabs(wve[1] - wvo[1])), 
                              max(0.1, math.fabs(wve[2] - wvo[2])))                
-                box.setRenderModeWireframe()
-                
-                self.debugGeomsParent = self.cmap.attachNewNode('debug_geoms')
+                box.setRenderModeWireframe()                                
                 box.reparentTo(self.debugGeomsParent)
             
         elif flag:
-            debugGeoms = self.debugGeomsParent.getChildrenAsList()
+            debugGeoms = self.debugGeomsParent.getChildrenAsList()            
             for box in debugGeoms:
                 box.removeNode()
                 
-        print self.cmap.ls()
+        
         
     def render(self, millis):
         pass
@@ -136,12 +128,10 @@ class NodeRenderer:
         the same as the node's name and the 6 postfixs: _fr.jpg, _bk.jpg, _lt.jpg,
         _rt.jpg, _top.jpg and _bottom.jpg
         """
-        self.node = node
+        self.node = node        
         
-        # load the 6 textures of the node
-        resourcesDir = '/c/Documents and Settings/Fidel/workspace/Panorama/demo/data/nodes/' + self.node.getName()
-        
-        prefixFilename = self.node.getCubemap() # os.path.join(resourcesDir, self.node.getName())
+        # load the 6 textures of the node        
+        prefixFilename = self.node.getCubemap()
         
         self.log.debug('full path to resource: %s', self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_fr.jpg'))
         filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_fr.jpg')        
@@ -222,12 +212,14 @@ class NodeRenderer:
                top, left, bottom, right, back, front
             c) The model scale must be 1, 1, 1        
         """        
-        resourcesDir = '/c/Documents and Settings/Fidel/workspace/Panorama/demo/data/models'
-        self.cmap = loader.loadModel(os.path.join(resourcesDir, 'cubemap-5.egg'))
+        modelPath = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_MODELS, 'cubemap-linux.egg')
+        self.cmap = loader.loadModel(modelPath)
         self.cmap.setName('cmap')
         self.cmap.reparentTo(render)
         self.cmap.setScale(10, 10, 10)
         self.cmap.setPos(0,0,0)
+        
+        self.debugGeomsParent = self.cmap.attachNewNode('debug_geoms')
         
         # Disable depth write for the cube map
         self.cmap.setDepthWrite(False)    
@@ -247,9 +239,11 @@ class NodeRenderer:
                            PanoConstants.CBM_BOTTOM_FACE : ((-self.faceHalfDim, -self.faceHalfDim, -self.faceHalfDim), (self.faceHalfDim, self.faceHalfDim, -self.faceHalfDim))
                            }
                                 
+        print self.cmap.ls()
+
         for i, n in self.cubeGeomsNames.items():
-            geomNode = self.cmap.find("**/Cube/=name=" + n)     
-            state = geomNode.node().getGeomState(0)
+            geomNode = self.cmap.find("**/Cube/=name=" + n)
+            state = geomNode.node().getGeomState(0)                 
             tex = state.getAttrib(TextureAttrib.getClassType()).getTexture()
             self.faceTextures[i] = tex 
                                     
