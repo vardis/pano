@@ -1,8 +1,39 @@
 
 class PanoConstants:
     """
-    Every constant related to our engine will be stored in this class.
+    Every constant related to our framework will be stored in this class.
     """
+    
+    # names of the configuration variables
+    CVAR_WIN_TITLE = 'game_title'
+    CVAR_WIN_WIDTH = 'display_width'
+    CVAR_WIN_HEIGHT = 'display_height'
+    CVAR_WIN_VSYNC = 'display_vsync'
+    CVAR_WIN_FULLSCREEN = 'display_fullscreen'
+    CVAR_CAM_HSPEED = 'camera_hspeed'
+    CVAR_CAM_VSPEED = 'camera_vspeed'
+    CVAR_DEBUG_HOTSPOTS = 'debug_show_hotspots'
+    CVAR_DEBUG_FPS = 'debug_show_fps'
+    
+    CVAR_RESOURCES_NODES = 'resources_nodes'
+    CVAR_RESOURCES_TEXTURES = 'resources_textures'
+    CVAR_RESOURCES_FONTS = 'resources_fonts'
+    CVAR_RESOURCES_POINTERS = 'resources_pointers'
+    CVAR_RESOURCES_LANGS = 'resources_langs'
+    CVAR_RESOURCES_MODELS = 'resources_models'
+    
+    # names of the cvars which are related to the talk box
+    CVAR_TALKBOX_X         = 'talkbox_x'
+    CVAR_TALKBOX_Y         = 'talkbox_y'
+    CVAR_TALKBOX_FONT      = 'talkbox_font'
+    CVAR_TALKBOX_BGCOLOR   = 'talkbox_bg_color'
+    CVAR_TALKBOX_IMAGE   = 'talkbox_image'
+    CVAR_TALKBOX_TEXTCOLOR = 'talkbox_text_color'
+    CVAR_TALKBOX_TEXTSCALE = 'talkbox_text_scale'
+    
+    # same for i18n
+    CVAR_I18N_LANG = "i18n_language"
+    
     
     # keys' names used to lookup window properties in a dictionary
     WIN_ORIGIN = 'win_origin'
@@ -27,6 +58,7 @@ class PanoConstants:
     RES_TYPE_SOUNDS = 4
     RES_TYPE_POINTERS = 5
     RES_TYPE_MODELS = 6
+    RES_TYPE_LANGS = 7
     RES_TYPE_ALL = 100
     
     #Constants for the predefined mouse pointers
