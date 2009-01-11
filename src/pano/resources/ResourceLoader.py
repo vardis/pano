@@ -1,22 +1,30 @@
-import os
+import os, logging, codecs
 
 from constants import PanoConstants
 from DirectoryResourcesLocation import DirectoryResourcesLocation
 from model.Node import Node
+from model.LangFile import LangFile
 from model.MousePointer import MousePointer
+from model.Font import Font
 from parsers.PointerParser import PointerParser 
 from parsers.NodeParser import NodeParser
+from parsers.FontParser import FontParser
+from parsers.LangFileParser import LangFileParser
 
 class ResourceLoader:
     """
     Stores all declared resource paths for the various resource types.
     """
-    def __init__(self):       
+    def __init__(self):
+        self.log = logging.getLogger('pano.resourceLoader')
+               
 		# locations of resources indexed by their supported resource types
         self.resLocations = {}		       
         self.parsers = {
                         PanoConstants.RES_TYPE_POINTERS : PointerParser(),
-                        PanoConstants.RES_TYPE_NODES    : NodeParser()
+                        PanoConstants.RES_TYPE_NODES    : NodeParser(),
+                        PanoConstants.RES_TYPE_LANGS    : LangFileParser(),
+                        PanoConstants.RES_TYPE_FONTS    : FontParser()
         }
         
     def addResourcesLocation(self, resLoc):
@@ -47,10 +55,46 @@ class ResourceLoader:
                         return loc.getResourceFullPath(filename)
         return None
     
+    def listResources(self, resType, fullPaths=True):
+        res = []
+        if self.resLocations.has_key(resType):
+            locations = self.resLocations[resType]
+            if locations is not None:
+                for loc in locations:
+                    res.extend(loc.listResources(resType, fullPaths))
+        return res           
+    
+    def loadAllLangFiles(self):
+        filenames = self.listResources(PanoConstants.RES_TYPE_LANGS, False)
+        if filenames:
+            return [lf for lf in [self.loadLangFile(f[:-5]) for f in filenames] if lf is not None]
+        else:
+            return []
+        
+    def loadAllFonts(self):
+        filenames = self.listResources(PanoConstants.RES_TYPE_FONTS, False)
+        if filenames:
+            return [ff for ff in [self.loadFont(f[:-5]) for f in filenames] if ff is not None]
+        else:
+            return []
+    
     def loadNode(self, name):
         node = Node(name=name)
-        self.loadGeneric(PanoConstants.RES_TYPE_NODES, node, name + '.node')
-        return node
+        try:
+            self.loadGeneric(PanoConstants.RES_TYPE_NODES, node, name + '.node')
+        except:
+            return None
+        else:
+            return node
+        
+    def loadFont(self, name):
+        font = Font(fontName=name)
+        try:
+            self.loadGeneric(PanoConstants.RES_TYPE_FONTS, font, name + '.font')
+        except:
+            return None
+        else:
+            return font
     
     def loadPointer(self, name):
         """
@@ -59,9 +103,23 @@ class ResourceLoader:
         """
         pointer = MousePointer()
         pointer.setName(name)
-        self.loadGeneric(PanoConstants.RES_TYPE_POINTERS, pointer, name + '.pointer')
-        
-        return pointer
+        try:
+            self.loadGeneric(PanoConstants.RES_TYPE_POINTERS, pointer, name + '.pointer')
+        except:
+            return None
+        else:
+            return pointer                
+    
+    def loadLangFile(self, name):
+        lf = LangFile(name = name)
+        language = name[name.index('_') + 1 : name.rindex('.')]
+        lf.setLanguage(language)
+        try:
+            self.loadGeneric(PanoConstants.RES_TYPE_LANGS, lf, name + '.lang')
+        except:
+            return None
+        else:
+            return lf
         
     def loadGeneric(self, resType, resObj, filename):
         assert resType is not None and resType != PanoConstants.RES_TYPE_ALL, 'invalid resource type in loadGeneric'
@@ -69,9 +127,11 @@ class ResourceLoader:
         if resPath is not None:
             istream = None
             try:
-                istream = open(resPath, 'r')
+                istream = codecs.open(resPath, 'r', "utf-8")
                 resource = self.parsers[resType].parse(resObj, istream)
                 return resource
+            except Exception,e:
+                self.log.exception(e)
             finally:
                 if istream is not None:
                     istream.close()
