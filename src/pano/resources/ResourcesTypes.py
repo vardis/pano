@@ -1,4 +1,4 @@
-from pano.constants import PanoConstants
+from constants import PanoConstants
 
 class ResourcesTypes:
 	"""
@@ -10,7 +10,8 @@ class ResourcesTypes:
 			PanoConstants.RES_TYPE_TEXTURES : ('.jpg', '.bmp', '.tga', '.tif', '.png', '.dds'),
 			PanoConstants.RES_TYPE_FONTS : ('.font'),
 			PanoConstants.RES_TYPE_SOUNDS : ('.wav', '.ogg', '.midi', '.mp3'),
-			PanoConstants.RES_TYPE_POINTERS : ('.pointer')
+			PanoConstants.RES_TYPE_POINTERS : ('.pointer'),
+			PanoConstants.RES_TYPE_LANGS : ('.lang')
 	}
 
 	def getExtensions(resType):
@@ -29,6 +30,13 @@ class ResourcesTypes:
 		else:
 			return None
 		
-	# makes getExtensions a static method
+	def isExtensionOfType(extension, resType):
+		if ResourcesTypes.resTypesExtensions.has_key(resType):
+			exts = ResourcesTypes.resTypesExtensions[resType]
+			return extension in exts
+		else:
+			return False
+			
 	getExtensions = staticmethod(getExtensions)
+	isExtensionOfType = staticmethod(isExtensionOfType)
 		
