@@ -6,10 +6,14 @@ from model.Node import Node
 from model.LangFile import LangFile
 from model.MousePointer import MousePointer
 from model.Font import Font
+from model.Sprite import Sprite
+from model.Playlist import Playlist
 from parsers.PointerParser import PointerParser 
 from parsers.NodeParser import NodeParser
 from parsers.FontParser import FontParser
 from parsers.LangFileParser import LangFileParser
+from parsers.SpriteParser import SpriteParser
+from parsers.PlaylistParser import PlaylistParser
 
 class ResourceLoader:
     """
@@ -24,7 +28,9 @@ class ResourceLoader:
                         PanoConstants.RES_TYPE_POINTERS : PointerParser(),
                         PanoConstants.RES_TYPE_NODES    : NodeParser(),
                         PanoConstants.RES_TYPE_LANGS    : LangFileParser(),
-                        PanoConstants.RES_TYPE_FONTS    : FontParser()
+                        PanoConstants.RES_TYPE_FONTS    : FontParser(),
+                        PanoConstants.RES_TYPE_SPRITES  : SpriteParser(),
+                        PanoConstants.RES_TYPE_PLAYLISTS : PlaylistParser()
         }
         
     def addResourcesLocation(self, resLoc):
@@ -120,6 +126,24 @@ class ResourceLoader:
             return None
         else:
             return lf
+        
+    def loadSprite(self, name):
+        spr = Sprite(name = name)
+        try:
+            self.loadGeneric(PanoConstants.RES_TYPE_SPRITES, spr, name + '.spr')
+        except:
+            return None
+        else:
+            return spr
+    
+    def loadPlaylist(self, name):
+        mpl = Playlist(name = name)
+        try:
+            self.loadGeneric(PanoConstants.RES_TYPE_PLAYLISTS, mpl, name + '.mpl')
+        except:
+            return None
+        else:
+            return mpl
         
     def loadGeneric(self, resType, resObj, filename):
         assert resType is not None and resType != PanoConstants.RES_TYPE_ALL, 'invalid resource type in loadGeneric'

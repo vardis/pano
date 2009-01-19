@@ -14,6 +14,7 @@ class PanoConstants:
     CVAR_CAM_VSPEED = 'camera_vspeed'
     CVAR_DEBUG_HOTSPOTS = 'debug_show_hotspots'
     CVAR_DEBUG_FPS = 'debug_show_fps'
+    CVAR_DEBUG_CONSOLE = 'debug_enable_console'
     
     CVAR_RESOURCES_NODES = 'resources_nodes'
     CVAR_RESOURCES_TEXTURES = 'resources_textures'
@@ -21,6 +22,9 @@ class PanoConstants:
     CVAR_RESOURCES_POINTERS = 'resources_pointers'
     CVAR_RESOURCES_LANGS = 'resources_langs'
     CVAR_RESOURCES_MODELS = 'resources_models'
+    CVAR_RESOURCES_SPRITES = 'resources_sprites'
+    CVAR_RESOURCES_PLAYLISTS = 'resources_playlists'
+    CVAR_RESOURCES_SOUNDS = 'resources_sounds'
     
     # names of the cvars which are related to the talk box
     CVAR_TALKBOX_X         = 'talkbox_x'
@@ -59,6 +63,8 @@ class PanoConstants:
     RES_TYPE_POINTERS = 5
     RES_TYPE_MODELS = 6
     RES_TYPE_LANGS = 7
+    RES_TYPE_SPRITES = 8
+    RES_TYPE_PLAYLISTS = 9
     RES_TYPE_ALL = 100
     
     #Constants for the predefined mouse pointers
