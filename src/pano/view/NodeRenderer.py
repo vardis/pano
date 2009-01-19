@@ -3,7 +3,7 @@ import math
 import logging
 
 from pandac.PandaModules import Texture
-from pandac.PandaModules import TextureAttrib
+from pandac.PandaModules import TextureAttrib, CullFaceAttrib
 from pandac.PandaModules import GeomVertexReader
 from pandac.PandaModules import LineSegs
 from pandac.PandaModules import Filename
@@ -23,7 +23,8 @@ class NodeRenderer:
     FRUSTUM_LEFT   = 3
     FRUSTUM_TOP    = 4
     FRUSTUM_BOTTOM = 5
-    
+
+    EPSILON_POS = 0.000001
 
     def __init__(self, resources):   
                    
@@ -61,8 +62,18 @@ class NodeRenderer:
         #frontTexture = self.faceTextures[CBM_FRONT_FACE]
         self.faceTextures = { }
         
+        # the normal of each face, indexed by the face constant (e.g. PanoConstants.CBM_TOP_FACE) 
+        self.faceNormals = {
+                     PanoConstants.CBM_TOP_FACE    : (0.0, 0.0, -1.0),
+                     PanoConstants.CBM_LEFT_FACE   : (1.0, 0.0, 0.0),
+                     PanoConstants.CBM_BOTTOM_FACE : (0.0, 0.0, 1.0),
+                     PanoConstants.CBM_RIGHT_FACE  : (-1.0, 0.0, 0.0),
+                     PanoConstants.CBM_BACK_FACE   : (0.0, 1.0, 0.0),
+                     PanoConstants.CBM_FRONT_FACE  : (0.0, -1.0, 0.0)
+        }
+        
         # AABBs of the cube's faces.
-        # indexed by the face constands (e.g. PanoConstants.CBM_TOP_FACE) and contains a tuple containing the min and max points each as a tuble
+        # indexed by the face constant (e.g. PanoConstants.CBM_TOP_FACE) and contains a tuple containing the min and max points each as a tuble
         # e.g: 
         #    minTop, maxTop = self.facesAABBs[PanoConstants.CBM_TOP_FACE]
         #    minx, miny, minz = minTop        
@@ -74,129 +85,15 @@ class NodeRenderer:
         # if True then the debug geometries for the hotspots will be drawn
         self.drawHotspots = False
         
+        # the texture cards for sprites rendering are descedants of this node
+        self.spritesParent = None
+
+    
     def initialize(self):
         base.camLens.setFar(100000)
         base.camLens.setFocalLength(1)
         self.loadCubeModel()
         
-    def getNode(self):
-        """
-        Returns the Node object that we are currently rendering.
-        """
-        return self.node
-
-    def drawDebugHotspots(self, flag):
-        self.drawHotspots = flag
-        if flag and self.node is not None:
-            for hp in self.node.getHotspots():
-                tex = self.faceTextures[hp.getFace()]            
-                mat = self.faceToWorldMatrices[hp.getFace()]
-                
-                fo = VBase3(hp.getXo() / tex.getXSize(), 0.0, hp.getYo() / tex.getYSize())
-                wvo = mat.xformPoint(fo) 
-                
-                fe = VBase3(hp.getXe() / tex.getXSize(), 0.0, hp.getYe() / tex.getYSize())
-                wve = mat.xformPoint(fe)                                                 
-                                
-                box = loader.loadModel(self.resources.getResourceFullPath(PanoConstants.RES_TYPE_MODELS, 'box.egg.pz'))
-#                box = loader.loadModelCopy('/c/Documents and Settings/Fidel/workspace/Panorama/demo/data/models/box.egg.pz')                
-                
-                box.setName('debug_geom_' + hp.getName())
-                box.setPos(wvo[0], wvo[1], wve[2])
-                box.setScale(
-                             max(0.1, math.fabs(wve[0] - wvo[0])), 
-                             max(0.1, math.fabs(wve[1] - wvo[1])), 
-                             max(0.1, math.fabs(wve[2] - wvo[2])))                
-                box.setRenderModeWireframe()                                
-                box.reparentTo(self.debugGeomsParent)
-            
-        elif flag:
-            debugGeoms = self.debugGeomsParent.getChildrenAsList()            
-            for box in debugGeoms:
-                box.removeNode()
-                
-        
-        
-    def render(self, millis):
-        pass
-            
-
-    def displayNode(self, node):
-        """
-        Displays the given node.
-        Convention: The textures filenames of a node consist of a prefix that is
-        the same as the node's name and the 6 postfixs: _fr.jpg, _bk.jpg, _lt.jpg,
-        _rt.jpg, _top.jpg and _bottom.jpg
-        """
-        self.node = node        
-        
-        # load the 6 textures of the node        
-        prefixFilename = self.node.getCubemap()
-        
-        self.log.debug('full path to resource: %s', self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_fr.jpg'))
-        filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_fr.jpg')        
-        self.faceTextures[PanoConstants.CBM_FRONT_FACE].read(Filename(filename))
-        self.faceTextures[PanoConstants.CBM_FRONT_FACE].setWrapU(Texture.WMClamp)
-        self.faceTextures[PanoConstants.CBM_FRONT_FACE].setWrapV(Texture.WMClamp)
-        
-        filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_bk.jpg')
-        self.faceTextures[PanoConstants.CBM_BACK_FACE].read(Filename(filename))
-        self.faceTextures[PanoConstants.CBM_BACK_FACE].setWrapU(Texture.WMClamp)
-        self.faceTextures[PanoConstants.CBM_BACK_FACE].setWrapV(Texture.WMClamp)
-        
-        filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_lt.jpg')
-        self.faceTextures[PanoConstants.CBM_LEFT_FACE].read(Filename(filename))
-        self.faceTextures[PanoConstants.CBM_LEFT_FACE].setWrapU(Texture.WMClamp)
-        self.faceTextures[PanoConstants.CBM_LEFT_FACE].setWrapV(Texture.WMClamp)
-        
-        filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_rt.jpg')
-        self.faceTextures[PanoConstants.CBM_RIGHT_FACE].read(Filename(filename))
-        self.faceTextures[PanoConstants.CBM_RIGHT_FACE].setWrapU(Texture.WMClamp)
-        self.faceTextures[PanoConstants.CBM_RIGHT_FACE].setWrapV(Texture.WMClamp)
-        
-        filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_top.jpg')
-        self.faceTextures[PanoConstants.CBM_TOP_FACE].read(Filename(filename))
-        self.faceTextures[PanoConstants.CBM_TOP_FACE].setWrapU(Texture.WMClamp)
-        self.faceTextures[PanoConstants.CBM_TOP_FACE].setWrapV(Texture.WMClamp)
-        
-        filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_bt.jpg')
-        self.faceTextures[PanoConstants.CBM_BOTTOM_FACE].read(Filename(filename))
-        self.faceTextures[PanoConstants.CBM_BOTTOM_FACE].setWrapU(Texture.WMClamp)
-        self.faceTextures[PanoConstants.CBM_BOTTOM_FACE].setWrapV(Texture.WMClamp)
-        
-    def buildWorldToFaceMatrices(self):
-        """
-        Builds the 4x4 matrices that transform a point from the world coordinates system
-        to the system that has its origin at the centre of a face, has the positive x axis running left to right
-        along the face, has the positive y axis running top to bottom along the face and extends between [-1.0, 1.0]
-        inside the boundary of the face. 
-        """
-        facesCoords = {
-                       PanoConstants.CBM_FRONT_FACE: (-self.faceHalfDim, self.faceHalfDim, self.faceHalfDim, 1, 0, -1), 
-                       PanoConstants.CBM_BACK_FACE: (self.faceHalfDim, -self.faceHalfDim, self.faceHalfDim, -1, 0, -1), 
-                       PanoConstants.CBM_RIGHT_FACE: (self.faceHalfDim, self.faceHalfDim, self.faceHalfDim, 0, -1, -1), 
-                       PanoConstants.CBM_LEFT_FACE: (-self.faceHalfDim, -self.faceHalfDim, self.faceHalfDim, 0, 1, -1), 
-                       PanoConstants.CBM_TOP_FACE: (-self.faceHalfDim, -self.faceHalfDim, self.faceHalfDim, 1, 1, 0), 
-                       PanoConstants.CBM_BOTTOM_FACE: (-self.faceHalfDim, self.faceHalfDim, -self.faceHalfDim, 1, -1, 0)
-        }
-        for face, coords in facesCoords.items():
-            matOffset = Mat4()
-            matOffset.setTranslateMat(VBase3(-coords[0], -coords[1], -coords[2]))
-            matScale = Mat4()
-            matScale.setScaleMat(VBase3(coords[3] / self.faceDim, coords[4] / self.faceDim, coords[5] / self.faceDim))
-            self.worldToFaceMatrices[face] = matOffset * matScale
-                                    
-            scale = [ coords[3], coords[4], coords[5] ]
-            for i in range(0, 3):
-                if scale[i] == 0.0: scale[i] = 1
-                
-            matInvOffset = Mat4()
-            matInvOffset.setTranslateMat(VBase3(coords[0], coords[1], coords[2]))
-            matInvScale = Mat4()
-            matInvScale.setScaleMat(VBase3(self.faceDim / scale[0], self.faceDim / scale[1], self.faceDim / scale[2]))
-            self.faceToWorldMatrices[face] = matInvScale * matInvOffset
-
-    
     def loadCubeModel(self):   
         """
         Loads the egg file that contains the cube model for displaying the cubic
@@ -220,6 +117,8 @@ class NodeRenderer:
         self.cmap.setPos(0,0,0)
         
         self.debugGeomsParent = self.cmap.attachNewNode('debug_geoms')
+        
+        self.spritesParent = self.cmap.attachNewNode('sprites_tex_cards')
         
         # Disable depth write for the cube map
         self.cmap.setDepthWrite(False)    
@@ -256,6 +155,172 @@ class NodeRenderer:
             self.log.debug('testing isFaceInFrustum from right: %d', self.isFaceInFrustum(PanoConstants.CBM_RIGHT_FACE))
             self.log.debug('testing isFaceInFrustum from top: %d', self.isFaceInFrustum(PanoConstants.CBM_TOP_FACE))
             self.log.debug('testing isFaceInFrustum from bottom: %d', self.isFaceInFrustum(PanoConstants.CBM_BOTTOM_FACE))
+        
+    def getNode(self):
+        """
+        Returns the Node object that we are currently rendering.
+        """
+        return self.node
+
+        
+    def render(self, millis):
+        pass
+            
+    def initScene(self):
+        # remove and destroy debug geometries
+        debugGeoms = self.debugGeomsParent.getChildrenAsList()            
+        for box in debugGeoms:
+            box.removeNode()
+            
+        # same for hotspots        
+        hotspots = self.spritesParent.getChildrenAsList()            
+        for hp in hotspots:
+            hp.removeNode()
+        
+        
+    def displayNode(self, node):
+        """
+        Displays the given node.
+        Convention: The textures filenames of a node consist of a prefix that is
+        the same as the node's name and the 6 postfixs: _fr.jpg, _bk.jpg, _lt.jpg,
+        _rt.jpg, _top.jpg and _bottom.jpg
+        """
+        if self.node is not None and self.node.getName() == node.getName():
+            return
+        else:
+            self.initScene()
+            
+        self.node = node        
+        
+        # load the 6 textures of the node        
+        prefixFilename = self.node.getCubemap()
+        
+        self.log.debug('full path to resource: %s', self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_fr.jpg'))
+        filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_fr.jpg')        
+        self.faceTextures[PanoConstants.CBM_FRONT_FACE].read(Filename(filename))
+        self.faceTextures[PanoConstants.CBM_FRONT_FACE].setWrapU(Texture.WMClamp)
+        self.faceTextures[PanoConstants.CBM_FRONT_FACE].setWrapV(Texture.WMClamp)
+        
+        filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_bk.jpg')
+        self.faceTextures[PanoConstants.CBM_BACK_FACE].read(Filename(filename))
+        self.faceTextures[PanoConstants.CBM_BACK_FACE].setWrapU(Texture.WMClamp)
+        self.faceTextures[PanoConstants.CBM_BACK_FACE].setWrapV(Texture.WMClamp)
+        
+        filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_lt.jpg')
+        self.faceTextures[PanoConstants.CBM_LEFT_FACE].read(Filename(filename))
+        self.faceTextures[PanoConstants.CBM_LEFT_FACE].setWrapU(Texture.WMClamp)
+        self.faceTextures[PanoConstants.CBM_LEFT_FACE].setWrapV(Texture.WMClamp)
+        
+        filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_rt.jpg')
+        self.faceTextures[PanoConstants.CBM_RIGHT_FACE].read(Filename(filename))
+        self.faceTextures[PanoConstants.CBM_RIGHT_FACE].setWrapU(Texture.WMClamp)
+        self.faceTextures[PanoConstants.CBM_RIGHT_FACE].setWrapV(Texture.WMClamp)
+        
+        filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_top.jpg')
+        self.faceTextures[PanoConstants.CBM_TOP_FACE].read(Filename(filename))
+        self.faceTextures[PanoConstants.CBM_TOP_FACE].setWrapU(Texture.WMClamp)
+        self.faceTextures[PanoConstants.CBM_TOP_FACE].setWrapV(Texture.WMClamp)
+        
+        filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_bt.jpg')
+        self.faceTextures[PanoConstants.CBM_BOTTOM_FACE].read(Filename(filename))
+        self.faceTextures[PanoConstants.CBM_BOTTOM_FACE].setWrapU(Texture.WMClamp)
+        self.faceTextures[PanoConstants.CBM_BOTTOM_FACE].setWrapV(Texture.WMClamp)
+        
+        # setup hotspot sprites, if any
+        self.createHotspotsTextureCards()
+                    
+        print self.cmap.ls()
+                     
+        
+    def buildWorldToFaceMatrices(self):
+        """
+        Builds the 4x4 matrices that transform a point from the world coordinates system
+        to the system that has its origin at the centre of a face, has the positive x axis running left to right
+        along the face, has the positive y axis running top to bottom along the face and extends between [0.0, 1.0]
+        inside the boundary of the face. 
+        """
+        facesCoords = {
+                       PanoConstants.CBM_FRONT_FACE: (-self.faceHalfDim, self.faceHalfDim, self.faceHalfDim, 1, 0, -1), 
+                       PanoConstants.CBM_BACK_FACE: (self.faceHalfDim, -self.faceHalfDim, self.faceHalfDim, -1, 0, -1), 
+                       PanoConstants.CBM_RIGHT_FACE: (self.faceHalfDim, self.faceHalfDim, self.faceHalfDim, 0, -1, -1), 
+                       PanoConstants.CBM_LEFT_FACE: (-self.faceHalfDim, -self.faceHalfDim, self.faceHalfDim, 0, 1, -1), 
+                       PanoConstants.CBM_TOP_FACE: (-self.faceHalfDim, -self.faceHalfDim, self.faceHalfDim, 1, 1, 0), 
+                       PanoConstants.CBM_BOTTOM_FACE: (-self.faceHalfDim, self.faceHalfDim, -self.faceHalfDim, 1, -1, 0)
+        }
+        for face, coords in facesCoords.items():
+            matOffset = Mat4()
+            matOffset.setTranslateMat(VBase3(-coords[0], -coords[1], -coords[2]))
+            matScale = Mat4()
+            matScale.setScaleMat(VBase3(coords[3] / self.faceDim, coords[4] / self.faceDim, coords[5] / self.faceDim))
+            self.worldToFaceMatrices[face] = matOffset * matScale
+                
+            # when calculating the inverse we will need to divide by the scale, so take care to replace zeros with ones                    
+            scale = [ coords[3], coords[4], coords[5] ]
+            for i in range(0, 3):
+                if scale[i] == 0.0: scale[i] = 1
+                                    
+            matInvOffset = Mat4()
+            matInvOffset.setTranslateMat(VBase3(coords[0], coords[1], coords[2]))
+            matInvScale = Mat4()
+            matInvScale.setScaleMat(VBase3(self.faceDim / scale[0], self.faceDim / scale[1], self.faceDim / scale[2]))
+            self.faceToWorldMatrices[face] = matInvScale * matInvOffset
+
+    
+    def drawDebugHotspots(self, flag):
+        self.drawHotspots = flag
+        if flag and self.node is not None:
+            for hp in self.node.getHotspots():
+                tex = self.faceTextures[hp.getFace()]            
+                mat = self.faceToWorldMatrices[hp.getFace()]
+                
+                fo = VBase3(hp.getXo() / tex.getXSize(), 0.0, hp.getYo() / tex.getYSize())
+                wvo = mat.xformPoint(fo) 
+                
+                fe = VBase3(hp.getXe() / tex.getXSize(), 0.0, hp.getYe() / tex.getYSize())
+                wve = mat.xformPoint(fe)                                                 
+                                
+                box = loader.loadModel(self.resources.getResourceFullPath(PanoConstants.RES_TYPE_MODELS, 'box.egg.pz'))
+#                box = loader.loadModelCopy('/c/Documents and Settings/Fidel/workspace/Panorama/demo/data/models/box.egg.pz')                
+                
+                box.setName('debug_geom_' + hp.getName())
+                box.setPos(wvo[0], wvo[1], wve[2])
+                box.setScale(
+                             max(0.1, math.fabs(wve[0] - wvo[0])), 
+                             max(0.1, math.fabs(wve[1] - wvo[1])), 
+                             max(0.1, math.fabs(wve[2] - wvo[2])))                
+                box.setRenderModeWireframe()                                
+                box.reparentTo(self.debugGeomsParent)
+            
+        elif flag:
+            debugGeoms = self.debugGeomsParent.getChildrenAsList()            
+            for box in debugGeoms:
+                box.removeNode()
+            
+    def createHotspotsTextureCards(self):
+        for hp in self.node.getHotspots():
+            if hp.sprite is not None:
+                sprite = self.resources.loadSprite(hp.sprite)
+                if sprite.eggFile is not None:
+                    eggPath = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_MODELS, sprite.eggFile)
+                    textureCard = loader.loadModel(eggPath)
+                    textureCard.reparentTo(self.spritesParent)
+                    # get position of hotspot's center in world space
+                    dim = self.getFaceTextureDimensions(hp.getFace())
+                    n = self.faceNormals[hp.getFace()]
+                    t1 = (hp.xo + hp.width / 2.0) / dim[0]
+                    t2 = (hp.yo + hp.height / 2.0) / dim[1]
+                    print 't1: ', t1, ' t2: ', t2
+                    worldPos = self.getWorldPointFromFacePoint(hp.getFace(), (t1, t2))
+                    # align textureCard's center with hotspots, now the texture card still faces along -Y
+                    textureCard.setPos(VBase3(worldPos[0], worldPos[1], worldPos[2]) + VBase3(n[0], n[1], n[2]) * 0.01)
+                    # scale appropriately
+                    textureCard.setScale(hp.width * self.faceDim / dim[0], 1.0, hp.height * self.faceDim / dim[1])
+                    # orient the textureCard using the normal, we will align the center point with a point at a small
+                    # distance along the face normal
+                    lookAt = worldPos - VBase3(n[0], n[1], n[2])
+                    textureCard.lookAt(lookAt[0], lookAt[1], lookAt[2])
+
+        
             
     """
     Translates the given world space point in the local 2D coordinate system
@@ -272,12 +337,30 @@ class NodeRenderer:
         
         if self.log.isEnabledFor(logging.DEBUG):        
             self.log.debug('face point is %s while inversed transformed back to world is %s', str(fp), str(self.faceToWorldMatrices[face].xformPoint(fp)))
-        if fp.getX() < 0.00001:
+        if fp.getX() < NodeRenderer.EPSILON_POS:
             return (fp.getY(), fp.getZ())
-        elif fp.getY() < 0.00001:
+        elif fp.getY() < NodeRenderer.EPSILON_POS:
             return (fp.getX(), fp.getZ())
         else:
-            return (fp.getX(), fp.getY())                
+            return (fp.getX(), fp.getY()) 
+        
+    def getWorldPointFromFacePoint(self, face, p):
+        """
+        The point p is given in the coordinate system that has its origin at the center of the face
+        and extends from -1.0 to 1.0 from left to right for the x-axis and from top to bottom for the 
+        y-axis.
+        Returns a VBase3 with the world space coordinates.
+        """
+        dim = self.getFaceTextureDimensions(face)
+        m = self.faceToWorldMatrices[face]
+        n = self.faceNormals[face]
+        
+        if math.fabs(n[0]) < NodeRenderer.EPSILON_POS and math.fabs(n[1]) < NodeRenderer.EPSILON_POS:        
+            return m.xformPoint(VBase3(p[0], p[1], 0.0))
+        elif math.fabs(n[0]) < NodeRenderer.EPSILON_POS and math.fabs(n[2]) < NodeRenderer.EPSILON_POS:
+            return m.xformPoint(VBase3(p[0], 0.0, p[1]))
+        else:
+            return m.xformPoint(VBase3(0.0, p[0], p[1]))                               
 
     """
       Finds the face of the cubemap on which lies the given normal vector.
@@ -359,7 +442,13 @@ class NodeRenderer:
                 return True
             
         return False
+    
+    def getFaceTextureDimensions(self, face):
+        if self.faceTextures.has_key(face):
+            tex = self.faceTextures[face]
+            if tex is not None:
+                return (tex.getXSize(), tex.getYSize())
             
-                        
+        return (0, 0)             
     
     
