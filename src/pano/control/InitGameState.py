@@ -38,7 +38,10 @@ class InitGameState(FSMState):
                               PanoConstants.CVAR_RESOURCES_FONTS : PanoConstants.RES_TYPE_FONTS,
                               PanoConstants.CVAR_RESOURCES_POINTERS : PanoConstants.RES_TYPE_POINTERS,
                               PanoConstants.CVAR_RESOURCES_LANGS : PanoConstants.RES_TYPE_LANGS,
-                              PanoConstants.CVAR_RESOURCES_MODELS : PanoConstants.RES_TYPE_MODELS
+                              PanoConstants.CVAR_RESOURCES_MODELS : PanoConstants.RES_TYPE_MODELS,
+                              PanoConstants.CVAR_RESOURCES_SPRITES : PanoConstants.RES_TYPE_SPRITES,
+                              PanoConstants.CVAR_RESOURCES_PLAYLISTS : PanoConstants.RES_TYPE_PLAYLISTS,
+                              PanoConstants.CVAR_RESOURCES_SOUNDS : PanoConstants.RES_TYPE_SOUNDS
                               }
 
         res = self.getGame().getResources()
@@ -49,7 +52,7 @@ class InitGameState(FSMState):
                     loc = DirectoryResourcesLocation(directory=path, name=path, description='', resTypes=configs_to_types[config])
                     res.addResourcesLocation(loc)
                     
-        print res.listResources(PanoConstants.RES_TYPE_TEXTURES)
+        print res.listResources(PanoConstants.RES_TYPE_PLAYLISTS)
         
     def configure(self):
         
@@ -76,6 +79,9 @@ class InitGameState(FSMState):
         if self.log.isEnabledFor(logging.DEBUG):
             self.log.debug('entered initial state') 
         
+        game = self.getGame()
+        
+        # load all configuration variables to game.config
         self.configure()
         
 		# configure resource locations
@@ -84,25 +90,33 @@ class InitGameState(FSMState):
         # disables Panda's mouse based camera control
         base.disableMouse()
         
-        self.getGame().getI18n().initialize()
+        if game.getConfig().getBool(PanoConstants.CVAR_DEBUG_CONSOLE):
+            game.enableDebugConsole()
+        
+        # loads language files and fonts localizations
+        game.getI18n().initialize()
+        
+        game.getMusic().initialize()
+        game.getMusic().setPlaylist(game.getResources().loadPlaylist('main-music'))
+        game.getMusic().play()
         
         # sets window settings and hides the system mouse
         winProps = { 
                     PanoConstants.WIN_MOUSE_POINTER : False,
-                    PanoConstants.WIN_SIZE : (self.game.getConfig().getInt(PanoConstants.CVAR_WIN_WIDTH), self.game.getConfig().getInt(PanoConstants.CVAR_WIN_HEIGHT)),
-                    PanoConstants.WIN_FULLSCREEN : self.game.getConfig().getBool(PanoConstants.CVAR_WIN_FULLSCREEN),
-                    PanoConstants.WIN_TITLE : self.game.getConfig().get(PanoConstants.CVAR_WIN_TITLE)
+                    PanoConstants.WIN_SIZE : (game.getConfig().getInt(PanoConstants.CVAR_WIN_WIDTH), game.getConfig().getInt(PanoConstants.CVAR_WIN_HEIGHT)),
+                    PanoConstants.WIN_FULLSCREEN : game.getConfig().getBool(PanoConstants.CVAR_WIN_FULLSCREEN),
+                    PanoConstants.WIN_TITLE : game.getConfig().get(PanoConstants.CVAR_WIN_TITLE)
         }
-        self.getGame().getView().setWindowProperties(winProps)
-        self.getGame().getView().openWindow()
-        self.getGame().getView().initialize()        
+        game.getView().setWindowProperties(winProps)
+        game.getView().openWindow()
+        game.getView().initialize()        
                     
-        self.initialNode = self.getGame().getResources().loadNode('node1')        
+        self.initialNode = game.getResources().loadNode('node1')        
                 
         
-        self.getGame().getView().displayNode(self.initialNode)                
-        self.getGame().getView().mousePointer.setByName('select')
-        talkBox = self.getGame().getView().getTalkBox()
+        game.getView().displayNode(self.initialNode)                
+        game.getView().mousePointer.setByName('select')
+        talkBox = game.getView().getTalkBox()
 #        talkBox.showText(
 #"""
 #Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et 
@@ -117,8 +131,6 @@ class InitGameState(FSMState):
         pass            
         
     def update(self, millis):
-        if self.log.isEnabledFor(logging.DEBUG):
-            self.log.debug('initial state update %d', millis)                    
         self.millis += millis
         if self.millis > 2:
             self.getGame().getState().changeState(ExploreState.NAME)

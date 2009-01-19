@@ -6,13 +6,15 @@ import logging.config
 from pandac.PandaModules import loadPrcFileData
 #loadPrcFileData("", "want-directtools #t")
 #loadPrcFileData("", "want-tk #t")
-loadPrcFileData("", "window-type none")
+#loadPrcFileData("", "window-type none")
 import direct.directbase.DirectStart
  
 from pandac.PandaModules import loadPrcFile
 from pandac.PandaModules import loadPrcFileData
 from pandac.PandaModules import WindowProperties
 from direct.task.Task import Task
+
+from external.interactiveConsole.interactiveConsole import pandaConsole, INPUT_CONSOLE, INPUT_GUI, OUTPUT_PYTHON, OUTPUT_IRC
 
 from constants import PanoConstants
 from cvars import ConfigVars 
@@ -23,6 +25,7 @@ from control.ExploreState import ExploreState
 from control.fsm import FSM
 from actions.GameActions import GameActions
 from resources.i18n import i18n
+from audio.music import MusicPlayer
 
 class PanoGame:
     """
@@ -41,6 +44,7 @@ class PanoGame:
         self.resources = ResourceLoader()
         self.gameView = GameView(gameRef = self, title = name)
         self.i18n = i18n(self)
+        self.music = MusicPlayer(self)
         self.initialNode = None
         self.mouseMode = PanoConstants.MOUSE_UI_MODE
         self.paused = False
@@ -49,6 +53,9 @@ class PanoGame:
         
         self.fsm = None          
         self.gameTask = None
+
+        self.console = None
+        self.consoleVisible = False
         
         self.quitRequested = False
         
@@ -111,12 +118,33 @@ class PanoGame:
 
     def getI18n(self):
         return self.i18n
+    
+    def getMusic(self):
+        return self.music
 
     def actions(self):
         return self.gameActions
     
     def isPaused(self):
         return self.paused
+    
+    def enableDebugConsole(self):
+        if self.console is None:
+            self.console = pandaConsole( INPUT_GUI|OUTPUT_PYTHON, locals() )
+            self.console.toggle()
+            
+    def showDebugConsole(self):
+        if self.console is not None:
+            self.console.toggle()
+            self.consoleVisible = True
+            
+    def hideDebugConsole(self):
+        if self.console is not None:
+            self.console.toggle()
+            self.consoleVisible = False
+            
+    def isDebugConsoleVisible(self):
+        return self.consoleVisible
     
     def quit(self):
         self.quitRequested = True
