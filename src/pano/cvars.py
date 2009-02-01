@@ -22,7 +22,7 @@ class ConfigVars:
     
     def getBool(self, var, default = None):
         if self.cvars.has_key(var):
-            return self.cvars[var] == 'True'
+            return str.lower(self.cvars[var]) == 'true'
         else:
             return default
     
@@ -35,6 +35,18 @@ class ConfigVars:
     def getInt(self, var, default = None):
         if self.cvars.has_key(var):
             return int(self.cvars[var])
+        else:
+            return default
+        
+    def getList(self, var, default = None):
+        """
+        Reads a list of comma separated string values.
+        """
+        if self.cvars.has_key(var):
+            value = self.cvars[var]
+            if value is not None:
+                return value.split(',')
+            return None
         else:
             return default
         
