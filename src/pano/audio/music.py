@@ -1,12 +1,14 @@
-import math
+import math, logging
 
 from direct.task.Task import Task
 
 from constants import PanoConstants
 from model.Playlist import Playlist
+from messaging import Messenger
 
 class MusicPlayer:
     def __init__(self, game):
+        self.log = logging.getLogger("pano.music")
         self.game = game
         self.playlist = Playlist()
         self.volume = 0.5
@@ -17,9 +19,9 @@ class MusicPlayer:
         self.task = None  
         self.paused = False
         self.stopped = True      
-        
+                
     def initialize(self):
-        self.task = taskMgr.add(self.update, "Updates the music")            
+        self.task = taskMgr.add(self.update, PanoConstants.TASK_MUSIC)                
          
     def update(self, task):
         if self.sound is not None:
@@ -87,7 +89,7 @@ class MusicPlayer:
             self.stopped = False
             self.paused = False
             
-    def getStopped(self):
+    def isStopped(self):
         return self.stopped
 
 
@@ -105,12 +107,16 @@ class MusicPlayer:
         self.paused = value        
         if self.sound is not None:
             if value:
-                self.sound.setPlayRate(0.0)
+                self.log.debug("Music rate set to 0.0")
+                t = self.sound.getTime()
+                self.sound.stop()
+                self.sound.setTime(t)
             else:
-                self.sound.setPlayRate(self.playRate)                
+                self.log.debug("Music rate set to 1.0")
+                self.sound.play()                                
     
     def getActiveTrack(self):
-        pass
+        return self.activeTrack
 
     def getPlaylist(self):
         return self.playlist
@@ -126,8 +132,7 @@ class MusicPlayer:
         return self.looping
 
 
-    def setPlaylist(self, value):
-        print 'SETTING PLAYLIST'
+    def setPlaylist(self, value):        
         self.playlist = value
         self.activeTrack = self.playlist.getTrack(0)
         self.looping = self.playlist.loop
@@ -147,8 +152,6 @@ class MusicPlayer:
     def setLooping(self, value):
         self.looping = value
         if self.sound is not None:
-            self.sound.setLoop(self.looping)
-
-    
+            self.sound.setLoop(self.looping)        
     
         
