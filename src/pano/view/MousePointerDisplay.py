@@ -39,23 +39,26 @@ class MousePointerDisplay:
         CullBinManager.getGlobalPtr().addBin('mouse_pointer', CullBinManager.BTUnsorted, 60)
         
         # add task that updates the location of the mouse pointer
-        taskMgr.add(self.updatePointerLocationTask, "Mouse Pointer Task")
+        taskMgr.add(self.updatePointerLocationTask, PanoConstants.TASK_MOUSE_POINTER)
         
     def isShown(self):
         return not self.mouseHidden
     
-    def show(self):        
-        if self.pointer is not None:            
-            if self.mousePointer is not None:
-                if self.isImagePointer:
-                    # trigger the actual display of the mouse pointer
-                    self.mouseHidden = self.setByName(self.pointerName)
-                else:
-                    # bring the mouse node back in the scenegraph
-                    self.mousePointer.reparentTo(aspect2d)
-                    self.mouseHidden = False            
-        else:
-            self.mouseHidden = True
+    def show(self):
+        self.mouseHidden = False
+        self.pointerParentNP.show()
+                 
+#        if self.pointer is not None:            
+#            if self.mousePointer is not None:
+#                if self.isImagePointer:
+#                    # trigger the actual display of the mouse pointer
+#                    self.mouseHidden = self.setByName(self.pointerName)
+#                else:
+#                    # bring the mouse node back in the scenegraph
+#                    self.mousePointer.reparentTo(aspect2d)
+#                    self.mouseHidden = False            
+#        else:
+#            self.mouseHidden = True
             
     """
     Hides the mouse pointer.
@@ -63,20 +66,23 @@ class MousePointerDisplay:
     While for model based pointers the associated model node is simply removed from the scenegraph. 
     """
     def hide(self):
-        if not self.mouseHidden:
-            base.mouseWatcherNode.setGeometry(None)
-            
-            self._destroyPointer()
-            
-            self.mouseHidden = True
-            self.pointer = None
-            self.mousePointer = None        
+         self.mouseHidden = True
+         self.pointerParentNP.hide()
+#        if not self.mouseHidden:
+#            base.mouseWatcherNode.setGeometry(None)
+#            
+#            self._destroyPointer()
+#            
+#            self.mouseHidden = True
+#            self.pointer = None
+#            self.mousePointer = None        
             
     def _destroyPointer(self):
-        if self.isImagePointer:
-            self.mousePointer.destroy()
-        else:
-            self.mousePointer.removeNode()
+        if self.mousePointer is not None:
+            if self.isImagePointer:
+                self.mousePointer.destroy()
+            else:
+                self.mousePointer.removeNode()
     
     def getScale(self):
         return self.scale
@@ -101,7 +107,7 @@ class MousePointerDisplay:
         """        
         pointerChanged = (self.pointer is None) or (pointerName != self.pointer.getName())
         if (pointerName is None) or pointerChanged:
-            self.hide()
+            self._destroyPointer()
             
         if pointerChanged:
             self.pointer = self.game.getResources().loadPointer(pointerName)
