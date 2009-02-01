@@ -2,7 +2,7 @@ import os
 import math
 import logging
 
-from pandac.PandaModules import Texture
+from pandac.PandaModules import Texture, NodePath
 from pandac.PandaModules import TextureAttrib, CullFaceAttrib
 from pandac.PandaModules import GeomVertexReader
 from pandac.PandaModules import LineSegs
@@ -11,12 +11,20 @@ from direct.showbase.PythonUtil import *
 from pandac.PandaModules import Mat4, VBase3
 
 from constants import PanoConstants
+from view.VideoPlayer import VideoPlayer
+from view.sprites import *
 
 # Check these two posts:
 # http://www.panda3d.net/phpbb2/viewtopic.php?t=2022&highlight=projection
 # http://www.panda3d.net/phpbb2/viewtopic.php?t=851&highlight=skybox
 class NodeRenderer:
-
+    """
+    Manages the rendering of currently active game node.
+    
+    To display a game node you need to call NodeRenderer.displayNode(node) and supply to it
+    the Node model object.
+    """
+    
     FRUSTUM_NEAR   = 0
     FRUSTUM_FAR    = 1
     FRUSTUM_RIGHT  = 2
@@ -24,7 +32,7 @@ class NodeRenderer:
     FRUSTUM_TOP    = 4
     FRUSTUM_BOTTOM = 5
 
-    EPSILON_POS = 0.000001
+    EPSILON_POS = 0.0001
 
     def __init__(self, resources):   
                    
@@ -32,15 +40,23 @@ class NodeRenderer:
 
         self.resources = resources
         
-        #The node that is displayed
+        self.videoPlayer = VideoPlayer('hotspots_player', resources)
+        
+        # the game node that we are rendering
         self.node = None
         
-        #The common dimension of the square faces of the cubemap
+        # the dimension of the cubemap
         self.faceDim = 0
         self.faceHalfDim = 0
         
-        #The cubemap model
+        # our root node 
+        self.rootNode = None
+        
+        # the node that hosts the cubemap model
         self.cmap = None
+        
+        # contains all the sprites in (sprite-node-name, sprite-nodepath) key,value pairs
+        self.sprites = {}
         
         # the names of the geoms that correspond to the cube's faces
         self.cubeGeomsNames = {
@@ -90,6 +106,9 @@ class NodeRenderer:
 
     
     def initialize(self):
+        # creates the root node 
+        self.rootNode = render.attachNewNode(PanoConstants.NODE_ROOT_NODE)
+        
         base.camLens.setFar(100000)
         base.camLens.setFocalLength(1)
         self.loadCubeModel()
@@ -104,23 +123,23 @@ class NodeRenderer:
         by the model creator and finally the scale set on the respective nodepath.
         
         Conventions: 
-            a) There exists a convention that the name of the cube model must be 'cubemap.egg'.
+            a) The name of the cube model must be 'cubemap.egg'.
             b) The names of the geoms definitions inside the .egg file must be: 
                top, left, bottom, right, back, front
             c) The model scale must be 1, 1, 1        
         """        
         modelPath = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_MODELS, 'cubemap-linux.egg')
         self.cmap = loader.loadModel(modelPath)
-        self.cmap.setName('cmap')
-        self.cmap.reparentTo(render)
-        self.cmap.setScale(10, 10, 10)
+        self.cmap.setName(PanoConstants.NODE_CUBEMAP)
+        self.cmap.reparentTo(self.rootNode)
+        self.cmap.hide()
+        self.cmap.setScale(10, 10, 10)  # scale up a bit the numbers for precision
         self.cmap.setPos(0,0,0)
         
-        self.debugGeomsParent = self.cmap.attachNewNode('debug_geoms')
+        self.debugGeomsParent = self.cmap.attachNewNode(PanoConstants.NODE_DEBUG_GEOMS_PARENT)        
+        self.spritesParent = self.cmap.attachNewNode(PanoConstants.NODE_SPRITES_PARENT)
         
-        self.spritesParent = self.cmap.attachNewNode('sprites_tex_cards')
-        
-        # Disable depth write for the cube map
+        # disable depth write for the cube map
         self.cmap.setDepthWrite(False)    
         
         if self.log.isEnabledFor(logging.DEBUG):
@@ -140,12 +159,14 @@ class NodeRenderer:
                                 
         print self.cmap.ls()
 
+        # caches references to the textures of each cubemap face
         for i, n in self.cubeGeomsNames.items():
             geomNode = self.cmap.find("**/Cube/=name=" + n)
             state = geomNode.node().getGeomState(0)                 
             tex = state.getAttrib(TextureAttrib.getClassType()).getTexture()
             self.faceTextures[i] = tex 
                                     
+        # builds matrices used in transforming points from/to world space and the faces' image space
         self.buildWorldToFaceMatrices() 
         
         if self.log.isEnabledFor(logging.DEBUG):
@@ -167,24 +188,33 @@ class NodeRenderer:
         pass
             
     def initScene(self):
+        """
+        Sets the scene to an initial state by destroying any rendering resources allocated that far
+        for rendering the previously active node.
+        """
         # remove and destroy debug geometries
         debugGeoms = self.debugGeomsParent.getChildrenAsList()            
         for box in debugGeoms:
-            box.removeNode()
+            box.removeNode()            
             
         # same for hotspots        
         hotspots = self.spritesParent.getChildrenAsList()            
         for hp in hotspots:
             hp.removeNode()
+            
+        self.sprites.clear()
         
         
     def displayNode(self, node):
         """
         Displays the given node.
-        Convention: The textures filenames of a node consist of a prefix that is
-        the same as the node's name and the 6 postfixs: _fr.jpg, _bk.jpg, _lt.jpg,
-        _rt.jpg, _top.jpg and _bottom.jpg
+        Convention: 
+            The textures filenames of a node consist of a prefix that is
+            the same as the node's name and the 6 postfixs: _fr.jpg, _bk.jpg, _lt.jpg,
+            _rt.jpg, _top.jpg and _bottom.jpg
         """
+        
+        # do nothing if we are displaying this node already or reset the scene before displaying a new node
         if self.node is not None and self.node.getName() == node.getName():
             return
         else:
@@ -192,7 +222,8 @@ class NodeRenderer:
             
         self.node = node        
         
-        # load the 6 textures of the node        
+# load the 6 textures of the node and assign them to the respective faces
+       
         prefixFilename = self.node.getCubemap()
         
         self.log.debug('full path to resource: %s', self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_fr.jpg'))
@@ -226,18 +257,46 @@ class NodeRenderer:
         self.faceTextures[PanoConstants.CBM_BOTTOM_FACE].setWrapU(Texture.WMClamp)
         self.faceTextures[PanoConstants.CBM_BOTTOM_FACE].setWrapV(Texture.WMClamp)
         
-        # setup hotspot sprites, if any
-        self.createHotspotsTextureCards()
-                    
+        # creates hotspot collision geometries and sprites
+        self.createHotspotsGeoms()
+        
+        self.cmap.show()
+        
         print self.cmap.ls()
                      
         
+    def pauseAnimations(self):
+        """
+        Stops all node animations.
+        """
+        for np in self.sprites.values():
+            if np.DtoolClassDict.has_key('video'):
+                t = np.video.getTime()
+                np.video.stop()
+                np.video.setTime(t)
+            else:
+                seq = np.node()
+                seq.stop()                
+            
+    def resumeAnimations(self):
+        """
+        Resumes node animations.        
+        """
+        for np in self.sprites.values():
+            if np.DtoolClassDict.has_key('video'):                
+                np.video.play()                
+            else:
+                seq = np.node()
+                seq.loop(False)                
+        
     def buildWorldToFaceMatrices(self):
         """
-        Builds the 4x4 matrices that transform a point from the world coordinates system
-        to the system that has its origin at the centre of a face, has the positive x axis running left to right
-        along the face, has the positive y axis running top to bottom along the face and extends between [0.0, 1.0]
-        inside the boundary of the face. 
+        Builds the 4x4 matrices that transform a point from the world coordinates system to the faces' image space.
+        The image space has:
+            a. Its origin at the centre of a face.
+            b. The positive x axis running from left to right along the face.
+            c. The positive y axis running from top to bottom along the face.
+            d. Extends between [0.0, 1.0] inside the boundary of the face. 
         """
         facesCoords = {
                        PanoConstants.CBM_FRONT_FACE: (-self.faceHalfDim, self.faceHalfDim, self.faceHalfDim, 1, 0, -1), 
@@ -268,67 +327,119 @@ class NodeRenderer:
     
     def drawDebugHotspots(self, flag):
         self.drawHotspots = flag
-        if flag and self.node is not None:
-            for hp in self.node.getHotspots():
-                tex = self.faceTextures[hp.getFace()]            
-                mat = self.faceToWorldMatrices[hp.getFace()]
-                
-                fo = VBase3(hp.getXo() / tex.getXSize(), 0.0, hp.getYo() / tex.getYSize())
-                wvo = mat.xformPoint(fo) 
-                
-                fe = VBase3(hp.getXe() / tex.getXSize(), 0.0, hp.getYe() / tex.getYSize())
-                wve = mat.xformPoint(fe)                                                 
-                                
-                box = loader.loadModel(self.resources.getResourceFullPath(PanoConstants.RES_TYPE_MODELS, 'box.egg.pz'))
-#                box = loader.loadModelCopy('/c/Documents and Settings/Fidel/workspace/Panorama/demo/data/models/box.egg.pz')                
-                
-                box.setName('debug_geom_' + hp.getName())
-                box.setPos(wvo[0], wvo[1], wve[2])
-                box.setScale(
-                             max(0.1, math.fabs(wve[0] - wvo[0])), 
-                             max(0.1, math.fabs(wve[1] - wvo[1])), 
-                             max(0.1, math.fabs(wve[2] - wvo[2])))                
-                box.setRenderModeWireframe()                                
-                box.reparentTo(self.debugGeomsParent)
+        if flag:
+            self.debugGeomsParent.show()
+        else:
+            self.debugGeomsParent.hide()
             
-        elif flag:
-            debugGeoms = self.debugGeomsParent.getChildrenAsList()            
-            for box in debugGeoms:
-                box.removeNode()
-            
-    def createHotspotsTextureCards(self):
+    def createHotspotsGeoms(self):
+        """
+        Creates nodes for the collision geometry (a box) and the sprite.
+        """
         for hp in self.node.getHotspots():
+            
+            dim = self.getFaceTextureDimensions(hp.getFace())
+            
+# create a box that covers the hotspot's boundaries in order to indicate its position
+# and scale inside the world
+                
+            # get world space coords of top left corner
+            t1 = hp.xo / dim[0]
+            t2 = hp.yo / dim[1]
+            wo = self.getWorldPointFromFacePoint(hp.getFace(), (t1, t2))
+            
+            # get world space coords of bottom right corner
+            t1 = hp.xe / dim[0]
+            t2 = hp.ye / dim[1]
+            we = self.getWorldPointFromFacePoint(hp.getFace(), (t1, t2))
+            
+            box = loader.loadModel(self.resources.getResourceFullPath(PanoConstants.RES_TYPE_MODELS, 'box.egg.pz'))
+            box.setPos(wo[0], wo[1], we[2])
+            box.setScale(
+                         max(0.2, math.fabs(we[0] - wo[0])), 
+                         max(0.2, math.fabs(we[1] - wo[1])), 
+                         max(0.2, math.fabs(we[2] - wo[2])))                
+            box.setRenderModeWireframe()                                
+            box.reparentTo(self.debugGeomsParent)
+
+# setups node for rendering the sprite associated with this hotspot
+# while the details of creating the sprite nodes are hidden in addSprite, we still have
+# to align the returned node with the surface covered by the hotspot in world space.                        
             if hp.sprite is not None:
                 sprite = self.resources.loadSprite(hp.sprite)
-                if sprite.eggFile is not None:
-                    eggPath = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_MODELS, sprite.eggFile)
-                    textureCard = loader.loadModel(eggPath)
-                    textureCard.reparentTo(self.spritesParent)
-                    # get position of hotspot's center in world space
-                    dim = self.getFaceTextureDimensions(hp.getFace())
-                    n = self.faceNormals[hp.getFace()]
-                    t1 = (hp.xo + hp.width / 2.0) / dim[0]
-                    t2 = (hp.yo + hp.height / 2.0) / dim[1]
-                    print 't1: ', t1, ' t2: ', t2
-                    worldPos = self.getWorldPointFromFacePoint(hp.getFace(), (t1, t2))
-                    # align textureCard's center with hotspots, now the texture card still faces along -Y
-                    textureCard.setPos(VBase3(worldPos[0], worldPos[1], worldPos[2]) + VBase3(n[0], n[1], n[2]) * 0.01)
-                    # scale appropriately
-                    textureCard.setScale(hp.width * self.faceDim / dim[0], 1.0, hp.height * self.faceDim / dim[1])
-                    # orient the textureCard using the normal, we will align the center point with a point at a small
-                    # distance along the face normal
-                    lookAt = worldPos - VBase3(n[0], n[1], n[2])
-                    textureCard.lookAt(lookAt[0], lookAt[1], lookAt[2])
+                nodePath = self.addSprite(sprite)                
+                
+                # gets position of hotspot's center in world space
+                dim = self.getFaceTextureDimensions(hp.getFace())
+                n = self.faceNormals[hp.getFace()]
+                t1 = (hp.xo + hp.width / 2.0) / dim[0]
+                t2 = (hp.yo + hp.height / 2.0) / dim[1]
+                centerPos = self.getWorldPointFromFacePoint(hp.getFace(), (t1, t2))
+                
+                # align nodePath's center with the hotspot's
+                nodePath.setPos(VBase3(centerPos[0], centerPos[1], centerPos[2]) + VBase3(n[0], n[1], n[2]) * 0.01)                
+                
+                # scale appropriately to cover the hotspot
+                nodePath.setScale(hp.width * self.faceDim / dim[0], 1.0, hp.height * self.faceDim / dim[1])
+                
+                # to orientate, we will align the center point with a point at a small distance along the face normal
+                lookAt = centerPos - VBase3(n[0], n[1], n[2])
+                nodePath.lookAt(lookAt[0], lookAt[1], lookAt[2])                    
 
+    def addSprite(self, sprite):
+        """
+        Adds a sprite for rendering.
+        If the sprite is animated, the animation will automatically begin from frame 1.
+        To control the animation you must acquire the rendering interface for the sprite using the method
+        NodeRenderer.getSpriteRenderInterface(spriteName).
+        See sprites.SpriteRenderInterface for more details.
         
+        Returns the NodePath that hosts the sprite inside the scenegraph.
+        
+        Note: You don't need to manually add the sprites of each hotspot of a game node as these
+        are automatically added when you display the node.
+        """
+        nodeName = SpritesUtil.getSpriteNodeName(sprite.getName())
+        nodePath = None
+        if not self.sprites.has_key(nodeName):                    
+            if sprite.getEggFile() is not None:
+                nodePath = SpritesUtil.createImageSequenceSprite(self.resources, sprite, self.spritesParent)
+            elif sprite.getVideo() is not None:
+                nodePath = SpritesUtil.createVideoSprite(self.resources, sprite, self.spritesParent)
             
-    """
-    Translates the given world space point in the local 2D coordinate system
-    of the specified face. The local space extends in [0..1] in the vertical
-    and horizontal axis, thus the method returns a tuple of x, y values in the
-    [0..1] range.
-    """
+            nodePath.setName(nodeName)
+            self.sprites[nodeName] = nodePath  
+        return self.sprites[nodeName]                 
+    
+    def removeSprite(self, spriteName):
+        """
+        Removes the named sprite from rendering.
+        """
+        nodeName = SpritesUtil.getSpriteNodeName(spriteName)
+        np = self.spritesParent.find(nodeName)
+        if np is not None:
+            np.removeNode()
+            del self.sprites[nodeName]
+    
+    def getSpriteRenderInterface(self, spriteName):
+        """
+        Returns a SpriteRenderInterface which can be used to control various rendering aspects
+        of the sprites, such as animation and visibility.
+        """
+        np = self.spritesParent.find(SpritesUtil.getSpriteNodeName(spriteName))
+        if np is not None:
+            return SpriteRenderInterface(np)
+        else:
+            return None
+                
+    
     def getFaceLocalCoords(self, face, p):    
+        """
+        Translates the given world space point in the local 2D coordinate system
+        of the specified face. The local space extends in [0..1] in the vertical
+        and horizontal axis, thus the method returns a tuple of x, y values in the
+        [0..1] range.
+        """
         
         if self.log.isEnabledFor(logging.DEBUG):
             self.log.debug('getFaceLocalCoords for point %s', p)    
@@ -362,16 +473,17 @@ class NodeRenderer:
         else:
             return m.xformPoint(VBase3(0.0, p[0], p[1]))                               
 
-    """
-      Finds the face of the cubemap on which lies the given normal vector.
-
-      This is done by finding the coordinate of the normal with the greatest
-      absolute value and finally considering the sign.
-      If x is the greatest coordinate, then the normal points either to the left
-      or right. If the sign is positive, then the normal points to the right, while
-      if it is negative it points to the left. Similarly for the rest coordinates.
-    """
+    
     def findFaceFromNormal(self, n):
+        """
+          Finds the face of the cubemap on which lies the given normal vector.
+
+          This is done by finding the coordinate of the normal with the greatest
+          absolute value and finally considering the sign.
+          If x is the greatest coordinate, then the normal points either to the left
+          or right. If the sign is positive, then the normal points to the right, while
+          if it is negative it points to the left. Similarly for the rest coordinates.
+        """
         abs_x = abs(n.getX())
         abs_y = abs(n.getY())
         abs_z = abs(n.getZ())
@@ -392,10 +504,11 @@ class NodeRenderer:
             else:    
                 return PanoConstants.CBM_RIGHT_FACE
 
-    """
-    Returns the NodePath of the cubemap model.
-    """
+    
     def nodepath(self):
+        """
+        Returns the NodePath of the cubemap model.
+        """
         return self.cmap
     
     
@@ -444,6 +557,10 @@ class NodeRenderer:
         return False
     
     def getFaceTextureDimensions(self, face):
+        """
+        Returns a tuple containing the width and height of the cubemap textures.
+        tuple[0] holds the width while tuple[1] holds the height of the textures.
+        """
         if self.faceTextures.has_key(face):
             tex = self.faceTextures[face]
             if tex is not None:

@@ -9,11 +9,12 @@ class ResourcesTypes:
 			PanoConstants.RES_TYPE_MODELS : ('.egg', '.egg.pz' ),
 			PanoConstants.RES_TYPE_TEXTURES : ('.jpg', '.bmp', '.tga', '.tif', '.png', '.dds'),
 			PanoConstants.RES_TYPE_FONTS : ('.font'),
-			PanoConstants.RES_TYPE_SOUNDS : ('.wav', '.ogg', '.midi', '.mp3'),
+			PanoConstants.RES_TYPE_SOUNDS : ('.wav', '.ogg', '.midi', '.mp3', '.avi', '.mpg', '.mpeg', '.ogg'),
 			PanoConstants.RES_TYPE_POINTERS : ('.pointer'),
 			PanoConstants.RES_TYPE_LANGS : ('.lang'),
 			PanoConstants.RES_TYPE_SPRITES : ('.spr'),
-			PanoConstants.RES_TYPE_PLAYLISTS : ('.mpl')
+			PanoConstants.RES_TYPE_PLAYLISTS : ('.mpl'),
+			PanoConstants.RES_TYPE_VIDEOS : ('.wmv', '.flv', '.asf', '.avi', '.mpg', '.ogg', '.ogm', '.mov')
 	}
 
 	def getExtensions(resType):
