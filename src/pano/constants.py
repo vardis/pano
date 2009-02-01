@@ -4,6 +4,18 @@ class PanoConstants:
     Every constant related to our framework will be stored in this class.
     """
     
+    # events' names
+    EVENT_GAME_UPDATE = "game.update"
+    EVENT_GAME_EXIT = "game.exit"
+    EVENT_GAME_PAUSED = "game.paused"
+    EVENT_GAME_RESUMED = "game.resumed"
+    
+    # tasks' names
+    TASK_GAME_LOOP = 'game_loop_task'
+    TASK_MOUSE_POINTER = 'mouse_pointer_task'
+    TASK_MUSIC = 'music_task'
+    
+    
     # names of the configuration variables
     CVAR_WIN_TITLE = 'game_title'
     CVAR_WIN_WIDTH = 'display_width'
@@ -25,6 +37,7 @@ class PanoConstants:
     CVAR_RESOURCES_SPRITES = 'resources_sprites'
     CVAR_RESOURCES_PLAYLISTS = 'resources_playlists'
     CVAR_RESOURCES_SOUNDS = 'resources_sounds'
+    CVAR_RESOURCES_VIDEOS = 'resources_videos'
     
     # names of the cvars which are related to the talk box
     CVAR_TALKBOX_X         = 'talkbox_x'
@@ -38,6 +51,15 @@ class PanoConstants:
     # same for i18n
     CVAR_I18N_LANG = "i18n_language"
     
+    # for paused state
+    CVAR_PAUSED_STATE_FONT = 'paused_font_name'
+    CVAR_PAUSED_STATE_FGCOLOR = 'paused_fg_color'
+    CVAR_PAUSED_STATE_MESSAGE = 'paused_message'
+    CVAR_PAUSED_STATE_SCALE = 'paused_font_scale'
+
+    # for intro state
+    CVAR_INTRO_STATE_VIDEOS = 'intro_videos'
+    CVAR_INTRO_STATE_DELAY = 'intro_delay'
     
     # keys' names used to lookup window properties in a dictionary
     WIN_ORIGIN = 'win_origin'
@@ -65,6 +87,7 @@ class PanoConstants:
     RES_TYPE_LANGS = 7
     RES_TYPE_SPRITES = 8
     RES_TYPE_PLAYLISTS = 9
+    RES_TYPE_VIDEOS = 10
     RES_TYPE_ALL = 100
     
     #Constants for the predefined mouse pointers
@@ -93,4 +116,23 @@ class PanoConstants:
     
     # name of the configuration variable that denotes the nodes path
     VAR_NODES_PATH = "var_nodes_path"
+    
+    # scenegraph node that acts as the common ancestor of all nodes which are involved with the rendering
+    # of the currently active game node
+    NODE_ROOT_NODE = "root_node"
+    
+    # name of scenegraph node where the cubemap is stored
+    NODE_CUBEMAP = 'cmap'
+    
+    # scenegraph node that acts as the common ancestor of all nodes that store debug geometries
+    NODE_DEBUG_GEOMS_PARENT = 'debug_geoms'
+    
+    # scenegraph node that acts as the common ancestor of all nodes that store sprites 
+    NODE_SPRITES_PARENT = 'sprites_tex_cards'
+    
+    # prefix to use when naming sprite nodes
+    SPRITES_NAME_PREFIX = 'sprite_'
+    
+    # prefix to use when naming nodes for debug geometries
+    DEBUG_GEOMS_NAME_PREFIX = 'debug_geom_'
     

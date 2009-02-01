@@ -15,11 +15,15 @@ from fsm import FSMState
 from model.Node import Node
 from model.Hotspot import Hotspot
 from ExploreState import ExploreState
+from IntroState import IntroState
 from resources.DirectoryResourcesLocation import DirectoryResourcesLocation 
 
 class InitGameState(FSMState):
+    
+    NAME = 'InitGameState'
+    
     def __init__(self, gameRef):
-        FSMState.__init__(self, gameRef, 'InitGameState')
+        FSMState.__init__(self, gameRef, InitGameState.NAME)
         
         self.log = logging.getLogger('pano.initState')        
         self.millis = 0
@@ -41,7 +45,8 @@ class InitGameState(FSMState):
                               PanoConstants.CVAR_RESOURCES_MODELS : PanoConstants.RES_TYPE_MODELS,
                               PanoConstants.CVAR_RESOURCES_SPRITES : PanoConstants.RES_TYPE_SPRITES,
                               PanoConstants.CVAR_RESOURCES_PLAYLISTS : PanoConstants.RES_TYPE_PLAYLISTS,
-                              PanoConstants.CVAR_RESOURCES_SOUNDS : PanoConstants.RES_TYPE_SOUNDS
+                              PanoConstants.CVAR_RESOURCES_SOUNDS : PanoConstants.RES_TYPE_SOUNDS,
+                              PanoConstants.CVAR_RESOURCES_VIDEOS : PanoConstants.RES_TYPE_VIDEOS
                               }
 
         res = self.getGame().getResources()
@@ -98,7 +103,7 @@ class InitGameState(FSMState):
         
         game.getMusic().initialize()
         game.getMusic().setPlaylist(game.getResources().loadPlaylist('main-music'))
-        game.getMusic().play()
+#        game.getMusic().play()
         
         # sets window settings and hides the system mouse
         winProps = { 
@@ -111,28 +116,19 @@ class InitGameState(FSMState):
         game.getView().openWindow()
         game.getView().initialize()        
                     
-        self.initialNode = game.getResources().loadNode('node1')        
-                
-        
-        game.getView().displayNode(self.initialNode)                
-        game.getView().mousePointer.setByName('select')
+#        self.initialNode = game.getResources().loadNode('node1')        
+#                
+#        
+#        game.getView().displayNode(self.initialNode)                
+#        game.getView().mousePointer.setByName('select')
         talkBox = game.getView().getTalkBox()
-#        talkBox.showText(
-#"""
-#Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et 
-#dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip 
-#ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore 
-#eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia 
-#deserunt mollit anim id est laborum.
-#""", (1,0,0,1))
-#        talkBox.showText("A small line of code through: \nself.getGame().getView().getTalkBox().showText(...)")
-        
+#   
     def exit(self):
         pass            
         
     def update(self, millis):
         self.millis += millis
         if self.millis > 2:
-            self.getGame().getState().changeState(ExploreState.NAME)
+            self.getGame().getState().changeState(IntroState.NAME)
 
 	

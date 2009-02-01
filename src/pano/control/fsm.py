@@ -1,23 +1,49 @@
 
+from constants import PanoConstants
+from messaging import Messenger
+
 class FSMState:
     def __init__(self, gameRef = None, name = ''):
         self.name = name
-        self.game = gameRef
+        self.game = gameRef     
+        self.msn = Messenger(self)   
         
     def getName(self):
         return self.name
-
+    
     def getGame(self):
-        return self.game
-        
+        return self.game    
+    
+    def getMessenger(self):
+        return self.msn
+                
     def enter(self):
-        pass
+        self.msn.acceptMessage(PanoConstants.EVENT_GAME_EXIT, self.onMessage)
+        self.msn.acceptMessage(PanoConstants.EVENT_GAME_PAUSED, self.onMessage)
+        self.msn.acceptMessage(PanoConstants.EVENT_GAME_RESUMED, self.onMessage)
+        
+        msgList = self.registerMessages()
+        if msgList is not None:
+            for msg in msgList:
+                self.msn.acceptMessage(msg, self.onMessage)
     
     def exit(self):
-        pass
+        self.msn.rejectAll()
     
     def update(self, millis):
         pass
+    
+    def registerMessages(self):
+        return None
+
+    def onMessage(self, msg, *args):
+        """
+        if msg === PanoConstants.EVENT_GAME_PAUSED: ....
+        """
+        pass
+    
+    def allowPausing(self):
+        return True
 
 class FSM:
     """
@@ -38,16 +64,17 @@ class FSM:
         
         self.globalState = None
         self.currentState = None
-        self.previousState = None 
+        self.previousState = None                
         
     def getGlobalState(self):
         return self.globalState        
         
-    def setGlobalState(self, globalState):
-        self.globalState = globalState
-                
+                    
     def getCurrentState(self):
         return self.currentState
+    
+    def getPreviousState(self):
+        return self.previousState
         
     def addValidState(self, state):
         self.states[state.getName()] = state
@@ -88,8 +115,37 @@ class FSM:
         self.currentState.enter()
         return True
         
-#    def onMessage(self, msg):
-#        pass
+    def changeGlobalState(self, stateName):
+        '''
+        Changes the current global state to the given state. 
+        The new state must be a member of the FSM's set of allowable states
+        otherwise the transition will be rejected and False will be returned.
+        
+        Returns: True if the transition was allowed and False if otherwise.
+        '''
+        # users are able to disable the global state since it is not necessary to have one
+        if stateName is None:
+            if self.globalState is not None:
+                self.globalState.exit()
+            self.globalState = None
+            return True
+                
+        if stateName not in self.states.keys():
+            return False
+        
+        if self.globalState is not None:
+            self.globalState.exit()
+                    
+        self.globalState = self.states[stateName]
+        self.globalState.enter()        
+    
+    def allowPausing(self):
+        if self.currentState is not None:
+            return self.currentState.allowPausing()
+        else:
+            return True
+        
+    
 #    
 #    def onInputAction(self, action):
 #        pass
