@@ -5,20 +5,14 @@ from direct.gui.DirectGui import DirectButton, DirectLabel
 
 from constants import PanoConstants
 
-class TalkBox:
-    
-    # names of the cvars which are related to the talk box
-    CVAR_TALKBOX_X         = 'talkbox_x'
-    CVAR_TALKBOX_Y         = 'talkbox_y'
-    CVAR_TALKBOX_FONT      = 'talkbox_font'
-    CVAR_TALKBOX_BGCOLOR   = 'talkbox_bg_color'
-    CVAR_TALKBOX_IMAGE   = 'talkbox_image'
-    CVAR_TALKBOX_TEXTCOLOR = 'talkbox_text_color'
-    CVAR_TALKBOX_TEXTSCALE = 'talkbox_text_scale'
+class TalkBox:    
     
     def __init__(self, game):
         self.log = logging.getLogger('pano.talkbox')
         self.game = game
+        
+        self.timeout = None
+        self.accumTime = 0.0
         
         # the font resource
         self.__font = None
@@ -32,13 +26,87 @@ class TalkBox:
     def initialize(self):
         self.__talkBoxNode = aspect2d.attachNewNode('talkBox')
         self.__textNodeParent = self.__talkBoxNode.attachNewNode('talkBox_text_parent')
-        self.setX(self.game.getConfig().getFloat(TalkBox.CVAR_TALKBOX_X))
-        self.setY(self.game.getConfig().getFloat(TalkBox.CVAR_TALKBOX_Y))
-        self.setFontName(self.game.getConfig().get(TalkBox.CVAR_TALKBOX_FONT))
-        self.setBackgroundColor(self.game.getConfig().getVec4(TalkBox.CVAR_TALKBOX_BGCOLOR))
-        self.setBackgroundImage(self.game.getConfig().getVec4(TalkBox.CVAR_TALKBOX_IMAGE))
-        self.setTextColor(self.game.getConfig().getVec4(TalkBox.CVAR_TALKBOX_TEXTCOLOR))
-        self.setTextScale(self.game.getConfig().getFloat(TalkBox.CVAR_TALKBOX_TEXTSCALE))
+        self.setX(self.game.getConfig().getFloat(PanoConstants.CVAR_TALKBOX_X))
+        self.setY(self.game.getConfig().getFloat(PanoConstants.CVAR_TALKBOX_Y))
+        self.setFontName(self.game.getConfig().get(PanoConstants.CVAR_TALKBOX_FONT))
+        self.setBackgroundColor(self.game.getConfig().getVec4(PanoConstants.CVAR_TALKBOX_BGCOLOR))
+        self.setBackgroundImage(self.game.getConfig().getVec4(PanoConstants.CVAR_TALKBOX_IMAGE))
+        self.setTextColor(self.game.getConfig().getVec4(PanoConstants.CVAR_TALKBOX_TEXTCOLOR))
+        self.setTextScale(self.game.getConfig().getFloat(PanoConstants.CVAR_TALKBOX_TEXTSCALE))
+        
+    def update(self, millis):
+        if self.timeout is not None:        
+            self.accumTime += millis / 1000.0
+            if (self.timeout - self.accumTime) <= 0:
+                self.hide()
+        
+    def showText(self, text, textColor = None, timeout=None):
+        
+        #copy text
+        self.setText(text)
+        
+        if textColor is not None:
+            self.setDefaultColor(textColor)
+            
+        # get localized version of font
+        i18n = self.game.getI18n()        
+        localizedFont = i18n.getLocalizedFont(self.__fontName)
+        fontPath = self.game.getResources().getResourceFullPath(PanoConstants.RES_TYPE_FONTS, localizedFont)                                    
+        self.__font = loader.loadFont(fontPath)
+        
+        if self.__font:            
+            # translate from message key
+            translatedText = i18n.translate(text)
+            
+            # assume a maximum of 10 points per screen unit
+            numLines = translatedText.count('\n') + 1
+            linesHeight = numLines * self.__textScale * self.__font.getLineHeight()
+    
+            if self.__bgLabel is not None:
+                self.__bgLabel.destroy()
+                
+            self.__bgLabel = DirectLabel(parent=self.__textNodeParent, 
+                             text='',                          
+                             text_bg=(self.__backgroundColor[0], self.__backgroundColor[1], self.__backgroundColor[2], self.__backgroundColor[3]), 
+    #                         text_align = TextNode.ALeft,                        
+                             pos=(base.a2dLeft, 0.1, base.a2dBottom + linesHeight), 
+                             frameSize=(base.a2dLeft, 2*base.a2dRight, base.a2dBottom, 1.1*linesHeight),
+                             frameColor=(0,0,0,1))
+            
+            if self.__textLabel is not None:
+                self.__textLabel.destroy()
+                
+            self.__textLabel = DirectButton(
+             parent=self.__textNodeParent,
+             text=translatedText, 
+             text_font=self.__font,
+             text_fg=(self.__textColor[0], self.__textColor[1], self.__textColor[2], self.__textColor[3]),
+             frameSize=(base.a2dLeft, 2*base.a2dRight, base.a2dBottom + 1, linesHeight), 
+             frameColor=(0,0,0,0),
+             text_wordwrap=None,
+             text_align = TextNode.ACenter,
+             scale=self.__textScale, 
+             pos=(0, 0, base.a2dBottom + linesHeight), 
+             pressEffect=0
+             )
+            
+            # text0 : normal
+            # text1 : pressed
+            # text2 : rollover
+            # text3 : disabled
+    #        for t in ('text1','text2'):
+    #            DB._DirectGuiBase__componentInfo[t][0].setColorScale(0.5, 1.0, 0.5, 1)
+                            
+            self.show()
+    
+    def show(self):
+        self.__talkBoxNode.show()
+    
+    def hide(self):
+        self.__talkBoxNode.hide()
+    
+    def isHidden(self):
+        return self.__talkBoxNode.isHidden()
 
     def getTextScale(self):
         return self.__textScale
@@ -98,74 +166,7 @@ class TalkBox:
 
 
     def setTextColor(self, value):
-        self.__textColor = value
-
-    
-    def showText(self, text, textColor = None):
-#        text = u'\u03b5\u03bb\u03bb\u03b7\u03bd\u03b9\u03ba\u03ac'
-        self.setText(text)
-        if textColor is not None:
-            self.setDefaultColor(textColor)
-            
-        i18n = self.game.getI18n()
-        localizedFont = i18n.getLocalizedFont(self.__fontName)
-        fontPath = self.game.getResources().getResourceFullPath(PanoConstants.RES_TYPE_FONTS, localizedFont)                                    
-        self.__font = loader.loadFont(fontPath)
-        if self.__font:            
-            
-            translatedText = i18n.translate(text)
-            
-            # assume a maximum of 10 points per screen unit
-            numLines = translatedText.count('\n') + 1
-            linesHeight = numLines * self.__textScale * self.__font.getLineHeight()
-            
-            print 'linesHeight: ', linesHeight, ' numLines: ', numLines
-    
-            if self.__bgLabel is not None:
-                self.__bgLabel.destroy()
-                
-            self.__bgLabel = DirectLabel(parent=self.__textNodeParent, 
-                             text='',                          
-                             text_bg=(self.__backgroundColor[0], self.__backgroundColor[1], self.__backgroundColor[2], self.__backgroundColor[3]), 
-    #                         text_align = TextNode.ALeft,                        
-                             pos=(base.a2dLeft, 0.1, base.a2dBottom + linesHeight), 
-                             frameSize=(base.a2dLeft, 2*base.a2dRight, base.a2dBottom, 1.1*linesHeight),
-                             frameColor=(0,0,0,1))
-            
-            if self.__textLabel is not None:
-                self.__textLabel.destroy()
-                
-            self.__textLabel = DirectButton(
-             parent=self.__textNodeParent,
-             text=translatedText, 
-             text_font=self.__font,
-             text_fg=(self.__textColor[0], self.__textColor[1], self.__textColor[2], self.__textColor[3]),
-             frameSize=(base.a2dLeft, 2*base.a2dRight, base.a2dBottom + 1, linesHeight), 
-             frameColor=(0,0,0,0),
-             text_wordwrap=None,
-             text_align = TextNode.ACenter,
-             scale=self.__textScale, 
-             pos=(0, 0, base.a2dBottom + linesHeight), 
-             pressEffect=0
-             )
-            
-            # text0 : normal
-            # text1 : pressed
-            # text2 : rollover
-            # text3 : disabled
-    #        for t in ('text1','text2'):
-    #            DB._DirectGuiBase__componentInfo[t][0].setColorScale(0.5, 1.0, 0.5, 1)
-                            
-            self.show()
-    
-    def show(self):
-        self.__talkBoxNode.show()
-    
-    def hide(self):
-        self.__talkBoxNode.hide()
-    
-    def isHidden(self):
-        return self.__talkBoxNode.isHidden()
+        self.__textColor = value        
 
     
     x = property(getX, setX, None, "X's Docstring")
