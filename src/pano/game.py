@@ -22,10 +22,13 @@ from resources.ResourceLoader import ResourceLoader
 from view.GameView import GameView
 from control.InitGameState import InitGameState
 from control.ExploreState import ExploreState
+from control.PausedState import PausedState
+from control.IntroState import IntroState
 from control.fsm import FSM
 from actions.GameActions import GameActions
 from resources.i18n import i18n
 from audio.music import MusicPlayer
+from messaging import Messenger
 
 class PanoGame:
     """
@@ -45,6 +48,7 @@ class PanoGame:
         self.gameView = GameView(gameRef = self, title = name)
         self.i18n = i18n(self)
         self.music = MusicPlayer(self)
+        self.msn = Messenger(self)
         self.initialNode = None
         self.mouseMode = PanoConstants.MOUSE_UI_MODE
         self.paused = False
@@ -66,13 +70,17 @@ class PanoGame:
         
         initState = InitGameState(gameRef = self)
         exploreState = ExploreState(gameRef = self, node = 'node1')
+        pausedState = PausedState(gameRef = self)
+        introState = IntroState(gameRef = self)
 
         self.fsm.addValidState(initState)
         self.fsm.addValidState(exploreState)
-        self.fsm.changeState(initState.getName())
+        self.fsm.addValidState(pausedState)
+        self.fsm.addValidState(introState)
+        self.fsm.changeState(InitGameState.NAME)
         
         # create and start the main game loop task
-        self.gameTask = taskMgr.add(self.gameLoop, "Game Loop")
+        self.gameTask = taskMgr.add(self.gameLoop, PanoConstants.TASK_GAME_LOOP)
         
         return Task.done
         
@@ -94,7 +102,7 @@ class PanoGame:
             return sys.exit()
                 
         #update input, graphics, sound, auditing, ai and state
-        millis = globalClock.getDt()
+        millis = globalClock.getDt()        
         self.fsm.update(millis)       
         
         self.gameView.update(millis)     
@@ -124,6 +132,29 @@ class PanoGame:
 
     def actions(self):
         return self.gameActions
+    
+    def canPause(self):
+        """
+        Use this method to probe whether the game can be paused.
+        It returns a boolean that indicates whether the game can be paused at this moment or not.
+        @todo: Publish the pause-request event and gather any vetos, for now accept it always. Will probably use the messenger object for this.
+        """
+        # the current state will decide...
+        return self.fsm.allowPausing()
+        
+    def pause(self):
+        """
+        Use this method to signal the pausing of the game.        
+        @todo: Publish the pause-request event and gather any vetos, for now accept it always.
+        """
+        self.paused = True                
+    
+    def resume(self):
+        """
+        Use this method to signal the un-pausing of the game.        
+        @todo: Publish the pause-request event and gather any vetos, for now accept it always.
+        """
+        self.paused = False    
     
     def isPaused(self):
         return self.paused
