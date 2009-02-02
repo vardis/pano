@@ -354,7 +354,12 @@ class NodeRenderer:
             we = self.getWorldPointFromFacePoint(hp.getFace(), (t1, t2))
             
             box = loader.loadModel(self.resources.getResourceFullPath(PanoConstants.RES_TYPE_MODELS, 'box.egg.pz'))
-            box.setPos(wo[0], wo[1], we[2])
+            
+            # we want to set as the position of our box, the respective world space position of the leftmost top corner of the hotspot
+            # because image space and world space X and Y axis may have opposite directions, we use min() to choose correctly between
+            # wo and we elements for setPos(): since the leftmost top corner has the smallest coordinates in image space, it will follow
+            # suite in the world space as well.
+            box.setPos(min(wo[0], we[0]), wo[1], min(wo[2], we[2]))
             box.setScale(
                          max(0.2, math.fabs(we[0] - wo[0])), 
                          max(0.2, math.fabs(we[1] - wo[1])), 
