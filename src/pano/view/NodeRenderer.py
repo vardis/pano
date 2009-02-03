@@ -270,23 +270,25 @@ class NodeRenderer:
         Stops all node animations.
         """
         for np in self.sprites.values():
-            if np.DtoolClassDict.has_key('video'):
-                t = np.video.getTime()
-                np.video.stop()
-                np.video.setTime(t)
+            if np.hasPythonTag('video'):
+                video = np.getPythonTag('video')
+                t = video.getTime()
+                video.stop()
+                video.setTime(t)
             else:
-                seq = np.node()
-                seq.stop()                
+                seq = np.find('**/+SequenceNode').node()                
+                seq.pose(seq.getFrame())           
             
     def resumeAnimations(self):
         """
         Resumes node animations.        
         """
         for np in self.sprites.values():
-            if np.DtoolClassDict.has_key('video'):                
-                np.video.play()                
+            if np.hasPythonTag('video'):
+                video = np.getPythonTag('video')                
+                video.play()                
             else:
-                seq = np.node()
+                seq = np.find('**/+SequenceNode').node()
                 seq.loop(False)                
         
     def buildWorldToFaceMatrices(self):

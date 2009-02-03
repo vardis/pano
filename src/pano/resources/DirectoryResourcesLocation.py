@@ -16,8 +16,7 @@ class DirectoryResourcesLocation(AbstractResourceLocation):
 		# a sorted list of all filenames of supported types that were found in self.directory
 		self.resourcesNames = []
 		
-	def indexResources(self):
-		AbstractResourceLocation(self)
+	def indexResources(self):		
 		
 		# get a listing of the directory and match filenames against
 		# all supported resource types
