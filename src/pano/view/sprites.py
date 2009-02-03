@@ -19,11 +19,14 @@ class SpriteRenderInterface:
     
     def __init__(self, nodepath):
         self.nodepath = nodepath
-        self.sprite = nodepath.sprite
+        self.sprite = nodepath.getPythonTag('sprite')
+        self.video = nodepath.getPythonTag('video')
         self.status = self.STOPPED 
         self.sequenceNode = self.nodepath.find('**/+SequenceNode')
-        if self.sequenceNode is not None:
-            self.sequenceNode = self.sequenceNode.node()            
+        if self.sequenceNode is not None and not self.sequenceNode.isEmpty():
+            self.sequenceNode = self.sequenceNode.node()
+        else:
+            self.sequenceNode = None            
         
         
     def play(self):
@@ -32,8 +35,8 @@ class SpriteRenderInterface:
         or from frame 0 if it was stopped.
         It has no effect if the sprite is already playing.
         """        
-        if self.nodepath.DtoolClassDict.has_key('video'):
-            self.nodepath.video.play()
+        if self.video is not None:
+            self.video.play()
         else:            
             self.sequenceNode.play()
             
@@ -41,18 +44,18 @@ class SpriteRenderInterface:
         
     
     def stop(self):
-        if self.nodepath.DtoolClassDict.has_key('video'):      
-            self.nodepath.video.stop()
+        if self.video is not None:      
+            self.video.stop()
         else:
             self.sequenceNode.stop()   
                      
         self.status = self.STOPPED
     
     def pause(self):
-        if self.nodepath.DtoolClassDict.has_key('video'):      
-            t = spriteNode.video.getTime()
-            spriteNode.video.stop()
-            spriteNode.video.setTime(t)
+        if self.video is not None:      
+            t = self.video.getTime()
+            self.video.stop()
+            self.video.setTime(t)
         else:
             self.sequenceNode.stop()   
         
@@ -62,16 +65,18 @@ class SpriteRenderInterface:
         return self.status == self.PAUSED
     
     def setFrame(self, frameNum):
-        if self.nodepath.DtoolClassDict.has_key('video'):      
-            # calculate time for the requested frame
+        if self.video is not None:      
+            # calculate time for the requested frame            
             time = self.sprite.getFrameRate() * frameNum
-            self.nodepath.video.setTime(time)
+            self.video.setTime(float(time))            
+            self.video.play()
         else:
+            play = self.sequenceNode.isPlaying()
             self.sequenceNode.pose(frameNum)
             
             # seq.pose will pause the animation, so check if we must call play
-            if self.status == self.PLAYING:
-                self.sequenceNode.play()        
+            if play:
+                self.sequenceNode.loop(False)        
     
     def hide(self):
         self.nodepath.hide()        
@@ -100,10 +105,11 @@ class SpritesUtil:
         # loads a plane that extends from -0.5 to 0.5 in XZ plane, face towards world -Y
         np = loader.loadModel(resources.getResourceFullPath(PanoConstants.RES_TYPE_MODELS, 'plane.egg'))
         np.reparentTo(parent)
-        np.DtoolClassDict.__setitem__('sprite', sprite)
-        np.DtoolClassDict.__setitem__('video', VideoPlayer.renderToTexture(resources, geom=np, video=sprite.getVideo(), audio=sprite.getAudio()))
-        np.video.setLoop(True)
-        np.video.play()        
+        np.setPythonTag('sprite', sprite)
+        video = VideoPlayer.renderToTexture(resources, geom=np, video=sprite.getVideo(), audio=sprite.getAudio())
+        np.setPythonTag('video', video)    
+        video.setLoop(True)
+        video.play()        
         return np
 
 
@@ -119,8 +125,8 @@ class SpritesUtil:
         """
         eggPath = resources.getResourceFullPath(PanoConstants.RES_TYPE_MODELS, sprite.eggFile)
         textureCard = loader.loadModel(eggPath)        
-        textureCard.reparentTo(parent)        
-        textureCard.DtoolClassDict.__setitem__('sprite', sprite)
+        textureCard.reparentTo(parent)
+        textureCard.setPythonTag('sprite', sprite)                
         return textureCard
     
     def getSpriteNodeName(spriteName):
