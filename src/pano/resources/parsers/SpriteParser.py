@@ -27,13 +27,13 @@ class SpriteParser:
                 sprite.setEggFile(cfg.get(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_EGGFILE))
             
             if cfg.has_option(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_FPS):
-                sprite.setFrameRate(cfg.get(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_FPS))
+                sprite.setFrameRate(cfg.getfloat(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_FPS))
                 
             if cfg.has_option(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_WIDTH):
-                sprite.setWidth(cfg.get(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_WIDTH))
+                sprite.setWidth(cfg.getint(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_WIDTH))
                 
             if cfg.has_option(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_HEIGHT):
-                sprite.setHeight(cfg.get(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_HEIGHT))
+                sprite.setHeight(cfg.getint(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_HEIGHT))
                 
             if cfg.has_option(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_VIDEO):
                 sprite.setVideo(cfg.get(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_VIDEO))
