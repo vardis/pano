@@ -118,22 +118,23 @@ class CameraMouseControl:
             y_rot = 0.0                        
                         
             # check for up-down camera movement
+            secs = millisElapsed / 1000.0
             if relX >= self.topX and relX <= (self.topX + self.topWidth) and relY >= self.topY and relY <= (self.topY + self.topHeight):
                 # Rotate around the global X axis in a counter-clockwise fashion                
-                x_rot = -self.__mouseVSpeed * millisElapsed
+                x_rot = -self.__mouseVSpeed * secs
                 
             elif relX >= self.bottomX and relX <= (self.bottomX + self.bottomWidth) and relY >= self.bottomY and relY <= (self.bottomY + self.bottomHeight):
                 # Rotate around the global X axis in a clockwise fashion                
-                x_rot = self.__mouseVSpeed * millisElapsed
+                x_rot = self.__mouseVSpeed * secs
             
             # check for left-right camera movement
             if relX >= self.leftX and relX <= (self.leftX + self.leftWidth) and relY >= self.leftY and relY <= (self.leftY + self.leftHeight):
                 # Rotate around the global Y axis in a counter-clockwise fashion                
-                y_rot = self.__mouseHSpeed * millisElapsed
+                y_rot = self.__mouseHSpeed * secs
                 
             elif relX >= self.rightX and relX <= (self.rightX + self.rightWidth) and relY >= self.rightY and relY <= (self.rightY + self.rightHeight):
                 # Rotate around the global Y axis in a clockwise fashion            
-                y_rot = -self.__mouseHSpeed * millisElapsed
+                y_rot = -self.__mouseHSpeed * secs
             
             hpr = base.camera.getHpr()            
             base.camera.setHpr((hpr[0] + y_rot) % 360, (hpr[1] + x_rot) % 360, hpr[2])            
