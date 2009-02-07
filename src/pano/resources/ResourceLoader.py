@@ -8,12 +8,14 @@ from model.MousePointer import MousePointer
 from model.Font import Font
 from model.Sprite import Sprite
 from model.Playlist import Playlist
+from model.ActionMappings import ActionMappings
 from parsers.PointerParser import PointerParser 
 from parsers.NodeParser import NodeParser
 from parsers.FontParser import FontParser
 from parsers.LangFileParser import LangFileParser
 from parsers.SpriteParser import SpriteParser
 from parsers.PlaylistParser import PlaylistParser
+from parsers.ActionMappingsParser import ActionMappingsParser
 
 class ResourceLoader:
     """
@@ -25,12 +27,13 @@ class ResourceLoader:
 		# locations of resources indexed by their supported resource types
         self.resLocations = {}		       
         self.parsers = {
-                        PanoConstants.RES_TYPE_POINTERS : PointerParser(),
-                        PanoConstants.RES_TYPE_NODES    : NodeParser(),
-                        PanoConstants.RES_TYPE_LANGS    : LangFileParser(),
-                        PanoConstants.RES_TYPE_FONTS    : FontParser(),
-                        PanoConstants.RES_TYPE_SPRITES  : SpriteParser(),
-                        PanoConstants.RES_TYPE_PLAYLISTS : PlaylistParser()
+                        PanoConstants.RES_TYPE_POINTERS  : PointerParser(),
+                        PanoConstants.RES_TYPE_NODES     : NodeParser(),
+                        PanoConstants.RES_TYPE_LANGS     : LangFileParser(),
+                        PanoConstants.RES_TYPE_FONTS     : FontParser(),
+                        PanoConstants.RES_TYPE_SPRITES   : SpriteParser(),
+                        PanoConstants.RES_TYPE_PLAYLISTS : PlaylistParser(),
+                        PanoConstants.RES_TYPE_MAPPINGS  : ActionMappingsParser()
         }
         
     def addResourcesLocation(self, resLoc):
@@ -144,6 +147,16 @@ class ResourceLoader:
             return None
         else:
             return mpl
+        
+    def loadActionMappings(self, name):
+        mappings = ActionMappings(name, {})
+        try:
+            self.loadGeneric(PanoConstants.RES_TYPE_MAPPINGS, mappings, name + '.mappings')
+        except:
+            return None
+        else:
+            return mappings
+        
         
     def loadGeneric(self, resType, resObj, filename):
         assert resType is not None and resType != PanoConstants.RES_TYPE_ALL, 'invalid resource type in loadGeneric'

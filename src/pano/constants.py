@@ -38,6 +38,7 @@ class PanoConstants:
     CVAR_RESOURCES_PLAYLISTS = 'resources_playlists'
     CVAR_RESOURCES_SOUNDS = 'resources_sounds'
     CVAR_RESOURCES_VIDEOS = 'resources_videos'
+    CVAR_RESOURCES_MAPPINGS = 'resources_mappings'
     
     # names of the cvars which are related to the talk box
     CVAR_TALKBOX_X         = 'talkbox_x'
@@ -88,6 +89,7 @@ class PanoConstants:
     RES_TYPE_SPRITES = 8
     RES_TYPE_PLAYLISTS = 9
     RES_TYPE_VIDEOS = 10
+    RES_TYPE_MAPPINGS = 11
     RES_TYPE_ALL = 100
     
     #Constants for the predefined mouse pointers

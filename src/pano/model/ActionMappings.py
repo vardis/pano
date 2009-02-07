@@ -4,15 +4,12 @@ class ActionMappings:
     Stores the mappings of the input events to game specific actions.
     """
     
-    def __init__(self):
-        # keys are the event names and values the action names
-        self.mappings = {}
+    def __init__(self, name, _mappings = {}):        
+        self.name = name
+        self.mappings = _mappings # keys are the event names and values the action names
     
-    def __init__(self, mappings):
-        """
-        Initialises given the dictionary of mappings.
-        """
-        self.mappings = mappings
+    def getName(self):
+        return self.name
     
     def addMapping(self, eventName, actionName):
         """
