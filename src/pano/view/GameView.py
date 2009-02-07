@@ -97,6 +97,7 @@ class GameView:
         
     def update(self, millis):
         self.panoRenderer.render(millis)
+        self.talkBox.update(millis)
 
     talkBox = property(getTalkBox, setTalkBox, None, "TalkBox's Docstring")
         

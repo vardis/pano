@@ -36,17 +36,20 @@ class TalkBox:
         
     def update(self, millis):
         if self.timeout is not None:        
-            self.accumTime += millis / 1000.0
+            self.accumTime += millis
+            print self.timeout, '  ',  self.accumTime
             if (self.timeout - self.accumTime) <= 0:
+                self.timeout = None
+                self.accumTime = 0.0
                 self.hide()
         
-    def showText(self, text, textColor = None, timeout=None):
+    def showText(self, text, timeout=None, textColor = None):
         
         #copy text
         self.setText(text)
         
         if textColor is not None:
-            self.setDefaultColor(textColor)
+            self.setTextColor(textColor)
             
         # get localized version of font
         i18n = self.game.getI18n()        
@@ -97,6 +100,7 @@ class TalkBox:
     #        for t in ('text1','text2'):
     #            DB._DirectGuiBase__componentInfo[t][0].setColorScale(0.5, 1.0, 0.5, 1)
                             
+            self.timeout = timeout * 1000.0
             self.show()
     
     def show(self):
