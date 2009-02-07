@@ -35,6 +35,8 @@ class PausedState(FSMState, DirectObject.DirectObject):
         # for testing pausing
         self.accept('p', self.togglePause)
         
+        self.getGame().getInput().pushMappings('paused')
+        
         # read config
         config = self.game.getConfig() 
         self.msgKey = config.get(PanoConstants.CVAR_PAUSED_STATE_MESSAGE)
@@ -51,40 +53,33 @@ class PausedState(FSMState, DirectObject.DirectObject):
         font = loader.loadFont(fontPath)
         
         self.translatedText = i18n.translate(self.msgKey)
+                                              
+        self.getMessenger().sendMessage(PanoConstants.EVENT_GAME_PAUSED)
         
-        # request to pause
-        if self.getGame().canPause():
+        music = self.getGame().getMusic()
+        self.wasMusicPlaying = not(music.isPaused() or music.isStopped())
+        music.setPaused(True)
+        
+        self.getGame().getView().panoRenderer.pauseAnimations()
+        
+        self.getGame().getView().mousePointer.hide()
+        
+        if self.textParent == None:
+            self.textParent = aspect2d.attachNewNode("pausedText")
+            
+        if self.textNode == None:
+            self.textNode = OnscreenText(
+                                         text=self.translatedText, 
+                                         pos=(0.0, 0.0), 
+                                         scale=self.scale, 
+                                         fg=self.fgColor,
+                                         align=TextNode.ACenter,
+                                         font=font,
+                                         parent=self.textParent,
+                                         mayChange=False)
+            
+        self.textParent.show()
                                         
-            self.getMessenger().sendMessage(PanoConstants.EVENT_GAME_PAUSED)
-            
-            music = self.getGame().getMusic()
-            self.wasMusicPlaying = not(music.isPaused() or music.isStopped())
-            music.setPaused(True)
-            
-            self.getGame().getView().panoRenderer.pauseAnimations()
-            
-            self.getGame().getView().mousePointer.hide()
-            
-            if self.textParent == None:
-                self.textParent = aspect2d.attachNewNode("pausedText")
-                
-            if self.textNode == None:
-                self.textNode = OnscreenText(
-                                             text=self.translatedText, 
-                                             pos=(0.0, 0.0), 
-                                             scale=self.scale, 
-                                             fg=self.fgColor,
-                                             align=TextNode.ACenter,
-                                             font=font,
-                                             parent=self.textParent,
-                                             mayChange=False)
-                
-            self.textParent.show()
-            
-        else:
-            # some game component vetoed the pause request, switch back to previous state
-            fsm = self.getGame().getState()
-            fsm.changeState(fsm.getPreviousState())                                
     
     def exit(self):
         
@@ -92,9 +87,9 @@ class PausedState(FSMState, DirectObject.DirectObject):
         
         self.textParent.hide()
         
-        self.getMessenger().sendMessage(PanoConstants.EVENT_GAME_RESUMED)                
+        self.getMessenger().sendMessage(PanoConstants.EVENT_GAME_RESUMED)                                
         
-        self.getGame().resume()
+        self.getGame().getInput().popMappings()
         
         self.getGame().getView().panoRenderer.resumeAnimations()
         self.getGame().getView().mousePointer.show()        
