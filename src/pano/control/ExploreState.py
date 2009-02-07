@@ -1,6 +1,5 @@
 import logging
 
-from direct.showbase import DirectObject
 from direct.interval.IntervalGlobal import *
 
 from constants import PanoConstants
@@ -8,7 +7,7 @@ from control.fsm import FSMState
 from view.camera import CameraMouseControl
 from control.PausedState import PausedState
 
-class ExploreState(FSMState, DirectObject.DirectObject):
+class ExploreState(FSMState):
     
     NAME = 'ExploreState'
     
@@ -26,13 +25,7 @@ class ExploreState(FSMState, DirectObject.DirectObject):
         FSMState.enter(self)
         
         self.cameraControl.initialize()
-        
-        #setup event handlers
-        self.accept('mouse1', self.onLeftClick)
-        
-        # for testing pausing
-        self.accept('p', self.togglePause)
-        
+                        
         # enable rotation of camera by mouse
         self.cameraControl.enable()
 
@@ -45,18 +38,21 @@ class ExploreState(FSMState, DirectObject.DirectObject):
 
         game.getMusic().play()
 
-        self.activeNode = self.getGame().getView().getActiveNode()
+        self.activeNode = game.getView().getActiveNode()
         
-        self.getGame().getView().panoRenderer.drawDebugHotspots(
-                self.getGame().getConfig().getBool(PanoConstants.CVAR_DEBUG_HOTSPOTS, False))
+        game.getInput().addMappings('explore')
+        
+        game.getView().panoRenderer.drawDebugHotspots(
+                game.getConfig().getBool(PanoConstants.CVAR_DEBUG_HOTSPOTS, False))
         
         self.talkBoxSequence = Sequence(
-                                        Func(self.getGame().getI18n().setLanguage, "en"),
-                                        Func(self.getGame().getView().getTalkBox().showText, "node1.door.desc"),
-                                        Wait(3.0),
-                                        Func(self.getGame().getI18n().setLanguage, "gr"),
-                                        Func(self.getGame().getView().getTalkBox().showText, "node1.door.desc"),
-                                        Wait(3.0))
+                                        Func(game.getI18n().setLanguage, "en"),
+                                        Func(game.getView().getTalkBox().showText, "node1.door.desc", 3.0),
+                                        Wait(6.0),
+                                        Func(game.getI18n().setLanguage, "gr"),
+                                        Func(game.getView().getTalkBox().showText, "node1.door.desc", 3.0),
+                                        Wait(6.0)
+                                        )
         self.talkBoxSequence.loop()        
     
     def registerMessages(self):
@@ -65,7 +61,7 @@ class ExploreState(FSMState, DirectObject.DirectObject):
                 PanoConstants.EVENT_GAME_PAUSED
                 )
     
-    def onLeftClick(self):
+    def doMouseAction(self):
         # returns the face code and image space coordinates of the hit point    
         face, x, y = self.getGame().getView().raycastNodeAtMouse()        
         dim = self.getGame().getView().panoRenderer.getFaceTextureDimensions(face)
@@ -77,14 +73,8 @@ class ExploreState(FSMState, DirectObject.DirectObject):
                 if self.log.isEnabledFor(logging.DEBUG):                    
                     self.log.debug('Clicked on hotspot %s, (%s)', h.getName(), h.getDescription())
                 
-                self.talkBoxSequence = Sequence(Func(self.getGame().getView().getTalkBox().showText, h.getDescription(), 3.0),
-                                        #Wait(3.0),
-                                        Func(self.getGame().getView().getTalkBox().hide))
-                self.talkBoxSequence.start()                 
-                
-                if h.getAction() is not None:
-                    self.getGame().actions().execute(h.getAction(), h.getActionArgs())
-                
+                self.getGame().getView().getTalkBox().showText(h.getDescription(), 3.0)                                        
+                                
 #        print 'face culling test:\n'
 #        print 'testing isFaceInFrustum from front: ', self.getGame().getView().panoRenderer.isFaceInFrustum(PanoConstants.CBM_FRONT_FACE)
 #        print 'testing isFaceInFrustum from back: ', self.getGame().getView().panoRenderer.isFaceInFrustum(PanoConstants.CBM_BACK_FACE)
@@ -97,8 +87,7 @@ class ExploreState(FSMState, DirectObject.DirectObject):
         
         FSMState.exit(self)
         
-        # unregister from Panda's event system   
-        self.ignoreAll()
+        self.getGame().getInput().removeMappings('explore')
         
         self.cameraControl.disable()
         
@@ -115,9 +104,42 @@ class ExploreState(FSMState, DirectObject.DirectObject):
             self.cameraControl.setIsActive(False)
         elif msg == PanoConstants.EVENT_GAME_RESUMED:
             self.talkBoxSequence.resume()
-            self.cameraControl.setIsActive(True)            
-    
-    def togglePause(self):
-        if not(self.getGame().isPaused()):
-            self.getGame().getState().changeGlobalState(PausedState.NAME)
+            self.cameraControl.setIsActive(True)    
             
+    def onInputAction(self, action):
+        if action == "hide_sprites":
+            self.hideSprites()
+        elif action == "show_sprites":
+            self.showSprites()
+        elif action == "reset_anims":
+            self.resetAnims()        
+        elif action == "acMouseAction":
+            self.doMouseAction()
+        else:
+            return False
+        return True
+    
+    def resetAnims(self):
+        for hp in self.activeNode.getHotspots():
+            spr = hp.getSprite()            
+            ri = self.getGame().getView().panoRenderer.getSpriteRenderInterface(spr)
+            if ri is not None:
+                self.log.debug('setting frame to 1 for sprite %s' % spr)
+                ri.setFrame(0)
+                
+    def hideSprites(self):
+        for hp in self.activeNode.getHotspots():
+            spr = hp.getSprite()            
+            ri = self.getGame().getView().panoRenderer.getSpriteRenderInterface(spr)
+            if ri is not None:
+                self.log.debug('hiding sprite %s' % spr)
+                ri.hide()
+                
+    def showSprites(self):
+        for hp in self.activeNode.getHotspots():
+            spr = hp.getSprite()            
+            ri = self.getGame().getView().panoRenderer.getSpriteRenderInterface(spr)
+            if ri is not None:
+                self.log.debug('showing sprite %s' % spr)
+                ri.show()
+                
