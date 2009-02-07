@@ -1,6 +1,9 @@
 
 import logging
 import Queue
+import math
+
+from direct.showbase import DirectObject
 
 from model.ActionMappings import ActionMappings
 
@@ -65,6 +68,10 @@ class InputActionMappings(DirectObject.DirectObject):
         Replaces the current map with the mappings defined inside the mapping file with given name.
         The old map is saved and can later be reactivated by a corresponding pop operation.        
         """
+        # push original mappings if they are not in stack
+        if len(self.mapStack) == 0:
+            self.mapStack.append(self.map)
+            
         self.mapStack.append(self._getMappings(mappingName))
         self.setMappings(self.mapStack[-1])
     
@@ -95,7 +102,7 @@ class InputActionMappings(DirectObject.DirectObject):
         Returns: a list of tuples of the form (event_name, action_name)
         """
         events = []
-        cnt = math.min(maxEvents, self.eventsQueue.qsize())
+        cnt = min(maxEvents, self.eventsQueue.qsize())
         if cnt > 0:            
             for i in xrange(cnt):
                 try:
