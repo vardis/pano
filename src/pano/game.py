@@ -18,6 +18,7 @@ from external.interactiveConsole.interactiveConsole import pandaConsole, INPUT_C
 
 from constants import PanoConstants
 from cvars import ConfigVars 
+from input import InputActionMappings
 from resources.ResourceLoader import ResourceLoader
 from view.GameView import GameView
 from control.InitGameState import InitGameState
@@ -41,21 +42,35 @@ class PanoGame:
         self.log = logging.getLogger('pano')
         
         self.name = name                
+        
         self.config = ConfigVars()
+        
         self.windowProperties = {}
+        
         self.parameters = ConfigVars()
+        
         self.resources = ResourceLoader()
+        
         self.gameView = GameView(gameRef = self, title = name)
+        
+        self.inputMappings = InputActionMappings(self)
+        
         self.i18n = i18n(self)
+        
         self.music = MusicPlayer(self)
+        
         self.msn = Messenger(self)
+        
         self.initialNode = None
+        
         self.mouseMode = PanoConstants.MOUSE_UI_MODE
+        
         self.paused = False
 
         self.gameActions = GameActions(self) 
         
         self.fsm = None          
+        
         self.gameTask = None
 
         self.console = None
@@ -100,11 +115,28 @@ class PanoGame:
         
         if self.quitRequested:
             return sys.exit()
-                
-        #update input, graphics, sound, auditing, ai and state
-        millis = globalClock.getDt()        
+                        
+        millis = globalClock.getDt() * 1000.0
+        
+        # process input events
+        events = self.inputMappings.getEvents()
+        if len(events) > 0:
+            for ev, act in events:
+                try:    
+                    processed = self.fsm.onInputAction(act)             
+                    if not(processed):
+                        if self.gameActions.isAction(act):   
+                            self.gameActions.execute(act)
+                        else:
+                            self.log.warning("Ignored unknown input action %s" % act)                    
+                                        
+                except:
+                    self.log.exception("Unexpected error while processing input action %s" % act)        
+        
+        # update state
         self.fsm.update(millis)       
         
+        # update view
         self.gameView.update(millis)     
         
         return Task.cont
@@ -120,6 +152,9 @@ class PanoGame:
 
     def getState(self):
         return self.fsm
+    
+    def getInput(self):
+        return self.inputMappings
 
     def getView(self):
         return self.gameView
@@ -147,13 +182,15 @@ class PanoGame:
         Use this method to signal the pausing of the game.        
         @todo: Publish the pause-request event and gather any vetos, for now accept it always.
         """
-        self.paused = True                
+        if self.canPause():
+            self.paused = self.fsm.changeGlobalState(PausedState.NAME)                
     
     def resume(self):
         """
         Use this method to signal the un-pausing of the game.        
         @todo: Publish the pause-request event and gather any vetos, for now accept it always.
         """
+        self.fsm.changeGlobalState(self.fsm.getPreviousGlobalState()) 
         self.paused = False    
     
     def isPaused(self):
