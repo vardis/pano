@@ -13,7 +13,6 @@ class LangFileParser():
                 
         name = langFile.getName()
         langFile.setLanguage(name[name.index('_')+1:])
-        print 'set language to ' , langFile.getLanguage()
         cfg = SafeConfigParser()        
         try:
             cfg.readfp(istream)

@@ -63,7 +63,6 @@ class GameView:
             
         if props.has_key(PanoConstants.WIN_SIZE):
             size = props[PanoConstants.WIN_SIZE]
-            print size
             wp.setSize(size[0], size[1])
             
         if props.has_key(PanoConstants.WIN_TITLE):

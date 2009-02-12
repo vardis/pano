@@ -37,7 +37,6 @@ class TalkBox:
     def update(self, millis):
         if self.timeout is not None:        
             self.accumTime += millis
-            print self.timeout, '  ',  self.accumTime
             if (self.timeout - self.accumTime) <= 0:
                 self.timeout = None
                 self.accumTime = 0.0

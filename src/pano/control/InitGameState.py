@@ -56,9 +56,7 @@ class InitGameState(FSMState):
             if locations:
                 for path in [str.strip(s) for s in locations.split(',')]:                    
                     loc = DirectoryResourcesLocation(directory=path, name=path, description='', resTypes=configs_to_types[config])
-                    res.addResourcesLocation(loc)
-                    
-        print res.listResources(PanoConstants.RES_TYPE_PLAYLISTS)
+                    res.addResourcesLocation(loc)                
         
     def configure(self):
         

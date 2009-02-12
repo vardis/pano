@@ -90,7 +90,6 @@ class VideoPlayer:
         
         geom.setTexture(videoTex)        
         if videoTex.getTexturesPower2():            
-            print 'TEX SCALE ', videoTex.getTexScale()
             geom.setTexScale(TextureStage.getDefault(), videoTex.getTexScale()) #0.75, 0.5625videoTex.getTexScale())
         
         if audio is not None:
