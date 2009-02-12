@@ -9,6 +9,7 @@ from model.Font import Font
 from model.Sprite import Sprite
 from model.Playlist import Playlist
 from model.ActionMappings import ActionMappings
+from model.Sound import Sound
 from parsers.PointerParser import PointerParser 
 from parsers.NodeParser import NodeParser
 from parsers.FontParser import FontParser
@@ -16,6 +17,7 @@ from parsers.LangFileParser import LangFileParser
 from parsers.SpriteParser import SpriteParser
 from parsers.PlaylistParser import PlaylistParser
 from parsers.ActionMappingsParser import ActionMappingsParser
+from parsers.SoundParser import SoundParser
 
 class ResourceLoader:
     """
@@ -33,7 +35,8 @@ class ResourceLoader:
                         PanoConstants.RES_TYPE_FONTS     : FontParser(),
                         PanoConstants.RES_TYPE_SPRITES   : SpriteParser(),
                         PanoConstants.RES_TYPE_PLAYLISTS : PlaylistParser(),
-                        PanoConstants.RES_TYPE_MAPPINGS  : ActionMappingsParser()
+                        PanoConstants.RES_TYPE_MAPPINGS  : ActionMappingsParser(),
+                        PanoConstants.RES_TYPE_SOUNDS    : SoundParser()
         }
         
     def addResourcesLocation(self, resLoc):
@@ -156,6 +159,15 @@ class ResourceLoader:
             return None
         else:
             return mappings
+        
+    def loadSound(self, name):
+        sound = Sound(name)
+        try:
+            self.loadGeneric(PanoConstants.RES_TYPE_SOUNDS, sound, name + '.sound')
+        except:
+            return None
+        else:
+            return sound
         
         
     def loadGeneric(self, resType, resObj, filename):
