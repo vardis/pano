@@ -29,6 +29,7 @@ from control.fsm import FSM
 from actions.GameActions import GameActions
 from resources.i18n import i18n
 from audio.music import MusicPlayer
+from audio.sounds import SoundsPlayer
 from messaging import Messenger
 
 class PanoGame:
@@ -58,6 +59,8 @@ class PanoGame:
         self.i18n = i18n(self)
         
         self.music = MusicPlayer(self)
+        
+        self.soundsFx = SoundsPlayer(self)
         
         self.msn = Messenger(self)
         
@@ -137,7 +140,10 @@ class PanoGame:
         self.fsm.update(millis)       
         
         # update view
-        self.gameView.update(millis)     
+        self.gameView.update(millis)
+        
+        # update sounds
+        self.soundsFx.update(millis)     
         
         return Task.cont
             
@@ -164,6 +170,9 @@ class PanoGame:
     
     def getMusic(self):
         return self.music
+    
+    def getSoundsFx(self):
+        return self.soundsFx
 
     def actions(self):
         return self.gameActions
