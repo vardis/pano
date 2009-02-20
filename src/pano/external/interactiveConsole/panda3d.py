@@ -160,7 +160,7 @@ class panda3dIOClass( DirectObject.DirectObject ):
     self.consoleEntry['focus'] != hidden
     if hidden:
       self.ignoreAll()
-      self.accept( self.gui_key, self.toggleConsole )
+#      self.accept( self.gui_key, self.toggleConsole )
     else:
       self.ignoreAll()
       self.accept( 'page_up', self.scroll, [-5] )
@@ -172,7 +172,7 @@ class panda3dIOClass( DirectObject.DirectObject ):
       self.accept( 'arrow_up'  , self.scrollCmd, [ 1] )
       self.accept( 'arrow_down', self.scrollCmd, [-1] )
       
-      self.accept( self.gui_key, self.toggleConsole )
+#      self.accept( self.gui_key, self.toggleConsole )
       self.accept( self.autocomplete_key, self.autocomplete )
       self.accept( self.autohelp_key, self.autohelp )
       
