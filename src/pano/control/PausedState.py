@@ -1,13 +1,12 @@
 import logging
 
-from direct.showbase import DirectObject
 from pandac.PandaModules import TextNode
 from direct.gui.OnscreenText import OnscreenText
 
 from constants import PanoConstants
 from control.fsm import FSMState
 
-class PausedState(FSMState, DirectObject.DirectObject):
+class PausedState(FSMState):
     
     NAME = 'PausedState'
     
@@ -31,9 +30,6 @@ class PausedState(FSMState, DirectObject.DirectObject):
     def enter(self):
         
         FSMState.enter(self)
-        
-        # for testing pausing
-        self.accept('p', self.togglePause)
         
         self.getGame().getInput().pushMappings('paused')
         
@@ -100,8 +96,4 @@ class PausedState(FSMState, DirectObject.DirectObject):
     def update(self, millis):
         pass
     
-    def togglePause(self):
-        if not(self.getGame().isPaused()):
-            self.getGame().getState().changeGlobalState(None)
-            
-                        
+    
