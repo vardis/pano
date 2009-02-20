@@ -48,7 +48,7 @@ class ActionMappings:
         newMap = self.mappings.copy()                        
         for k, v in other.mappings.items():
             newMap[k] = v
-        return ActionMappings(newMap)
+        return ActionMappings(self.name, newMap)
             
     def subtract(self, other):
         """
@@ -59,7 +59,7 @@ class ActionMappings:
             if newMap.has_key(k):
                 del newMap[k]
                 
-        return ActionMappings(newMap) 
+        return ActionMappings(self.name, newMap) 
                 
     def getEvents(self):
         """
