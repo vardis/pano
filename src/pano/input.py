@@ -17,6 +17,7 @@ class InputActionMappings(DirectObject.DirectObject):
     def __init__(self, gameRef):
         self.log = logging.getLogger('pano.inputMap')
         self.game = gameRef
+        self.globalMap = None
         self.map = None
         self.mapStack = [] 
         self.eventsQueue = Queue.Queue(50)       
@@ -27,10 +28,23 @@ class InputActionMappings(DirectObject.DirectObject):
         
         Returns: the name of the action that maps to this event.
         """
-        if self.map is not None:
-            return self.map.mapInputEvent(inputEventName)
-        else:
-            return None
+        act = None
+        if self.globalMap is not None:
+            act = self.globalMap.mapInputEvent(inputEventName)
+                        
+        if act is None and self.map is not None:
+            act = self.map.mapInputEvent(inputEventName)
+        
+        return act
+    
+    def setGlobalMappings(self, actionMap):
+        if isinstance(actionMap, ActionMappings): 
+            self.globalMap = actionMap
+        elif isinstance(actionMap, str):
+            self.globalMap = self._getMappings(actionMap)
+            
+        if self.globalMap is not None:
+            self._registerPandaEvents()
         
     def setMappings(self, actionMap):
         """
@@ -86,7 +100,14 @@ class InputActionMappings(DirectObject.DirectObject):
         elif sz == 1:
             self.setMappings(self.mapStack.pop())            
     
-    def clearMappings(self, mappingName):
+    def clearGlobalMappings(self):
+        """
+        Clears the current map and any stack history.
+        """
+        self.globalMap = None        
+        self._registerPandaEvents()
+    
+    def clearMappings(self):
         """
         Clears the current map and any stack history.
         """
@@ -128,10 +149,16 @@ class InputActionMappings(DirectObject.DirectObject):
         """
         Internal method that registers self to receive all input event, through Panda3D's event system, for the events
         which have an entry in the current input map. 
-        """
+        """        
         self.ignoreAll()
-        for e in self.map.getEvents():
-            self.accept(e, self._eventHandler, [e])
+            
+        if self.globalMap is not None:    
+            for e in self.globalMap.getEvents():
+                self.accept(e, self._eventHandler, [e])
+            
+        if self.map is not None:
+            for e in self.map.getEvents():
+                self.accept(e, self._eventHandler, [e])
             
     def _eventHandler(self, e):
         """
