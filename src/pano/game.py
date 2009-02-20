@@ -24,6 +24,7 @@ from view.GameView import GameView
 from control.InitGameState import InitGameState
 from control.ExploreState import ExploreState
 from control.PausedState import PausedState
+from control.ConsoleState import ConsoleState
 from control.IntroState import IntroState
 from control.fsm import FSM
 from actions.GameActions import GameActions
@@ -89,11 +90,13 @@ class PanoGame:
         initState = InitGameState(gameRef = self)
         exploreState = ExploreState(gameRef = self, node = 'node1')
         pausedState = PausedState(gameRef = self)
+        consoleState = ConsoleState(self)
         introState = IntroState(gameRef = self)
 
         self.fsm.addValidState(initState)
         self.fsm.addValidState(exploreState)
         self.fsm.addValidState(pausedState)
+        self.fsm.addValidState(consoleState)
         self.fsm.addValidState(introState)
         self.fsm.changeState(InitGameState.NAME)
         
@@ -214,11 +217,13 @@ class PanoGame:
         if self.console is not None:
             self.console.toggle()
             self.consoleVisible = True
+            self.fsm.changeGlobalState(ConsoleState.NAME)
             
     def hideDebugConsole(self):
         if self.console is not None:
             self.console.toggle()
             self.consoleVisible = False
+            self.fsm.changeGlobalState(self.fsm.getPreviousGlobalState())
             
     def isDebugConsoleVisible(self):
         return self.consoleVisible
