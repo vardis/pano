@@ -7,6 +7,15 @@ BuiltinActionsNames = [
      'acResume'
      ]
 
+def registerBultins(gameActions):    
+    gameActions.registerAction(VoidAction())
+    gameActions.registerAction(ExitGameAction())
+    gameActions.registerAction(PauseGameAction())
+    gameActions.registerAction(ResumeGameAction())
+    gameActions.registerAction(ShowDebugConsoleAction())
+    gameActions.registerAction(HideDebugConsoleAction())
+    gameActions.registerAction(ToggleDebugConsoleAction())
+
 class VoidAction(BaseAction):
     def __init__(self):
         BaseAction.__init__(self, 'acVoid', 'Does nothing')
@@ -21,7 +30,6 @@ class PauseGameAction(BaseAction):
         
     def execute(self, game):
         BaseAction.execute(self, game)
-#        game.getInput().pushMappings('paused')
         game.pause()
         
 class ResumeGameAction(BaseAction):
@@ -30,8 +38,35 @@ class ResumeGameAction(BaseAction):
         
     def execute(self, game):
         BaseAction.execute(self, game)
-#        game.getInput().popMappings()
         game.resume()            
+
+class ShowDebugConsoleAction(BaseAction):
+    def __init__(self):
+        BaseAction.__init__(self, 'acShowConsole', 'Show the debug console')
+        
+    def execute(self, game):
+        BaseAction.execute(self, game)
+        if not game.isDebugConsoleVisible():
+            game.showDebugConsole()
+            
+class ToggleDebugConsoleAction(BaseAction):
+    def __init__(self):
+        BaseAction.__init__(self, 'acToggleConsole', 'Toggles the debug console visibility')
+        
+    def execute(self, game):
+        BaseAction.execute(self, game)
+        if not game.isDebugConsoleVisible():
+            game.showDebugConsole()
+        else:
+            game.hideDebugConsole()            
+        
+class HideDebugConsoleAction(BaseAction):
+    def __init__(self):
+        BaseAction.__init__(self, 'acHideConsole', 'Hides the debug console')
+        
+    def execute(self, game):
+        BaseAction.execute(self, game)
+        game.hideDebugConsole()        
         
 class ExitGameAction(BaseAction):
     
@@ -41,5 +76,14 @@ class ExitGameAction(BaseAction):
     def execute(self, game):
         BaseAction.execute(self, game)
         game.quit()
+        
+class ChangeState(BaseAction):
+    
+    def __init__(self):
+        BaseAction.__init__(self, 'acChangeState', 'Changes the state of the game')
+        
+    def execute(self, game, state):
+        BaseAction.execute(self, game)
+        game.getState().changeState(state)
         
                 
