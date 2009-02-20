@@ -96,6 +96,9 @@ class InitGameState(FSMState):
         
         if game.getConfig().getBool(PanoConstants.CVAR_DEBUG_CONSOLE):
             game.enableDebugConsole()
+            
+        # load global input mappings
+        game.getInput().setGlobalMappings('global')
         
         # loads language files and fonts localizations
         game.getI18n().initialize()
@@ -114,13 +117,7 @@ class InitGameState(FSMState):
         game.getView().setWindowProperties(winProps)
         game.getView().openWindow()
         game.getView().initialize()        
-                    
-#        self.initialNode = game.getResources().loadNode('node1')        
-#                
-#        
-#        game.getView().displayNode(self.initialNode)                
-#        game.getView().mousePointer.setByName('select')
-        talkBox = game.getView().getTalkBox()
+         
 #   
     def exit(self):
         pass            
