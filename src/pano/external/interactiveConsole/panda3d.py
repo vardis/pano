@@ -22,6 +22,10 @@ from direct.showbase import DirectObject
 from pandac.PandaModules import TextNode, Vec3, VBase4
 from direct.gui.OnscreenText import OnscreenText
 
+# vardis 27-02-2009: Added special cull bin in order to render on top of everything
+from constants import PanoConstants
+from pandac.PandaModules import CullBinManager
+
 from clipboard import clipboard
 
 class panda3dIOClass( DirectObject.DirectObject ):
@@ -66,6 +70,11 @@ class panda3dIOClass( DirectObject.DirectObject ):
                                     , frameColor = (200, 200, 200, 0.5)
                                     , scale=self.scale
                                     , frameSize = (0, self.h_size / self.scale, 0, self.v_size / self.scale) )
+    
+    # vardis 27-02-2009: Added special cull bin in order to render on top of everything
+    CullBinManager.getGlobalPtr().addBin(PanoConstants.CONSOLE_CULL_BIN_NAME, CullBinManager.BTUnsorted, PanoConstants.CONSOLE_CULL_BIN_VAL)
+    self.consoleFrame.setBin(PanoConstants.CONSOLE_CULL_BIN_NAME, 0)
+    
     self.windowEvent( base.win )
     
     # try to load the defined font
