@@ -26,12 +26,15 @@ from control.ExploreState import ExploreState
 from control.PausedState import PausedState
 from control.ConsoleState import ConsoleState
 from control.IntroState import IntroState
+from control.InventoryState import InventoryState
 from control.fsm import FSM
 from actions.GameActions import GameActions
 from resources.i18n import i18n
 from audio.music import MusicPlayer
 from audio.sounds import SoundsPlayer
 from messaging import Messenger
+from model.inventory import Inventory
+
 
 class PanoGame:
     """
@@ -53,6 +56,8 @@ class PanoGame:
         
         self.resources = ResourceLoader()
         
+        self.inventory = Inventory(self)
+        
         self.gameView = GameView(gameRef = self, title = name)
         
         self.inputMappings = InputActionMappings(self)
@@ -63,7 +68,7 @@ class PanoGame:
         
         self.soundsFx = SoundsPlayer(self)
         
-        self.msn = Messenger(self)
+        self.msn = Messenger(self)                        
         
         self.initialNode = None
         
@@ -92,12 +97,14 @@ class PanoGame:
         pausedState = PausedState(gameRef = self)
         consoleState = ConsoleState(self)
         introState = IntroState(gameRef = self)
+        inventoryState = InventoryState(self) 
 
         self.fsm.addValidState(initState)
         self.fsm.addValidState(exploreState)
         self.fsm.addValidState(pausedState)
         self.fsm.addValidState(consoleState)
         self.fsm.addValidState(introState)
+        self.fsm.addValidState(inventoryState)
         self.fsm.changeState(InitGameState.NAME)
         
         # create and start the main game loop task
@@ -128,6 +135,7 @@ class PanoGame:
         events = self.inputMappings.getEvents()
         if len(events) > 0:
             for ev, act in events:
+                print ev, act
                 try:    
                     processed = self.fsm.onInputAction(act)             
                     if not(processed):
@@ -175,7 +183,10 @@ class PanoGame:
         return self.music
     
     def getSoundsFx(self):
-        return self.soundsFx
+        return self.soundsFx        
+    
+    def getInventory(self):
+        return self.inventory
 
     def actions(self):
         return self.gameActions
@@ -217,13 +228,15 @@ class PanoGame:
         if self.console is not None:
             self.console.toggle()
             self.consoleVisible = True
-            self.fsm.changeGlobalState(ConsoleState.NAME)
+#            self.fsm.changeGlobalState(ConsoleState.NAME)
+            self.fsm.pushState(ConsoleState.NAME)
             
     def hideDebugConsole(self):
         if self.console is not None:
             self.console.toggle()
             self.consoleVisible = False
-            self.fsm.changeGlobalState(self.fsm.getPreviousGlobalState())
+#            self.fsm.changeGlobalState(self.fsm.getPreviousGlobalState())
+            self.fsm.popState()
             
     def isDebugConsoleVisible(self):
         return self.consoleVisible
@@ -231,7 +244,7 @@ class PanoGame:
     def quit(self):
         self.quitRequested = True
 
-#os.chdir('/host/Documents and Settings/Fidel/workspace/Panorama/demo')
+#os.chdir(sys.argv[1])
 
 game = PanoGame()
 taskMgr.add(game.initialise, "Game initialisation task")
