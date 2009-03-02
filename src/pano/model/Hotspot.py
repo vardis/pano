@@ -66,7 +66,9 @@ class Hotspot:
 
     def getAction(self):
         return self.__action
-
+    
+    def hasAction(self):
+        return self.__action is not None
 
     def getActionArgs(self):
         return self.__actionArgs
