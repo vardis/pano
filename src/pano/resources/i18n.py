@@ -82,8 +82,7 @@ class i18n:
         if lang is None:
             lang = self.getLanguage()
         assert lang is not None, 'The language is not set!'
-        
-        res = self.game.getResources()        
+                    
         for fnt in self.fonts:
             if fnt.getName() == fontName:
                 return fnt.getLocalized(lang)
