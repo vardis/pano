@@ -3,7 +3,8 @@ import re
 class ConfigVars:
     
     def __init__(self):    
-        self.cvars = {}      
+        self.cvars = {}
+        self.vec2Re = re.compile(r'\s*(\S+)\s+(\S+)\s*')      
         self.vec3Re = re.compile(r'\s*(\S+)\s+(\S+)\s+(\S+)\s*')
         self.vec4Re = re.compile(r'\s*(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s*')  
         
@@ -46,6 +47,17 @@ class ConfigVars:
             value = self.cvars[var]
             if value is not None:
                 return value.split(',')
+            return None
+        else:
+            return default
+        
+    def getVec2(self, var, default = None):
+        if self.cvars.has_key(var):
+            value = self.cvars[var]
+            if value is not None:
+                m = self.vec2Re.match(value)
+                if m is not None:
+                    return (float(m.group(1)), float(m.group(2)))
             return None
         else:
             return default
