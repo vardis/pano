@@ -20,6 +20,7 @@ class PointerParser:
     EGG_FILE_OPTION = 'egg_file'
     TEXTURE_OPTION = 'texture'
     ALPHA_OPTION = 'enable_alpha'
+    SCALE_OPTION = 'scale'
     
     def __init__(self):
         pass
@@ -43,6 +44,9 @@ class PointerParser:
             
             if cfg.has_option(section, PointerParser.ALPHA_OPTION):
                 pointer.setEnableAlpha(cfg.getboolean(section, PointerParser.ALPHA_OPTION))
+                
+            if cfg.has_option(section, PointerParser.SCALE_OPTION):
+                pointer.setScale(cfg.getfloat(section, PointerParser.SCALE_OPTION))
             
             assert pointer.getEggFile() is not None or pointer.getTexture() is not None, 'either an egg file or a texture file must be specified for the pointer'
                 

@@ -4,11 +4,12 @@ class MousePointer:
     Properties for the mouse pointer. 
     """        
 
-    def __init__(self, name = '', eggFile = None, enableAlpha = False, texture = None):
+    def __init__(self, name = '', eggFile = None, enableAlpha = False, texture = None, scale = 1.0):
         self.__name = name
         self.__eggFile = eggFile
         self.__texture = texture
         self.__enableAlpha = enableAlpha
+        self.scale = scale
     
     def getName(self):
         return self.__name
@@ -37,6 +38,12 @@ class MousePointer:
     def setTexture(self, value):
         self.__texture = value
 
+
+    def getScale(self):
+        return self.scale
+    
+    def setScale(self, scale):
+        self.scale = scale
 
     def setEnableAlpha(self, value):
         self.__enableAlpha = value
