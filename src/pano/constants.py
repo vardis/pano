@@ -4,11 +4,15 @@ class PanoConstants:
     Every constant related to our framework will be stored in this class.
     """
     
-    # events' names
+    # names of events
     EVENT_GAME_UPDATE = "game.update"
     EVENT_GAME_EXIT = "game.exit"
     EVENT_GAME_PAUSED = "game.paused"
     EVENT_GAME_RESUMED = "game.resumed"
+    EVENT_ITEMS_CLEARED = "inventory.items.cleared"
+    EVENT_ITEM_ADDED = "inventory.item.added"
+    EVENT_ITEM_REMOVED = "inventory.item.removed"
+    EVENT_ITEM_COUNT_CHANGED = "inventory.count.changed"
     
     # tasks' names
     TASK_GAME_LOOP = 'game_loop_task'
@@ -39,6 +43,7 @@ class PanoConstants:
     CVAR_RESOURCES_SOUNDS = 'resources_sounds'
     CVAR_RESOURCES_VIDEOS = 'resources_videos'
     CVAR_RESOURCES_MAPPINGS = 'resources_mappings'
+    CVAR_RESOURCES_ITEMS = 'resources_items'
     
     # names of the cvars which are related to the talk box
     CVAR_TALKBOX_X         = 'talkbox_x'
@@ -61,6 +66,18 @@ class PanoConstants:
     # for intro state
     CVAR_INTRO_STATE_VIDEOS = 'intro_videos'
     CVAR_INTRO_STATE_DELAY = 'intro_delay'
+    
+    # for inventory
+    CVAR_INVENTORY_BACKDROP = 'inventory_backdrop'
+    CVAR_INVENTORY_POINTER = 'inventory_mouse_pointer'
+    CVAR_INVENTORY_FONT = 'inventory_font_name'
+    CVAR_INVENTORY_FONT_COLOR = 'inventory_font_color'
+    CVAR_INVENTORY_POS = 'inventory_pos'
+    CVAR_INVENTORY_SIZE = 'inventory_size'
+    CVAR_INVENTORY_TEXT_POS = 'inventory_item_text_pos'
+    CVAR_INVENTORY_TEXT_SCALE = 'inventory_item_text_scale'
+    CVAR_INVENTORY_OPACITY = 'inventory_opacity'
+    CVAR_INVENTORY_SLOTS = 'inventory_slots_provider'
     
     # keys' names used to lookup window properties in a dictionary
     WIN_ORIGIN = 'win_origin'
@@ -90,6 +107,7 @@ class PanoConstants:
     RES_TYPE_PLAYLISTS = 9
     RES_TYPE_VIDEOS = 10
     RES_TYPE_MAPPINGS = 11
+    RES_TYPE_ITEMS = 12
     RES_TYPE_ALL = 100
     
     #Constants for the predefined mouse pointers
@@ -137,4 +155,10 @@ class PanoConstants:
     
     # prefix to use when naming nodes for debug geometries
     DEBUG_GEOMS_NAME_PREFIX = 'debug_geom_'
+    
+    MOUSE_CULL_BIN_NAME = "mouse_pointer_bin"
+    MOUSE_CULL_BIN_VAL = 60 
+    
+    CONSOLE_CULL_BIN_NAME = "console_pointer_bin"
+    CONSOLE_CULL_BIN_VAL = 70
     
