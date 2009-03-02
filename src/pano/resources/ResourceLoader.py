@@ -10,6 +10,7 @@ from model.Sprite import Sprite
 from model.Playlist import Playlist
 from model.ActionMappings import ActionMappings
 from model.Sound import Sound
+from model.InventoryItem import InventoryItem
 from parsers.PointerParser import PointerParser 
 from parsers.NodeParser import NodeParser
 from parsers.FontParser import FontParser
@@ -18,6 +19,10 @@ from parsers.SpriteParser import SpriteParser
 from parsers.PlaylistParser import PlaylistParser
 from parsers.ActionMappingsParser import ActionMappingsParser
 from parsers.SoundParser import SoundParser
+from parsers.InventoryItemParser import InventoryItemParser
+
+class ResourceNotFound(Exception):
+    pass
 
 class ResourceLoader:
     """
@@ -36,7 +41,8 @@ class ResourceLoader:
                         PanoConstants.RES_TYPE_SPRITES   : SpriteParser(),
                         PanoConstants.RES_TYPE_PLAYLISTS : PlaylistParser(),
                         PanoConstants.RES_TYPE_MAPPINGS  : ActionMappingsParser(),
-                        PanoConstants.RES_TYPE_SOUNDS    : SoundParser()
+                        PanoConstants.RES_TYPE_SOUNDS    : SoundParser(),
+                        PanoConstants.RES_TYPE_ITEMS    : InventoryItemParser()
         }
         
     def addResourcesLocation(self, resLoc):
@@ -169,6 +175,15 @@ class ResourceLoader:
         else:
             return sound
         
+    def loadItem(self, name):
+        item = InventoryItem(name)
+        try:
+            self.loadGeneric(PanoConstants.RES_TYPE_ITEMS, item, name + '.item')
+        except:
+            return None
+        else:
+            return item
+        
         
     def loadGeneric(self, resType, resObj, filename):
         assert resType is not None and resType != PanoConstants.RES_TYPE_ALL, 'invalid resource type in loadGeneric'
@@ -185,7 +200,7 @@ class ResourceLoader:
                 if istream is not None:
                     istream.close()
         else:
-            return None
+            raise ResourceNotFound('Unable to locate resource %s' % filename)
             
         
            
