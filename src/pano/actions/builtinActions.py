@@ -4,7 +4,12 @@ BuiltinActionsNames = [
      'acVoid',
      'acExit',
      'acPause',
-     'acResume'
+     'acResume',
+     'acShowConsole',
+     'acToggleConsole',
+     'acHideConsole',
+     'acChangeState',
+     'acToggleInventory'
      ]
 
 def registerBultins(gameActions):    
@@ -15,6 +20,7 @@ def registerBultins(gameActions):
     gameActions.registerAction(ShowDebugConsoleAction())
     gameActions.registerAction(HideDebugConsoleAction())
     gameActions.registerAction(ToggleDebugConsoleAction())
+    gameActions.registerAction(ToggleInventoryAction())
 
 class VoidAction(BaseAction):
     def __init__(self):
@@ -86,4 +92,17 @@ class ChangeState(BaseAction):
         BaseAction.execute(self, game)
         game.getState().changeState(state)
         
-                
+        
+from control.InventoryState import InventoryState        
+        
+class ToggleInventoryAction(BaseAction):
+    def __init__(self):
+        BaseAction.__init__(self, 'acToggleInventory', 'Toggles the visibility of the inventory')
+        
+    def execute(self, game):
+        BaseAction.execute(self, game)
+        if game.getState().getCurrentState().getName() == InventoryState.NAME:
+            game.getState().popState()
+        else:
+            game.getState().pushState(InventoryState.NAME)
+                            
