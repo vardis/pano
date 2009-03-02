@@ -16,27 +16,33 @@ class ExploreState(FSMState):
         
         self.log = logging.getLogger('pano.exploreState')
         self.activeNode = None
+        self.activeHotspot = None
         self.cameraControl = CameraMouseControl(self.getGame())
         
         self.talkBoxSequence = None
+        self.sounds = None
+        self.test_spi = None
         
     def enter(self):
         
         FSMState.enter(self)
         
-        self.cameraControl.initialize()
+        self.cameraControl.initialize()        
                         
         # enable rotation of camera by mouse
         self.cameraControl.enable()
 
         game = self.getGame()
         
+        self.sounds = game.getSoundsFx()
+        
         initialNode = game.getResources().loadNode('node1')                        
         
         game.getView().displayNode(initialNode)                
         game.getView().mousePointer.setByName('select')
 
-        game.getMusic().play()
+        game.getMusic().setPlaylist(game.getResources().loadPlaylist('main-music'))
+#        game.getMusic().play()
 
         self.activeNode = game.getView().getActiveNode()
         
@@ -54,6 +60,10 @@ class ExploreState(FSMState):
                                         Wait(6.0)
                                         )
         self.talkBoxSequence.loop()        
+        
+        self.log.debug('is inventory visible: %i' % game.getView().getInventoryView().isVisible())        
+        for i in xrange(8):
+            game.getInventory().addItem('newspaper')
     
     def registerMessages(self):
         return (
@@ -63,17 +73,20 @@ class ExploreState(FSMState):
     
     def doMouseAction(self):
         # returns the face code and image space coordinates of the hit point    
-        face, x, y = self.getGame().getView().raycastNodeAtMouse()        
-        dim = self.getGame().getView().panoRenderer.getFaceTextureDimensions(face)
-        x *= dim[0]
-        y *= dim[1]
-        
-        for h in self.activeNode.getHotspots():
-            if h.getFace() == face and x >= h.getXo() and x <= h.getXe() and y >= h.getYo() and y <= h.getYe():
-                if self.log.isEnabledFor(logging.DEBUG):                    
-                    self.log.debug('Clicked on hotspot %s, (%s)', h.getName(), h.getDescription())
-                
-                self.getGame().getView().getTalkBox().showText(h.getDescription(), 3.0)                                        
+#        face, x, y = self.getGame().getView().raycastNodeAtMouse()        
+#        dim = self.getGame().getView().panoRenderer.getFaceTextureDimensions(face)
+#        x *= dim[0]
+#        y *= dim[1]
+#        
+#        for h in self.activeNode.getHotspots():
+#            if h.getFace() == face and x >= h.getXo() and x <= h.getXe() and y >= h.getYo() and y <= h.getYe():
+        if self.activeHotspot is not None:
+            if self.log.isEnabledFor(logging.DEBUG):                    
+                self.log.debug('Clicked on hotspot %s, (%s)', self.activeHotspot.getName(), self.activeHotspot.getDescription())
+            
+            if self.activeHotspot.hasAction():
+                self.getGame().actions().execute(self.activeHotspot.getAction(), self.activeHotspot.getActionArgs())                
+            self.getGame().getView().getTalkBox().showText(self.activeHotspot.getDescription(), 3.0)                                        
                                 
 #        print 'face culling test:\n'
 #        print 'testing isFaceInFrustum from front: ', self.getGame().getView().panoRenderer.isFaceInFrustum(PanoConstants.CBM_FRONT_FACE)
@@ -97,6 +110,32 @@ class ExploreState(FSMState):
     def update(self, millis):
         if not self.getGame().isPaused():
             self.cameraControl.update(millis)
+            
+            # returns the face code and image space coordinates of the hit point    
+            result = self.getGame().getView().raycastNodeAtMouse()
+            if result is not None:
+                face, x, y = result        
+                dim = self.getGame().getView().panoRenderer.getFaceTextureDimensions(face)
+                x *= dim[0]
+                y *= dim[1]
+                
+                self.activeHotspot = None
+                for h in self.activeNode.getHotspots():
+                    if h.getFace() == face and x >= h.getXo() and x <= h.getXe() and y >= h.getYo() and y <= h.getYe():
+                        self.activeHotspot = h
+                        
+                if self.activeHotspot is not None:
+                    cu = self.activeHotspot.getCursor()
+                    if cu is not None:
+                        self.getGame().getView().getMousePointer().setByName(cu)
+                else:
+                    self.getGame().getView().getMousePointer().setByName('select')
+    
+    def suspend(self):        
+        self.cameraControl.disable()
+    
+    def resume(self):
+        self.cameraControl.enable()
     
     def onMessage(self, msg, *args):
         if msg == PanoConstants.EVENT_GAME_PAUSED:            
@@ -115,6 +154,43 @@ class ExploreState(FSMState):
             self.resetAnims()        
         elif action == "acMouseAction":
             self.doMouseAction()
+        elif action == "play_sound":            
+            if self.test_spi is None: 
+                self.log.debug('playing sound')
+                self.test_spi = self.sounds.playSound('deep_space')
+            elif self.test_spi.isPaused():
+                self.log.debug('resuming sound')
+                self.test_spi.play()
+            self.log.debug('test sound length: %f' % self.test_spi.getLength())
+        elif action == "stop_sound":
+            if self.test_spi:
+                self.log.debug('stopping sound')
+                self.test_spi.stop()
+        elif action == "pause_sound":
+            if self.test_spi:
+                self.log.debug('pausing sound')                
+                self.test_spi.pause()
+                self.log.debug('play rate now is: %f' % self.test_spi.getPlayRate())
+        elif action == "more_volume":
+            if self.test_spi:
+                self.log.debug('increasing volume')
+                self.test_spi.setVolume(self.test_spi.getVolume() + 0.1)
+        elif action == "less_volume":
+            if self.test_spi:
+                self.log.debug('decreasing volume')
+                self.test_spi.setVolume(self.test_spi.getVolume() - 0.1)
+        elif action == "less_rate":
+            if self.test_spi:
+                self.log.debug('decreasing rate')
+                self.test_spi.setPlayRate(self.test_spi.getPlayRate() - 0.1)
+        elif action == "more_rate":
+            if self.test_spi:
+                self.log.debug('increasing rate')
+                self.test_spi.setPlayRate(self.test_spi.getPlayRate() + 0.1)
+        elif action == "delete_sound":
+            if self.test_spi:
+                self.log.debug('deleting sound')
+                del self.test_spi        
         else:
             return False
         return True
