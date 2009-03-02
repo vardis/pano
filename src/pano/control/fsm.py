@@ -36,8 +36,24 @@ class FSMState:
     def update(self, millis):
         pass
     
+    def suspend(self):
+        """
+        Called when the state is about to get suspended in order to disable any functionalities.        
+        """
+        pass
+    
+    def resume(self):
+        """
+        Called when the state should resume from where it was suspended.
+        """
+        pass
+    
     def registerMessages(self):
-        return None
+        """
+        Returns a list of event names that this FSMState instance is interested in receiving.
+        A subscription will then be done for these messages.
+        """ 
+        return []
 
     def onMessage(self, msg, *args):
         """
@@ -69,13 +85,15 @@ class FSM:
     
     def __init__(self, gameRef = None):
                 
-        self.log = logging.getLogger('pano.fsm_state')
+        self.log = logging.getLogger('pano.fsm')
         self.game = gameRef                    
         self.states = {}    # a list of the names of all valid states for this FSM        
         self.globalState = None
         self.currentState = None
         self.previousGlobalState = None
         self.previousState = None                
+        self.statesStack = []
+        self.globalStatesStack = []
         
     def getGlobalState(self):
         return self.globalState                
@@ -108,7 +126,7 @@ class FSM:
         if self.currentState is not None:
             self.currentState.update(millis)
             
-    def changeState(self, stateName):
+    def changeState(self, stateName, pushNew=False, popOld=False):
         '''
         Changes the current state to the given state. 
         The new state must be a member of the FSM's set of allowable states
@@ -120,12 +138,16 @@ class FSM:
         if stateName not in self.states.keys():
             return False
         
-        if self.currentState is not None:
+        # when pushing a different stae, we don't need to call exit on the old
+        if self.currentState is not None and not pushNew:
             self.currentState.exit()
             
         self.previousState = self.currentState
         self.currentState = self.states[stateName]
-        self.currentState.enter()
+        
+        # when poping an old state, we don't need to call enter again on it
+        if not popOld:
+            self.currentState.enter()
         return True
         
     def changeGlobalState(self, stateName):
@@ -155,6 +177,29 @@ class FSM:
         self.globalState = self.states[stateName]
         self.globalState.enter()      
         return True  
+    
+    def pushState(self, stateName):
+        """
+        Sets the specified state as the new current state but doesn't exit the previous state.
+        The old state is not exited but remains ready to be resumed when popState will be called. 
+        """
+        self.statesStack.append(self.currentState.NAME)
+        self.changeState(stateName, True, False)
+    
+    def popState(self):
+        """
+        Resumes the previously active state.
+        As the previously active state was not exited, there won't be a call to its enter method.
+        """
+        assert len(self.statesStack) > 0, 'popState called on empty state stack'
+        self.changeState(self.statesStack.pop(), False, True)
+    
+    def revertState(self,):
+        """
+        Returns to the previously active state.
+        """
+        self.changeState(self.previousState)
+        
     
     def allowPausing(self):
         if self.currentState is not None:
