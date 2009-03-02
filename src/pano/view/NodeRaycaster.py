@@ -65,24 +65,24 @@ class NodeRaycaster:
             self.collisionsQueue.sortEntries()
             cEntry = self.collisionsQueue.getEntry(0)
             
-            if self.log.isEnabledFor(logging.DEBUG):
-                self.log.debug(cEntry)
+#            if self.log.isEnabledFor(logging.DEBUG):
+#                self.log.debug(cEntry)
             
             #We have the point and normal of the collision
             p = cEntry.getSurfacePoint(render)
             n = cEntry.getSurfaceNormal(render)
-            if self.log.isEnabledFor(logging.DEBUG):
-                self.log.debug("%s, %s", p, n)
+#            if self.log.isEnabledFor(logging.DEBUG):
+#                self.log.debug("%s, %s", p, n)
             
             face = self.renderer.findFaceFromNormal(n)
-            if self.log.isEnabledFor(logging.DEBUG):
-                self.log.debug("%d", face)
+#            if self.log.isEnabledFor(logging.DEBUG):
+#                self.log.debug("%d", face)
             
             # get the coordinates of the hit point in the local coordinate
             # system of the respective cubemap face
             x, y = self.renderer.getFaceLocalCoords(face, p)
-            if self.log.isEnabledFor(logging.DEBUG):
-                self.log.debug("%f, %f", x, y)
+#            if self.log.isEnabledFor(logging.DEBUG):
+#                self.log.debug("%f, %f", x, y)
             
-            return face, x, y
+            return (face, x, y)
             

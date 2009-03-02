@@ -448,13 +448,13 @@ class NodeRenderer:
         [0..1] range.
         """
         
-        if self.log.isEnabledFor(logging.DEBUG):
-            self.log.debug('getFaceLocalCoords for point %s', p)    
+#        if self.log.isEnabledFor(logging.DEBUG):
+#            self.log.debug('getFaceLocalCoords for point %s', p)    
         mat = self.worldToFaceMatrices[face]        
         fp = mat.xformPoint(p)
         
-        if self.log.isEnabledFor(logging.DEBUG):        
-            self.log.debug('face point is %s while inversed transformed back to world is %s', str(fp), str(self.faceToWorldMatrices[face].xformPoint(fp)))
+#        if self.log.isEnabledFor(logging.DEBUG):        
+#            self.log.debug('face point is %s while inversed transformed back to world is %s', str(fp), str(self.faceToWorldMatrices[face].xformPoint(fp)))
         if fp.getX() < NodeRenderer.EPSILON_POS:
             return (fp.getY(), fp.getZ())
         elif fp.getY() < NodeRenderer.EPSILON_POS:
