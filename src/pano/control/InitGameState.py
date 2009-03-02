@@ -47,7 +47,8 @@ class InitGameState(FSMState):
                               PanoConstants.CVAR_RESOURCES_PLAYLISTS : PanoConstants.RES_TYPE_PLAYLISTS,
                               PanoConstants.CVAR_RESOURCES_SOUNDS : PanoConstants.RES_TYPE_SOUNDS,
                               PanoConstants.CVAR_RESOURCES_VIDEOS : PanoConstants.RES_TYPE_VIDEOS,
-                              PanoConstants.CVAR_RESOURCES_MAPPINGS : PanoConstants.RES_TYPE_MAPPINGS
+                              PanoConstants.CVAR_RESOURCES_MAPPINGS : PanoConstants.RES_TYPE_MAPPINGS,
+                              PanoConstants.CVAR_RESOURCES_ITEMS : PanoConstants.RES_TYPE_ITEMS
                               }
 
         res = self.getGame().getResources()
@@ -98,14 +99,7 @@ class InitGameState(FSMState):
             game.enableDebugConsole()
             
         # load global input mappings
-        game.getInput().setGlobalMappings('global')
-        
-        # loads language files and fonts localizations
-        game.getI18n().initialize()
-        
-        game.getMusic().initialize()
-        game.getMusic().setPlaylist(game.getResources().loadPlaylist('main-music'))
-#        game.getMusic().play()
+        game.getInput().setGlobalMappings('global')                
         
         # sets window settings and hides the system mouse
         winProps = { 
@@ -116,8 +110,11 @@ class InitGameState(FSMState):
         }
         game.getView().setWindowProperties(winProps)
         game.getView().openWindow()
-        game.getView().initialize()        
-         
+        game.getView().initialize()
+        
+        # init components
+        game.getI18n().initialize()        
+        game.getMusic().initialize()
 #   
     def exit(self):
         pass            
