@@ -19,8 +19,7 @@ class SoundPlaybackInterface():
         self.setLoop(loop)
         
         # checks for pause->resume transition
-        if self.isPaused():
-            print 'resuming...'            
+        if self.isPaused():                    
             self.pandaSound.setPlayRate(self.prevRate)
             self.pandaSound.setTime(self.pauseTime)
             
@@ -36,8 +35,7 @@ class SoundPlaybackInterface():
         else:
             return self.pandaSound.getLoopCount()
     
-    def setLoop(self, loop):
-        print 'SET LOOP ', loop
+    def setLoop(self, loop):        
         if type(loop) == bool:            
             self.pandaSound.setLoop(loop)
         elif type(loop) == int:
@@ -119,5 +117,10 @@ class SoundPlaybackInterface():
         """
         self.pandaSound.setTime(t)
         
+    def isPlaying(self):
+        """
+        Returns True if the sound is currently playing or False if otherwise.
+        """        
+        return self.pandaSound.status() == 2
     
     
