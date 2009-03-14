@@ -3,6 +3,7 @@ import logging
 from direct.gui.OnscreenImage import OnscreenImage
 from pandac.PandaModules import TransparencyAttrib
 from pandac.PandaModules import CullBinManager
+from pandac.PandaModules import Point3
 from direct.task.Task import Task
 
 from constants import PanoConstants
@@ -15,7 +16,7 @@ class MousePointerDisplay:
         self.game = game
         self.resources = game.getResources()
         
-        self.scale = 0.1
+        self.defaultScale = 0.05
         
         self.pointer = None
         
@@ -36,7 +37,7 @@ class MousePointerDisplay:
         self.pointerParentNP = aspect2d.attachNewNode('mousePointer')
         
         # create a GUI Layer for the pointer
-        CullBinManager.getGlobalPtr().addBin('mouse_pointer', CullBinManager.BTUnsorted, 60)
+        CullBinManager.getGlobalPtr().addBin(PanoConstants.MOUSE_CULL_BIN_NAME, CullBinManager.BTUnsorted, PanoConstants.MOUSE_CULL_BIN_VAL)
         
         # add task that updates the location of the mouse pointer
         taskMgr.add(self.updatePointerLocationTask, PanoConstants.TASK_MOUSE_POINTER)
@@ -80,9 +81,12 @@ class MousePointerDisplay:
     def _destroyPointer(self):
         if self.mousePointer is not None:
             if self.isImagePointer:
-                self.mousePointer.destroy()
+                self.mousePointer.destroy()                
             else:
                 self.mousePointer.removeNode()
+            self.mousePointer = None
+            self.pointer = None
+            self.mouseHidden = True
     
     def getScale(self):
         return self.scale
@@ -120,23 +124,46 @@ class MousePointerDisplay:
                 self.mousePointer = loader.loadModel(fullPath)
                 self.mousePointer.reparentTo(self.pointerParentNP)
             else:
-                self.isImagePointer = True
-                texPath = self.game.getResources().getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, self.pointer.getTexture())
-                self.mousePointer = OnscreenImage(image = texPath, pos = (0.5, 0, 0.5), scale=self.scale, parent=self.pointerParentNP)
-                self.mousePointer.setTransparency(TransparencyAttrib.MAlpha)
+                self.setImageAsPointer(self.pointer.getTexture(), self.pointer.getScale())
                 
-            self.mousePointer.setBin('mouse_pointer', 0)
+            self.mousePointer.setBin(PanoConstants.MOUSE_CULL_BIN_NAME, 0)
             self.mousePointer.setDepthTest(False)
             self.mousePointer.setDepthWrite(False)            
             self.mouseHidden = False
             
-        return True            
+        return True   
+    
+    def setImageAsPointer(self, image, scale = None):
+        self._destroyPointer()
+        self.isImagePointer = True        
+        texPath = self.game.getResources().getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, image)
+        if texPath is not None:
+            x, y = 0, 0
+            if base.mouseWatcherNode.hasMouse():
+                x=base.mouseWatcherNode.getMouseX()
+                y=base.mouseWatcherNode.getMouseY()
+                                                        
+            self.mousePointer = OnscreenImage(
+                                              parent=self.pointerParentNP, 
+                                              image = texPath, 
+                                              pos = aspect2d.getRelativePoint(render2d, Point3(x - 0.05, 0, y)), 
+                                              scale = scale if scale is not None else self.defaultScale 
+                                              )
+            self.mousePointer.setTransparency(TransparencyAttrib.MAlpha)
+            self.mousePointer.setBin(PanoConstants.MOUSE_CULL_BIN_NAME, 0)
+            self.mousePointer.setDepthTest(False)
+            self.mousePointer.setDepthWrite(False)            
+            self.mouseHidden = False
+            return True
+        else:
+            return False
             
-    def updatePointerLocationTask(self, task):        
-        if self.mousePointer is not None and not self.mouseHidden and self.isImagePointer and base.mouseWatcherNode.hasMouse() and not self.game.isPaused():
-            x=base.mouseWatcherNode.getMouseX()
-            y=base.mouseWatcherNode.getMouseY()            
-            self.mousePointer.setPos(x - 0.05, 0, y)
+    def updatePointerLocationTask(self, task):   
+        if base.mouseWatcherNode.hasMouse():     
+            if self.mousePointer is not None and not self.mouseHidden and self.isImagePointer and base.mouseWatcherNode.hasMouse() and not self.game.isPaused():
+                x=base.mouseWatcherNode.getMouseX()
+                y=base.mouseWatcherNode.getMouseY()            
+                self.mousePointer.setPos(aspect2d.getRelativePoint(render2d, Point3(x - 0.05, 0, y)))
             
         return Task.cont
 
