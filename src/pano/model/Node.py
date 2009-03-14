@@ -5,70 +5,74 @@ class Node:
     Represents the model of a game node, i.e. a static panoramic view of the
     game environment from a specific viewpoint.
     """
-    def __init__(self, name = '', desc = '', hotspots = []):
+    def __init__(self, name = '', desc = '', hotspots = None, scriptName = None, lookat = None):
         """
-        Initializes a new instance with the given values for its members
+        Initialises a new instance with the given values for its members
         """
-        self.__name = name
-        self.__description = desc
-        self.__cubemap = None
-        self.__image = None
-        self.__hotspots = hotspots            
+        self.name = name
+        self.description = desc
+        self.cubemap = None
+        self.image = None
+        self.hotspots = hotspots if hotspots is not None else {}
+        self.scriptName = scriptName if scriptName is not None else name            
+        self.lookat = lookat
 
     def getCubemap(self):
-        return self.__cubemap
+        return self.cubemap
 
 
     def getImage(self):
-        return self.__image
+        return self.image
 
 
     def setCubemap(self, value):
-        self.__cubemap = value
+        self.cubemap = value
 
 
     def setImage(self, value):
-        self.__image = value
+        self.image = value
 
 
     def getName(self):
-        return self.__name
+        return self.name
 
 
     def getDescription(self):
-        return self.__description
+        return self.description
 
 
     def getHotspots(self):
-        return self.__hotspots
+        return self.hotspots.values()
 
 
     def setName(self, value):
-        self.__name = value
+        self.name = value
 
 
     def setDescription(self, value):
-        self.__description = value
+        self.description = value
 
 
     def setHotspots(self, value):
-        self.__hotspots = value
-
+        self.hotspots = value
 
     def addHotspot(self, hotspot):
-        self.__hotspots.append(hotspot)
+        self.hotspots[hotspot.getName()] = hotspot
         
-
-    name = property(getName, setName, None, "Name's Docstring")
-
-    description = property(getDescription, setDescription, None, "Description's Docstring")
-
-    hotspots = property(getHotspots, setHotspots, None, "Hotspots's Docstring")
-
-    cubemap = property(getCubemap, setCubemap, None, "Cubemap's Docstring")
-
-    image = property(getImage, setImage, None, "Image's Docstring")
+    def getHotspot(self, name):
+        return self.hotspots.get(name)
         
+    def getScriptName(self):
+        return self.scriptName
+    
+    def setScriptName(self, scriptName):
+        self.scriptName = scriptName
+        
+    def getLookAt(self):
+        return self.lookat
+    
+    def setLookAt(self, lookat):
+        self.lookat = lookat
         
         
     

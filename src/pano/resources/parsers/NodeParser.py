@@ -11,6 +11,8 @@ class NodeParser:
     NODE_OPT_DESC    = 'description'
     NODE_OPT_CUBEMAP = 'cubemap'
     NODE_OPT_IMAGE   = 'image'
+    NODE_OPT_SCRIPT  = 'script'
+    NODE_OPT_LOOKAT  = 'lookat'
     
     HOTSPOT_OPT_LOOKTEXT    = 'look_text'
     HOTSPOT_OPT_FACE        = 'face'    
@@ -57,6 +59,12 @@ class NodeParser:
                 
             if cfg.has_option(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_IMAGE):
                 node.setImage(cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_IMAGE))
+                
+            if cfg.has_option(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_SCRIPT):
+                node.setScriptName(cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_SCRIPT))
+                
+            if cfg.has_option(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_LOOKAT):
+                node.setLookAt(cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_LOOKAT))
                 
             for s in cfg.sections():
                 if s.startswith('hotspot_'):
