@@ -20,7 +20,7 @@ class PanoConstants:
     TASK_MUSIC = 'music_task'
     
     
-    # names of the configuration variables
+    # names of the configuration variables that define locations for each resource type
     CVAR_WIN_TITLE = 'game_title'
     CVAR_WIN_WIDTH = 'display_width'
     CVAR_WIN_HEIGHT = 'display_height'
@@ -44,6 +44,7 @@ class PanoConstants:
     CVAR_RESOURCES_VIDEOS = 'resources_videos'
     CVAR_RESOURCES_MAPPINGS = 'resources_mappings'
     CVAR_RESOURCES_ITEMS = 'resources_items'
+    CVAR_RESOURCES_SCRIPTS = 'resources_scripts'
     
     # names of the cvars which are related to the talk box
     CVAR_TALKBOX_X         = 'talkbox_x'
@@ -108,6 +109,7 @@ class PanoConstants:
     RES_TYPE_VIDEOS = 10
     RES_TYPE_MAPPINGS = 11
     RES_TYPE_ITEMS = 12
+    RES_TYPE_SCRIPTS = 13
     RES_TYPE_ALL = 100
     
     #Constants for the predefined mouse pointers
