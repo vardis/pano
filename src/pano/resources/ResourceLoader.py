@@ -183,7 +183,22 @@ class ResourceLoader:
             return None
         else:
             return item
-        
+
+    def loadScript(self, name):
+        '''
+        Loads the content of the specified script file and returns it as a string.
+        '''
+        filename = name + '.py'
+        resPath = self.getResourceFullPath(PanoConstants.RES_TYPE_SCRIPTS, filename)
+        istream = None
+        try:
+            istream = codecs.open(resPath, 'r', "utf-8")
+            return istream.read()
+        except Exception,e:
+            self.log.exception('Failed to load script file: %s' % filename)
+        finally:
+            if istream is not None:
+                istream.close()
         
     def loadGeneric(self, resType, resObj, filename):
         assert resType is not None and resType != PanoConstants.RES_TYPE_ALL, 'invalid resource type in loadGeneric'

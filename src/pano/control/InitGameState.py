@@ -1,5 +1,5 @@
 import logging
-import os
+import os, platform
 from ConfigParser import SafeConfigParser
 
 from pandac.PandaModules import getModelPath
@@ -48,7 +48,8 @@ class InitGameState(FSMState):
                               PanoConstants.CVAR_RESOURCES_SOUNDS : PanoConstants.RES_TYPE_SOUNDS,
                               PanoConstants.CVAR_RESOURCES_VIDEOS : PanoConstants.RES_TYPE_VIDEOS,
                               PanoConstants.CVAR_RESOURCES_MAPPINGS : PanoConstants.RES_TYPE_MAPPINGS,
-                              PanoConstants.CVAR_RESOURCES_ITEMS : PanoConstants.RES_TYPE_ITEMS
+                              PanoConstants.CVAR_RESOURCES_ITEMS : PanoConstants.RES_TYPE_ITEMS,
+                              PanoConstants.CVAR_RESOURCES_SCRIPTS : PanoConstants.RES_TYPE_SCRIPTS
                               }
 
         res = self.getGame().getResources()
@@ -82,7 +83,9 @@ class InitGameState(FSMState):
         
     def enter(self):
         if self.log.isEnabledFor(logging.DEBUG):
-            self.log.debug('entered initial state') 
+            self.log.debug('entered initial state')
+            
+        self.printPlatformInformation() 
         
         game = self.getGame()
         
@@ -124,4 +127,17 @@ class InitGameState(FSMState):
         if self.millis > 2:
             self.getGame().getState().changeState(IntroState.NAME)
 
+    def printPlatformInformation(self):
+        di = base.pipe.getDisplayInformation()
+        self.log.info('********************')
+        self.log.info('Platform Information')
+        self.log.info('********************')
+        self.log.info('**Platform ID: %s' % platform.platform())
+        self.log.info('**CPU ID: %s \t %s' % (di.getCpuVendorString(), di.getCpuBrandString()))
+        self.log.info('**Physical memory: %s total, %s available' % (di.getPhysicalMemory(), di.getAvailablePhysicalMemory()))
+        self.log.info('**Display driver: ')
+        self.log.info('**Shader model: %s' % di.getShaderModel())
+        self.log.info('**Texture memory: %s' % di.getTextureMemory())
+        self.log.info('**Python version: %s, build: %s' % (platform.python_version(), platform.python_build()))
+        
 	
