@@ -131,10 +131,14 @@ class Inventory:
 #        if self.hasItem(itemName):
 #            self.incrementItemCount(itemName, 1)
 #        else:
-        itemObj = self.game.getResources().loadItem(itemName)
-        self.items[itemName] = itemObj
-        self.getFreeSlot().setItem(itemObj)
-        self.msn.sendMessage(PanoConstants.EVENT_ITEM_ADDED, [itemName])
+        slot = self.getFreeSlot()
+        if slot is not None:
+            itemObj = self.game.getResources().loadItem(itemName)
+            self.items[itemName] = itemObj
+            self.getFreeSlot().setItem(itemObj)
+            self.msn.sendMessage(PanoConstants.EVENT_ITEM_ADDED, [itemName])
+        else:
+            self.log.error('Could not find a free slot to add item %s' % itemName)
             
     def removeItem(self, itemName):
         """
