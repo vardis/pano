@@ -16,7 +16,8 @@ class ResourcesTypes:
 			PanoConstants.RES_TYPE_PLAYLISTS : ('.mpl'),
 			PanoConstants.RES_TYPE_VIDEOS : ('.wmv', '.flv', '.asf', '.avi', '.mpg', '.ogg', '.ogm', '.mov'),
 			PanoConstants.RES_TYPE_MAPPINGS : ('.mappings'),
-			PanoConstants.RES_TYPE_ITEMS : ('.item')
+			PanoConstants.RES_TYPE_ITEMS : ('.item'),
+			PanoConstants.RES_TYPE_SCRIPTS : ('.py')
 	}
 
 	def getExtensions(resType):
