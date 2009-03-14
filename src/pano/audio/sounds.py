@@ -43,24 +43,12 @@ class SoundsPlayer():
         
         Returns: a Sound object or None if playback failed
         """
-        snd = self.game.getResources().loadSound(sndName)
-        spath = self.game.getResources().getResourceFullPath(PanoConstants.RES_TYPE_SOUNDS, snd.getSoundFile())
-        spi = SoundPlaybackInterface(loader.loadSfx(spath))
-        loopVal = loop
-        if not loopVal:
-            loopVal = snd.getLoop()
-                        
-        if rate is not None:    
-            spi.setPlayRate(rate)
-        else:
-            spi.setPlayRate(snd.getPlayRate())
-                        
-        spi.play(loopVal)
-        spi.setVolume(self.volume)
-        spi.setBalance(self.balance)
-        self.sounds.append(weakref.ref(spi))
-        return spi
+        snd = self.game.getResources().loadSound(sndName)        
+                
+        loopVal = loop if loop is not None else snd.getLoop()
+        rateVal = rate if rate is not None else snd.getPlayRate()        
         
+        return self.playSoundFile(snd.getSoundFile(), loopVal, rateVal)                    
     
     def playSoundFile(self, filename, loop=False, rate=1.0):
         """
@@ -68,15 +56,15 @@ class SoundsPlayer():
         
         Returns: a Sound object or None if playback failed
         """
-        fp = self.game.getResources().getResourceFullPath(filename)
+        fp = self.game.getResources().getResourceFullPath(PanoConstants.RES_TYPE_SOUNDS, filename)
         sound = loader.loadSfx(fp)
-        sound.setLoop(loop)
-        sound.setPlayRate(rate)
-        sound.play()
-        sound.setVolume(self.volume)
-        sound.setBalance(self.balance)
-        
         spi = SoundPlaybackInterface(sound)
+        spi.setLoop(loop)
+        spi.setPlayRate(rate)
+        spi.setVolume(self.volume)
+        spi.setBalance(self.balance)
+        spi.play()                
+        
         self.sounds.append(weakref.ref(spi))
         return spi
     
