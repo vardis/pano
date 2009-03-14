@@ -5,7 +5,7 @@ class Sound:
     Sound resources are defined in .snd files. 
     """
     
-    def __init__(self, name, soundFile = None, volume = 1.0, balance = 0.0, node = None, cutOff = None, rate = 1.0):
+    def __init__(self, name, soundFile = None, volume = 1.0, balance = 0.0, node = None, cutOff = None, rate = 1.0, subtitles = None):
         self.name = name            # the logical name of the sound
         self.soundFile = soundFile  # the filename of the actual sound data
         self.volume = volume        # the sound's volume
@@ -14,6 +14,7 @@ class Sound:
         self.cutOff = cutOff        # the cut off distance
         self.rate = rate            # the play rate
         self.loop = False           # True/False if the sound should loop, or an integer value specifying the loop count
+        self.subtitles = subtitles  # the key of the message to display as subtitles to this sound
     
     def getName(self):
         return self.name
@@ -63,6 +64,11 @@ class Sound:
     def setLoop(self, loop):
         self.loop = loop
             
+    def getSubtitles(self):
+        return self.subtitles
+    
+    def setSubtitles(self, subs):
+        self.subtitles = subs
             
     
     
