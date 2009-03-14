@@ -3,7 +3,7 @@ import logging.config
  
 # defer opening of the main window until we read the window properties from the
 # configuration and setup a WindowProperties to initialise the window.
-from pandac.PandaModules import loadPrcFileData
+#from pandac.PandaModules import loadPrcFileData
 #loadPrcFileData("", "want-directtools #t")
 #loadPrcFileData("", "want-tk #t")
 #loadPrcFileData("", "window-type none")
@@ -108,6 +108,7 @@ class PanoGame:
         self.fsm.changeState(InitGameState.NAME)
         
         # create and start the main game loop task
+        globalClock.setMaxDt(0.1)
         self.gameTask = taskMgr.add(self.gameLoop, PanoConstants.TASK_GAME_LOOP)
         
         return Task.done
@@ -244,7 +245,7 @@ class PanoGame:
     def quit(self):
         self.quitRequested = True
 
-#os.chdir(sys.argv[1])
+os.chdir(sys.argv[1])
 
 game = PanoGame()
 taskMgr.add(game.initialise, "Game initialisation task")
