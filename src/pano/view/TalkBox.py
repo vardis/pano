@@ -14,6 +14,8 @@ class TalkBox:
         self.timeout = None
         self.accumTime = 0.0
         
+        self.activeSound = None     # the sound we play due to a call to self.say
+        
         # the font resource
         self.__font = None
         
@@ -37,10 +39,39 @@ class TalkBox:
     def update(self, millis):
         if self.timeout is not None:        
             self.accumTime += millis
+#            print self.accumTime
             if (self.timeout - self.accumTime) <= 0:
                 self.timeout = None
-                self.accumTime = 0.0
+                self.accumTime = 0.0                
                 self.hide()
+                
+        if self.activeSound is not None and not self.activeSound.isPlaying():
+            self.activeSound.stop()
+            self.activeSound = None
+            
+                
+    def say(self, soundName):
+        """
+        Given the name of a high level sound resource (i.e. a .snd filename without the extension) it will play
+        the sound and display its subtitles for the duration of the sound.
+        """
+        snd = self.game.getResources().loadSound(soundName)
+        if snd is not None:
+            self.activeSound = self.game.getSoundsFx().playSound(soundName)            
+            self.showText(snd.getSubtitles(), self.activeSound.getLength())
+        else:
+            self.log.error('Could not find sound named: %s' % soundName)
+            
+    def interrupt(self):
+        """
+        Interrupts the last say or showText operations by stopping the sound and hiding the text. 
+        """
+        if self.activeSound is not None:
+            self.activeSound.stop()
+            self.activeSound = None
+            
+        self.timeout = None
+        self.hide()
         
     def showText(self, text, timeout=None, textColor = None):
         
