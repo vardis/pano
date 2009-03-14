@@ -1,6 +1,8 @@
 import logging
 
 from pandac.PandaModules import WindowProperties
+from direct.showbase.Transitions import Transitions
+
 from NodeRenderer import NodeRenderer
 from constants import PanoConstants
 from MousePointerDisplay import MousePointerDisplay
@@ -22,7 +24,8 @@ class GameView:
         self.mousePointer = MousePointerDisplay(gameRef)
         self.inventory = InventoryView(gameRef)
         self.__talkBox = TalkBox(gameRef)         
-        self.activeNode = None   
+        self.activeNode = None
+        self.transition = None   
         
     def initialize(self):
         self.windowProperties = base.win.getProperties()
@@ -32,6 +35,7 @@ class GameView:
         self.raycaster.initialize()
         self.__talkBox.initialize()
         self.inventory.initialize(self.game.getInventory())
+        self.transition = Transitions(loader)
                      
 
     def getTalkBox(self):
@@ -110,6 +114,33 @@ class GameView:
         self.panoRenderer.render(millis)
         self.talkBox.update(millis)
         self.inventory.update(millis)
+        
+    def fadeIn(self, seconds):
+        """
+        Fades in the camera view in the specified duration in seconds.
+        """
+        self.transition.fadeIn(seconds)
+    
+    def fadeOut(self, seconds):
+        """
+        Fades out the camera view in the specified duration in seconds.
+        """
+        self.transition.fadeOut(seconds)
+        
+    def hideLetterBox(self, seconds):
+        """
+        Hides the black bars from the camera view in the specified duration in seconds.
+        """
+        self.transition.letterboxOff(seconds)
+    
+    def showLetterBox(self, seconds):
+        """
+        Shows the black bars from the camera view in the specified duration in seconds.
+        """
+        self.transition.letterboxOn(seconds)
+        
+    def captureMovie(self, name, duration, fps = 30, source = None):
+        base.movie(name, duration, fps, 'png', 4, source)
         
     def convertScreenToAspectCoords(self, pointsList):
         wp = self.getWindowProperties()
