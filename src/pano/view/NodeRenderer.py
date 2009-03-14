@@ -136,8 +136,7 @@ class NodeRenderer:
         self.cmap.setScale(10, 10, 10)  # scale up a bit the numbers for precision
         self.cmap.setPos(0,0,0)
         
-        self.debugGeomsParent = self.cmap.attachNewNode(PanoConstants.NODE_DEBUG_GEOMS_PARENT)        
-        self.spritesParent = self.cmap.attachNewNode(PanoConstants.NODE_SPRITES_PARENT)
+        
         
         # disable depth write for the cube map
         self.cmap.setDepthWrite(False)    
@@ -192,15 +191,27 @@ class NodeRenderer:
         Sets the scene to an initial state by destroying any rendering resources allocated that far
         for rendering the previously active node.
         """
-        # remove and destroy debug geometries
-        debugGeoms = self.debugGeomsParent.getChildrenAsList()            
-        for box in debugGeoms:
-            box.removeNode()            
+        # remove and destroy debug geometries        
+        if self.debugGeomsParent is not None:
+            debugGeoms = self.debugGeomsParent.getChildrenAsList()            
+            for box in debugGeoms:
+                box.removeNode()
+            self.debugGeomsParent.node().removeAllChildren()           
+            self.debugGeomsParent.removeNode() 
             
         # same for hotspots        
-        hotspots = self.spritesParent.getChildrenAsList()            
-        for hp in hotspots:
-            hp.removeNode()
+        if self.spritesParent is not None:
+            hotspots = self.spritesParent.getChildrenAsList()            
+            for hp in hotspots:                
+                if hp.hasPythonTag('video'):
+                    video = hp.getPythonTag('video')
+                    video.stop()
+                hp.removeNode()
+            self.spritesParent.node().removeAllChildren()
+            self.spritesParent.removeNode()
+            
+        self.debugGeomsParent = self.cmap.attachNewNode(PanoConstants.NODE_DEBUG_GEOMS_PARENT)        
+        self.spritesParent = self.cmap.attachNewNode(PanoConstants.NODE_SPRITES_PARENT)
             
         self.sprites.clear()
         
@@ -478,7 +489,16 @@ class NodeRenderer:
         elif math.fabs(n[0]) < NodeRenderer.EPSILON_POS and math.fabs(n[2]) < NodeRenderer.EPSILON_POS:
             return m.xformPoint(VBase3(p[0], 0.0, p[1]))
         else:
-            return m.xformPoint(VBase3(0.0, p[0], p[1]))                               
+            return m.xformPoint(VBase3(0.0, p[0], p[1]))           
+        
+    def getHotspotWorldPos(self, hotspot):
+        # gets position of hotspot's center in world space
+        dim = self.getFaceTextureDimensions(hotspot.getFace())
+        n = self.faceNormals[hotspot.getFace()]
+        t1 = (hotspot.xo + hotspot.width / 2.0) / dim[0]
+        t2 = (hotspot.yo + hotspot.height / 2.0) / dim[1]
+        centerPos = self.getWorldPointFromFacePoint(hotspot.getFace(), (t1, t2))
+        return centerPos               
 
     
     def findFaceFromNormal(self, n):
@@ -517,6 +537,12 @@ class NodeRenderer:
         Returns the NodePath of the cubemap model.
         """
         return self.cmap
+    
+    def getCamera(self):
+        '''
+        Returns the camera that is used for rendering this node.
+        '''
+        return base.camera
     
     
     def isFaceInFrustum(self, face):
