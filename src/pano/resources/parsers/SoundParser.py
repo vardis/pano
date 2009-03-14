@@ -14,6 +14,7 @@ class SoundParser:
     SOUND_OPT_RATE     = 'rate'
     SOUND_OPT_NODE     = 'node'
     SOUND_OPT_LOOP     = 'loop'
+    SOUND_OPT_SUBS     = 'subtitles'
     
     def __init__(self):
         self.log = logging.getLogger('pano.soundParser')
@@ -41,6 +42,9 @@ class SoundParser:
                 
             if cfg.has_option(SoundParser.SOUND_SECTION, SoundParser.SOUND_OPT_NODE):
                 sound.setNode(cfg.get(SoundParser.SOUND_SECTION, SoundParser.SOUND_OPT_NODE))                        
+                
+            if cfg.has_option(SoundParser.SOUND_SECTION, SoundParser.SOUND_OPT_SUBS):
+                sound.setSubtitles(cfg.get(SoundParser.SOUND_SECTION, SoundParser.SOUND_OPT_SUBS))
                 
             if cfg.has_option(SoundParser.SOUND_SECTION, SoundParser.SOUND_OPT_LOOP):
                 
