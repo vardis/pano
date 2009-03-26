@@ -29,7 +29,7 @@ class ResourcesTypes:
 	"""
 	resTypesExtensions = { 
 			PanoConstants.RES_TYPE_NODES : ('.node'),
-			PanoConstants.RES_TYPE_MODELS : ('.egg', '.egg.pz' ),
+			PanoConstants.RES_TYPE_MODELS : ('.egg', '.egg.pz', '.bam' ),
 			PanoConstants.RES_TYPE_TEXTURES : ('.jpg', '.bmp', '.tga', '.tif', '.png', '.dds'),
 			PanoConstants.RES_TYPE_FONTS : ('.font'),
 			PanoConstants.RES_TYPE_SOUNDS : ('.wav', '.ogg', '.midi', '.mp3', '.avi', '.mpg', '.mpeg', '.sound'),

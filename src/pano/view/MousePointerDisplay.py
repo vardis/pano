@@ -74,42 +74,29 @@ class MousePointerDisplay:
     def show(self):
         self.mouseHidden = False
         self.pointerParentNP.show()
-                 
-#        if self.pointer is not None:            
-#            if self.mousePointer is not None:
-#                if self.isImagePointer:
-#                    # trigger the actual display of the mouse pointer
-#                    self.mouseHidden = self.setByName(self.pointerName)
-#                else:
-#                    # bring the mouse node back in the scenegraph
-#                    self.mousePointer.reparentTo(aspect2d)
-#                    self.mouseHidden = False            
-#        else:
-#            self.mouseHidden = True
+ 
             
     """
     Hides the mouse pointer.
     For image based pointers, the associated OnScreenImage is destroyed with a call to the member function destroy().
     While for model based pointers the associated model node is simply removed from the scenegraph. 
     """
-    def hide(self):
-         self.mouseHidden = True
-         self.pointerParentNP.hide()
-#        if not self.mouseHidden:
-#            base.mouseWatcherNode.setGeometry(None)
-#            
-#            self._destroyPointer()
-#            
-#            self.mouseHidden = True
-#            self.pointer = None
-#            self.mousePointer = None        
+    def hide(self):        
+        self.mouseHidden = True
+        self.pointerParentNP.hide()
             
-    def _destroyPointer(self):
+    def _destroyPointer(self):        
         if self.mousePointer is not None:
             if self.isImagePointer:
                 self.mousePointer.destroy()                
             else:
                 self.mousePointer.removeNode()
+            
+            if self.pointerParentNP is not None:
+                self.pointerParentNP.node().removeAllChildren()
+                
+            self.isImagePointer = False
+            self.pointerImage = None
             self.mousePointer = None
             self.pointer = None
             self.mouseHidden = True
@@ -145,17 +132,23 @@ class MousePointerDisplay:
                 self.log.error("Could'nt find pointer: %s", pointerName)
                 return False
              
-            if self.pointer.getEggFile() is not None:
+            if self.pointer.getModelFile() is not None:                
                 self.isImagePointer = False
-                self.mousePointer = loader.loadModel(fullPath)
+                self.mousePointer = self.game.getResources().loadModel(self.pointer.getModelFile())
+                self.mousePointer.setScale(self.pointer.getScale() if self.pointer.getScale() is not None else self.defaultScale)
+                self.mousePointer.setTag('model', 'True')
                 self.mousePointer.reparentTo(self.pointerParentNP)
-            else:
+                self.isImagePointer = False
+                self.pointerImage = None
+            else:                
                 self.setImageAsPointer(self.pointer.getTexture(), self.pointer.getScale())
                 
+            self.mousePointer.setTransparency(TransparencyAttrib.MAlpha)            
             self.mousePointer.setBin(PanoConstants.MOUSE_CULL_BIN_NAME, 0)
             self.mousePointer.setDepthTest(False)
             self.mousePointer.setDepthWrite(False)            
             self.mouseHidden = False
+            self.show()
             
         return True   
     
@@ -175,11 +168,7 @@ class MousePointerDisplay:
                                               pos = aspect2d.getRelativePoint(render2d, Point3(x - 0.05, 0, y)), 
                                               scale = scale if scale is not None else self.defaultScale 
                                               )
-            self.mousePointer.setTransparency(TransparencyAttrib.MAlpha)
-            self.mousePointer.setBin(PanoConstants.MOUSE_CULL_BIN_NAME, 0)
-            self.mousePointer.setDepthTest(False)
-            self.mousePointer.setDepthWrite(False)            
-            self.mouseHidden = False
+            
             self.pointerImage = image
             return True
         else:
@@ -187,7 +176,7 @@ class MousePointerDisplay:
             
     def updatePointerLocationTask(self, task):   
         if base.mouseWatcherNode.hasMouse():     
-            if self.mousePointer is not None and not self.mouseHidden and self.isImagePointer and base.mouseWatcherNode.hasMouse() and not self.game.isPaused():
+            if self.mousePointer is not None and not self.mouseHidden  and base.mouseWatcherNode.hasMouse() and not self.game.isPaused():
                 x=base.mouseWatcherNode.getMouseX()
                 y=base.mouseWatcherNode.getMouseY()            
                 self.mousePointer.setPos(aspect2d.getRelativePoint(render2d, Point3(x - 0.05, 0, y)))
@@ -202,6 +191,6 @@ class MousePointerDisplay:
         ctx.addVar('image', self.pointerImage if self.pointer is None else '')
         return ctx
     
-    def onLoad(self, persistence):
+    def resumeState(self, persistence):
         pass
     

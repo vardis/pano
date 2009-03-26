@@ -27,9 +27,9 @@ class MousePointer:
     Properties for the mouse pointer. 
     """        
 
-    def __init__(self, name = '', eggFile = None, enableAlpha = False, texture = None, scale = 1.0):
+    def __init__(self, name = '', modelFile = None, enableAlpha = False, texture = None, scale = 1.0):
         self.__name = name
-        self.__eggFile = eggFile
+        self.modelFile = modelFile
         self.__texture = texture
         self.__enableAlpha = enableAlpha
         self.scale = scale
@@ -38,8 +38,8 @@ class MousePointer:
         return self.__name
 
 
-    def getEggFile(self):
-        return self.__eggFile
+    def getModelFile(self):
+        return self.modelFile
 
 
     def getTexture(self):
@@ -54,8 +54,8 @@ class MousePointer:
         self.__name = value
 
 
-    def setEggFile(self, value):
-        self.__eggFile = value
+    def setModelFile(self, value):
+        self.modelFile = value
 
 
     def setTexture(self, value):
@@ -72,8 +72,6 @@ class MousePointer:
         self.__enableAlpha = value
 
     name = property(getName, setName, None, "The name of the mouse pointer, it should be unique")
-
-    eggFile = property(getEggFile, setEggFile, None, "The filename containing the 3D model to display in place of the mouse pointer")
 
     texture = property(getTexture, setTexture, None, "The filename of the texture to use ass a mouse pointer")
 
