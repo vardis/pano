@@ -1,3 +1,26 @@
+'''
+    Copyright (c) 2008 Georgios Giannoudovardis, <vardis.g@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+'''
+
 import logging
 
 from cvars import ConfigVars
@@ -49,46 +72,47 @@ class CameraMouseControl:
     def __init__(self, gameRef):
         self.log = logging.getLogger('pano.camera')
         self.game = gameRef
+        self.active = False
         
     def initialize(self):
-        self.__isActive = False
-        self.__mouseHSpeed = self.game.getConfig().getFloat(PanoConstants.CVAR_CAM_HSPEED)
-        self.__mouseVSpeed =  self.game.getConfig().getFloat(PanoConstants.CVAR_CAM_VSPEED)
+        self.active = False
+        self.mouseHSpeed = self.game.getConfig().getFloat(PanoConstants.CVAR_CAM_HSPEED)
+        self.mouseVSpeed =  self.game.getConfig().getFloat(PanoConstants.CVAR_CAM_VSPEED)
 
-    def getIsActive(self):
-        return self.__isActive
+    def isActive(self):
+        return self.active
 
 
     def getMouseHSpeed(self):
-        return self.__mouseHSpeed
+        return self.mouseHSpeed
 
 
     def getMouseVSpeed(self):
-        return self.__mouseVSpeed
+        return self.mouseVSpeed
 
 
     def setIsActive(self, value):
-        self.__isActive = value
+        self.active = value
 
 
     def setMouseHSpeed(self, value):
-        self.__mouseHSpeed = value
+        self.mouseHSpeed = value
 
 
     def setMouseVSpeed(self, value):
-        self.__mouseVSpeed = value        
+        self.mouseVSpeed = value        
         
     def enable(self):
         """
         The controller is activated and any mouse movement will result in a change to the camera's orientation. 
         """        
-        self.__isActive = True
+        self.active = True
         
     def disable(self):
         """
         The camera will not be affected anymore by this controller.
         """        
-        self.__isActive = False
+        self.active = False
         
     def update(self, millisElapsed):
         """
@@ -99,7 +123,7 @@ class CameraMouseControl:
         The speed of rotation is controlled by the fields self.mouseHSpeed and self.mouseVSpeed and is frame depended
         by multiplying it with the elapsed time since the last update.
         """
-        if not self.__isActive:
+        if not self.active:
             return
         
         if base.mouseWatcherNode.hasMouse():
@@ -121,26 +145,22 @@ class CameraMouseControl:
             secs = millisElapsed / 1000.0
             if relX >= self.topX and relX <= (self.topX + self.topWidth) and relY >= self.topY and relY <= (self.topY + self.topHeight):
                 # Rotate around the global X axis in a counter-clockwise fashion                
-                x_rot = -self.__mouseVSpeed * secs
+                x_rot = -self.mouseVSpeed * secs
                 
             elif relX >= self.bottomX and relX <= (self.bottomX + self.bottomWidth) and relY >= self.bottomY and relY <= (self.bottomY + self.bottomHeight):
                 # Rotate around the global X axis in a clockwise fashion                
-                x_rot = self.__mouseVSpeed * secs
+                x_rot = self.mouseVSpeed * secs
             
             # check for left-right camera movement
             if relX >= self.leftX and relX <= (self.leftX + self.leftWidth) and relY >= self.leftY and relY <= (self.leftY + self.leftHeight):
                 # Rotate around the global Y axis in a counter-clockwise fashion                
-                y_rot = self.__mouseHSpeed * secs
+                y_rot = self.mouseHSpeed * secs
                 
             elif relX >= self.rightX and relX <= (self.rightX + self.rightWidth) and relY >= self.rightY and relY <= (self.rightY + self.rightHeight):
                 # Rotate around the global Y axis in a clockwise fashion            
-                y_rot = -self.__mouseHSpeed * secs
+                y_rot = -self.mouseHSpeed * secs
             
             hpr = base.camera.getHpr()            
             base.camera.setHpr((hpr[0] + y_rot) % 360, (hpr[1] + x_rot) % 360, hpr[2])            
 
-    isActive = property(getIsActive, setIsActive, None, "IsActive's Docstring")
 
-    mouseHSpeed = property(getMouseHSpeed, setMouseHSpeed, None, "MouseHSpeed's Docstring")
-
-    mouseVSpeed = property(getMouseVSpeed, setMouseVSpeed, None, "MouseVSpeed's Docstring")

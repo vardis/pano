@@ -1,8 +1,32 @@
-import fnmatch, dircache, os
-import logging
+'''
+    Copyright (c) 2008 Georgios Giannoudovardis, <vardis.g@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+'''
 
 from ResourcesLocation import AbstractResourceLocation
 from ResourcesTypes import ResourcesTypes
+import dircache
+import fnmatch
+import logging
+import os
 
 class DirectoryResourcesLocation(AbstractResourceLocation):
 	def __init__(self, directory, name, description, resTypes, hotswap=True, checkPeriod=10):
@@ -35,7 +59,7 @@ class DirectoryResourcesLocation(AbstractResourceLocation):
 		self.resourcesNames = [item for item in filenames if item.endswith(suffixes)]
 		self.resourcesNames.sort()
 		
-		print 'resource names ' , self.resourcesNames
+		print 'resource names ', self.resourcesNames
 
 	def containsResource(self, filename):
 		return self.resourcesNames.count(filename) > 0
@@ -46,7 +70,11 @@ class DirectoryResourcesLocation(AbstractResourceLocation):
 			return os.path.join(self.directory, name)
 		else:
 			return None
-		
+
+	def getResourceStream(self, name):
+		path = self.getResourceFullPath(name)
+		return open(path, 'r') if path is not None else None
+
 	def listResources(self, resType, fullPaths=True):
 		if resType in self.getResourcesTypes():
 			prefix = ''

@@ -1,3 +1,26 @@
+'''
+    Copyright (c) 2008 Georgios Giannoudovardis, <vardis.g@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+'''
+
 import logging
 import re
 
@@ -9,7 +32,7 @@ from messaging import Messenger
 
 class InventorySlot:
     """
-    Represents a free or occupied inventory slot. A slot is free if it's item field is None.
+    Represents a free or occupied inventory slot. A slot is free if its item field is None.
     """
     def __init__(self, num = -1, item = None, itemCount = 0):
         self.num = num        
@@ -183,5 +206,26 @@ class Inventory:
             if s.isFree():
                 return s
         return None
-            
+
+    def persistState(self, persistence):
+        '''
+        Saves the contents of the inventory into a persistence context.        
+        '''
+        ctx = persistence.createContext('inventory')
+        ctx.addVar('items', self.items)
+#        ctx.addVar('itemNames', self.items.keys())
+        ctx.addVar('slots', self.slots)
+        return ctx
+    
+    def restoreState(self, persistence, ctx):
+        self.log.debug('Restoring state...')
+#        self.items = {}
+#        itemsNames = ctx.getVar('itemNames')
+#        for name in itemsNames:
+#            itemObj = self.game.getResources().loadItem(name)
+#            self.items[name] = itemObj
+        self.items = ctx.getVar('items')
+        self.slots = ctx.getVar('slots')
+        self.msn.sendMessage(PanoConstants.EVENT_ITEMS_RESTORED)
+    
     

@@ -22,4 +22,40 @@ THE SOFTWARE.
 '''
 
 
-__all__ = [ "InitGameState", "fsm" ]
+class GameError(Exception):
+    def __init__(self, msg):
+        Exception.__init__(self, msg)
+        
+        
+class PersistenceError(GameError):
+    def __init__(self, msg, context):
+        GameError.__init__(self, msg)
+        self.context = context
+        
+    def __str__(self):
+        return 'An error has originated from the persistence layer: %s. Context name: %s' % (self.message, self.context.getName())    
+    
+class SaveGameError(GameError):
+    def __init__(self, msg):
+        GameError.__init__(self, msg)
+        
+class LoadGameError(GameError):
+    def __init__(self, msg):
+        GameError.__init__(self, msg)    
+    
+class ResourceError(GameError):
+    def __init__(self, msg):
+        GameError.__init__(self, msg)
+
+class GraphicsError(GameError):
+    def __init__(self, msg):
+        GameError.__init__(self, msg)
+
+class InputError(GameError):
+    def __init__(self, msg):
+        GameError.__init__(self, msg)
+
+class SoundError(GameError):
+    def __init__(self, msg):
+        GameError.__init__(self, msg)
+

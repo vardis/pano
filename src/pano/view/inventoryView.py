@@ -1,3 +1,26 @@
+'''
+    Copyright (c) 2008 Georgios Giannoudovardis, <vardis.g@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+'''
+
 import logging
 import re
 
@@ -343,7 +366,7 @@ class InventoryView:
         self.slotsLayout.enableDebugRendring(self.game)
         
     def disableDebugRendering(self):
-        self.slotsLayout.disableDebugRendering(self.game)
+        self.slotsLayout.disableDebugRendering(self.game)            
     
     def _createBackdrop(self, show = True):
         """
@@ -437,15 +460,6 @@ class InventoryView:
                 p, sz = self.slotsLayout.getRelativeSlotPosSize(s.getNum())
                 itemImage = s.getItem().getImage()
                 imagePath = self.game.getResources().getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, itemImage)
-#                iconNode = DirectButton(
-#                     parent=self.iconsNode,
-#                     pos=(p[0] + sz[0]/2.0, 0.0, p[1]+sz[1]/2.0),
-#                     image=imagePath,     
-#                     image_scale=0.2,                
-#                     frameColor=(0,0,0,0),                     
-#                     frameSize=(p[0], p[0]+sz[0], p[1], p[1]+sz[1]),                     
-#                     pressEffect=0
-#                     )
                 iconNode = OnscreenImage(
                                          parent=self.iconsNode, 
                                          image=imagePath, 

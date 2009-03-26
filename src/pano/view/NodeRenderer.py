@@ -1,3 +1,26 @@
+'''
+    Copyright (c) 2008 Georgios Giannoudovardis, <vardis.g@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+'''
+
 import os
 import math
 import logging
@@ -77,6 +100,7 @@ class NodeRenderer:
         #Stores the textures of the faces. E.g.:
         #frontTexture = self.faceTextures[CBM_FRONT_FACE]
         self.faceTextures = { }
+        self.facesGeomNodes = {}
         
         # the normal of each face, indexed by the face constant (e.g. PanoConstants.CBM_TOP_FACE) 
         self.faceNormals = {
@@ -104,6 +128,7 @@ class NodeRenderer:
         # the texture cards for sprites rendering are descedants of this node
         self.spritesParent = None
 
+    
     
     def initialize(self):
         # creates the root node 
@@ -136,8 +161,6 @@ class NodeRenderer:
         self.cmap.setScale(10, 10, 10)  # scale up a bit the numbers for precision
         self.cmap.setPos(0,0,0)
         
-        
-        
         # disable depth write for the cube map
         self.cmap.setDepthWrite(False)    
         
@@ -161,20 +184,21 @@ class NodeRenderer:
         # caches references to the textures of each cubemap face
         for i, n in self.cubeGeomsNames.items():
             geomNode = self.cmap.find("**/Cube/=name=" + n)
-            state = geomNode.node().getGeomState(0)                 
+            state = geomNode.node().getGeomState(0)
+            self.facesGeomNodes[i] = geomNode.node()
             tex = state.getAttrib(TextureAttrib.getClassType()).getTexture()
             self.faceTextures[i] = tex 
                                     
         # builds matrices used in transforming points from/to world space and the faces' image space
         self.buildWorldToFaceMatrices() 
         
-        if self.log.isEnabledFor(logging.DEBUG):
-            self.log.debug('testing isFaceInFrustum from front: %d', self.isFaceInFrustum(PanoConstants.CBM_FRONT_FACE))
-            self.log.debug('testing isFaceInFrustum from back: %d', self.isFaceInFrustum(PanoConstants.CBM_BACK_FACE))
-            self.log.debug('testing isFaceInFrustum from left: %d', self.isFaceInFrustum(PanoConstants.CBM_LEFT_FACE))
-            self.log.debug('testing isFaceInFrustum from right: %d', self.isFaceInFrustum(PanoConstants.CBM_RIGHT_FACE))
-            self.log.debug('testing isFaceInFrustum from top: %d', self.isFaceInFrustum(PanoConstants.CBM_TOP_FACE))
-            self.log.debug('testing isFaceInFrustum from bottom: %d', self.isFaceInFrustum(PanoConstants.CBM_BOTTOM_FACE))
+#        if self.log.isEnabledFor(logging.DEBUG):
+#            self.log.debug('testing isFaceInFrustum from front: %d', self.isFaceInFrustum(PanoConstants.CBM_FRONT_FACE))
+#            self.log.debug('testing isFaceInFrustum from back: %d', self.isFaceInFrustum(PanoConstants.CBM_BACK_FACE))
+#            self.log.debug('testing isFaceInFrustum from left: %d', self.isFaceInFrustum(PanoConstants.CBM_LEFT_FACE))
+#            self.log.debug('testing isFaceInFrustum from right: %d', self.isFaceInFrustum(PanoConstants.CBM_RIGHT_FACE))
+#            self.log.debug('testing isFaceInFrustum from top: %d', self.isFaceInFrustum(PanoConstants.CBM_TOP_FACE))
+#            self.log.debug('testing isFaceInFrustum from bottom: %d', self.isFaceInFrustum(PanoConstants.CBM_BOTTOM_FACE))
         
     def getNode(self):
         """
@@ -233,40 +257,8 @@ class NodeRenderer:
             
         self.node = node        
         
-# load the 6 textures of the node and assign them to the respective faces
-       
-        prefixFilename = self.node.getCubemap()
-        
-        self.log.debug('full path to resource: %s', self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_fr.jpg'))
-        filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_fr.jpg')        
-        self.faceTextures[PanoConstants.CBM_FRONT_FACE].read(Filename(filename))
-        self.faceTextures[PanoConstants.CBM_FRONT_FACE].setWrapU(Texture.WMClamp)
-        self.faceTextures[PanoConstants.CBM_FRONT_FACE].setWrapV(Texture.WMClamp)
-        
-        filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_bk.jpg')
-        self.faceTextures[PanoConstants.CBM_BACK_FACE].read(Filename(filename))
-        self.faceTextures[PanoConstants.CBM_BACK_FACE].setWrapU(Texture.WMClamp)
-        self.faceTextures[PanoConstants.CBM_BACK_FACE].setWrapV(Texture.WMClamp)
-        
-        filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_lt.jpg')
-        self.faceTextures[PanoConstants.CBM_LEFT_FACE].read(Filename(filename))
-        self.faceTextures[PanoConstants.CBM_LEFT_FACE].setWrapU(Texture.WMClamp)
-        self.faceTextures[PanoConstants.CBM_LEFT_FACE].setWrapV(Texture.WMClamp)
-        
-        filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_rt.jpg')
-        self.faceTextures[PanoConstants.CBM_RIGHT_FACE].read(Filename(filename))
-        self.faceTextures[PanoConstants.CBM_RIGHT_FACE].setWrapU(Texture.WMClamp)
-        self.faceTextures[PanoConstants.CBM_RIGHT_FACE].setWrapV(Texture.WMClamp)
-        
-        filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_top.jpg')
-        self.faceTextures[PanoConstants.CBM_TOP_FACE].read(Filename(filename))
-        self.faceTextures[PanoConstants.CBM_TOP_FACE].setWrapU(Texture.WMClamp)
-        self.faceTextures[PanoConstants.CBM_TOP_FACE].setWrapV(Texture.WMClamp)
-        
-        filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_bt.jpg')
-        self.faceTextures[PanoConstants.CBM_BOTTOM_FACE].read(Filename(filename))
-        self.faceTextures[PanoConstants.CBM_BOTTOM_FACE].setWrapU(Texture.WMClamp)
-        self.faceTextures[PanoConstants.CBM_BOTTOM_FACE].setWrapV(Texture.WMClamp)
+        # load the 6 textures of the node and assign them to the respective faces       
+        self._replaceCubemapTextures()
         
         # creates hotspot collision geometries and sprites
         self.createHotspotsGeoms()
@@ -600,5 +592,27 @@ class NodeRenderer:
                 return (tex.getXSize(), tex.getYSize())
             
         return (0, 0)             
+    
+    def _replaceCubemapTextures(self):
+        
+        prefixFilename = self.node.getCubemap()        
+        faceCodes = { 
+                     PanoConstants.CBM_FRONT_FACE : '_fr.jpg',
+                     PanoConstants.CBM_BACK_FACE : '_bk.jpg',
+                     PanoConstants.CBM_LEFT_FACE : '_lt.jpg',
+                     PanoConstants.CBM_RIGHT_FACE : '_rt.jpg',
+                     PanoConstants.CBM_TOP_FACE : '_top.jpg',
+                     PanoConstants.CBM_BOTTOM_FACE : '_bt.jpg'
+                     }
+        
+        for face, suffix in faceCodes.items():
+            tex = self.resources.loadTexture(prefixFilename + suffix)
+            tex.setWrapU(Texture.WMClamp)
+            tex.setWrapV(Texture.WMClamp)
+        
+            rs = self.facesGeomNodes[face].getGeomState(0).setAttrib(TextureAttrib.make(tex))
+            self.facesGeomNodes[face].setGeomState(0, rs)
+
+
     
     
