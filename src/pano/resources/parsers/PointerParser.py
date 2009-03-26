@@ -40,7 +40,7 @@ class PointerParser:
     should be enabled. Boolean value that specifies if alpha should be enabled.
     """
     
-    EGG_FILE_OPTION = 'egg_file'
+    MODEL_FILE_OPTION = 'model_file'
     TEXTURE_OPTION = 'texture'
     ALPHA_OPTION = 'enable_alpha'
     SCALE_OPTION = 'scale'
@@ -59,8 +59,8 @@ class PointerParser:
             section = cfg.sections()[0]
             assert section is not None and section == 'Pointer', 'pointer file must contain the "Pointer" section header'
                     
-            if cfg.has_option(section, PointerParser.EGG_FILE_OPTION):
-                pointer.setEggFile(cfg.get(section, PointerParser.EGG_FILE_OPTION))
+            if cfg.has_option(section, PointerParser.MODEL_FILE_OPTION):
+                pointer.setModelFile(cfg.get(section, PointerParser.MODEL_FILE_OPTION))
                 
             if cfg.has_option(section, PointerParser.TEXTURE_OPTION):
                 pointer.setTexture(cfg.get(section, PointerParser.TEXTURE_OPTION))
@@ -71,7 +71,7 @@ class PointerParser:
             if cfg.has_option(section, PointerParser.SCALE_OPTION):
                 pointer.setScale(cfg.getfloat(section, PointerParser.SCALE_OPTION))
             
-            assert pointer.getEggFile() is not None or pointer.getTexture() is not None, 'either an egg file or a texture file must be specified for the pointer'
+            assert pointer.getModelFile() is not None or pointer.getTexture() is not None, 'either an egg file or a texture file must be specified for the pointer'
                 
             
         except (MissingSectionHeaderError, ParsingError):

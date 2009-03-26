@@ -236,10 +236,18 @@ class ResourceLoader:
     def loadTexture(self, filename):
         '''
         Loads the texture specified by the given filename.
-        Returns: A panda3d Texture object or None if the texture was not found.
+        Returns: A panda3d Texture object or None if the file was not found.
         '''
         path = self.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, filename)
         return loader.loadTexture(path)
+    
+    def loadModel(self, filename):
+        '''
+        Loads the model specified by the given filename.
+        Returns: A panda3d ModelNode object or None if the file was not found.
+        '''
+        path = self.getResourceFullPath(PanoConstants.RES_TYPE_MODELS, filename)
+        return loader.loadModel(path)
         
     def loadGeneric(self, resType, resObj, filename):
         assert resType is not None and resType != PanoConstants.RES_TYPE_ALL, 'invalid resource type in loadGeneric'
