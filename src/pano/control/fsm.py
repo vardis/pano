@@ -1,8 +1,33 @@
+'''
+    Copyright (c) 2008 Georgios Giannoudovardis, <vardis.g@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+'''
+
+
 
 import logging 
 
 from constants import PanoConstants
 from messaging import Messenger
+from control.StatesFactory import StatesFactory
 
 class FSMState:
     def __init__(self, gameRef = None, name = ''):
@@ -71,6 +96,13 @@ class FSMState:
     
     def allowPausing(self):
         return True
+    
+    
+    def persistState(self, persistence):
+        return None
+    
+    def restoreState(self, persistence, ctx):
+        pass
 
 class FSM:
     """
@@ -86,8 +118,9 @@ class FSM:
     def __init__(self, gameRef = None):
                 
         self.log = logging.getLogger('pano.fsm')
-        self.game = gameRef                    
-        self.states = {}    # a list of the names of all valid states for this FSM        
+        self.game = gameRef        
+        self.factory = StatesFactory(self.game)            
+        self.states = {}    # contains all the valid states for this FSM keyed by name        
         self.globalState = None
         self.currentState = None
         self.previousGlobalState = None
@@ -107,17 +140,20 @@ class FSM:
     def getPreviousState(self):
         return self.previousState
         
-    def addValidState(self, state):
-        self.states[state.getName()] = state
+#    def addValidState(self, state):
+#        self.states[state.getName()] = state
+#        
+#    def removeValidState(self, state):
+#        del self.states[state.getName()]
         
-    def removeValidState(self, state):
-        del self.states[state.getName()]
-        
-    def getValidStates(self):
-        '''
-        Returns a copy of the list of valid states names.
-        '''
-        return self.states.keys()
+    def getFactory(self):
+        return self.factory
+    
+#    def getValidStates(self):
+#        '''
+#        Returns a copy of the list of valid states names.
+#        '''
+#        return self.states.keys()
     
     def update(self, millis):
         if self.globalState is not None:
@@ -135,7 +171,7 @@ class FSM:
         Returns: True if the transition was allowed and False if otherwise.
         '''        
         
-        if stateName not in self.states.keys():
+        if not self.factory.isRegistered(stateName):
             return False
         
         # when pushing a different stae, we don't need to call exit on the old
@@ -143,7 +179,7 @@ class FSM:
             self.currentState.exit()
             
         self.previousState = self.currentState
-        self.currentState = self.states[stateName]
+        self.currentState = self.factory.create(stateName)
         
         # when poping an old state, we don't need to call enter again on it
         if not popOld:
@@ -167,14 +203,16 @@ class FSM:
             self.globalState = None
             return True
                 
-        if stateName not in self.states.keys():
+#        if stateName not in self.states.keys():
+#            return False
+        if not self.factory.isRegistered(stateName):
             return False
         
         if self.globalState is not None:
             self.globalState.exit()
                             
         self.previousGlobalState = self.globalState
-        self.globalState = self.states[stateName]
+        self.globalState = self.factory.create(stateName) # self.states[stateName]
         self.globalState.enter()      
         return True  
     
@@ -211,8 +249,86 @@ class FSM:
         try:
             return (self.globalState and self.globalState.onInputAction(action)) or (self.currentState and self.currentState.onInputAction(action))            
         except:
-            self.log.exception("Unexpected error while respoding to input action %s" % action)
+            self.log.exception("Unexpected error while responding to input action %s" % action)
             return False
         
+    def persistState(self, persistence):
+        '''
+        Saves the FSM's data into a persistence context.        
+        '''
+        ctx = persistence.createContext('fsm')
+        if self.globalState is not None:
+            ctx.addVar('globalState', self.globalState.getName())
+            
+        if self.previousGlobalState is not None:
+            ctx.addVar('previousGlobalState', self.previousGlobalState.getName())
+            
+        ctx.addVar('currentState', self.currentState.getName())
+        stateCtx = self.currentState.persistState(persistence)
+        ctx.addVar('state_context_' + self.currentState.getName(), persistence.serializeContext(stateCtx))
+        
+        if self.previousState is not None:
+            ctx.addVar('previousState', self.previousState.getName())
+        
+        if self.statesStack is not None:
+            ctx.addVar('statesStack', [s.getName() for s in self.statesStack])
+            
+            for name, state in self.statesStack.items():
+                stateCtx = state.persistState(persistence)
+                ctx.addVar('state_context_' + name, persistence.serializeContext(stateCtx))
+            
+        if self.globalStatesStack is not None:
+            ctx.addVar('globalStatesStack', [s.getName() for s in self.globalStatesStack])
+            
+            for name, state in self.globalStatesStack.items():
+                stateCtx = state.persistState(persistence)
+                ctx.addVar('state_context_' + name, persistence.serializeContext(stateCtx))                    
+        
+        return ctx      
     
+    def restoreState(self, persistence, ctx):
+        
+        self.states = {}
+        statesNames = ctx.getVar('validStates')
+        for stateName in statesNames:
+            stateObj = self.factory.create(stateName)
+            self.states[stateName] = stateObj
+        
+        if ctx.hasVar('globalState'):
+            globalStateName = ctx.getVar('globalState')
+            self.globalState = self.factory.create(globalStateName)
+            
+        if ctx.hasVar('previousGlobalState'):
+            previousGlobalStateName = ctx.getVar('previousGlobalState')
+            self.previousGlobalState = self.factory.create(previousGlobalStateName)
+            
+        self.currentState = self.factory.create(ctx.getVar('currentState'))
+        stateCtx = persistence.deserializeContext(ctx.getVar('state_context_' + self.currentState.getName()))
+        self.currentState.restoreState(stateCtx)
+        
+        if ctx.hasVar('previousState'):
+            self.previousState = self.factory.create(ctx.getVar('previousState'))
+            
+        if ctx.hasVar('statesStack'):
+            self.statesStack = []
+            statesStack = ctx.getVar('statesStack')
+            for state in statesStack:
+                stateObj = self.factory.create(state)
+                self.statesStack.append(stateObj)
+                stateCtx = persistence.deserializeContext(ctx.getVar('state_context_' + state))
+                stateObj.restoreState(persistence, stateCtx)
+                
+        if ctx.hasVar('globalStatesStack'):
+            self.globalStatesStack = []
+            globalStatesStack = ctx.getVar('globalStatesStack')
+            for state in globalStatesStack:
+                stateObj = self.factory.create(state)
+                self.globalStatesStack.append(stateObj)
+                stateCtx = persistence.deserializeContext(ctx.getVar('state_context_' + state))
+                stateObj.restoreState(persistence, stateCtx)
+                
+            
+        
+            
+        
     

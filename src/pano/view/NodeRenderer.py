@@ -1,3 +1,26 @@
+'''
+    Copyright (c) 2008 Georgios Giannoudovardis, <vardis.g@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+'''
+
 import os
 import math
 import logging
@@ -236,10 +259,14 @@ class NodeRenderer:
 # load the 6 textures of the node and assign them to the respective faces
        
         prefixFilename = self.node.getCubemap()
+
+        self.log.debug('cwd: %s' % os.getcwd())
+
+        path = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_fr.jpg')
+        self.log.debug('full path to resource: %s', path)
         
-        self.log.debug('full path to resource: %s', self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_fr.jpg'))
-        filename = self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_fr.jpg')        
-        self.faceTextures[PanoConstants.CBM_FRONT_FACE].read(Filename(filename))
+        filename = '/c/Documents and Settings/Fidel/workspace/pano/demo/' + self.resources.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, prefixFilename + '_fr.jpg')
+        self.faceTextures[PanoConstants.CBM_FRONT_FACE] = self.resources.loadTexture(prefixFilename + '_fr.jpg')
         self.faceTextures[PanoConstants.CBM_FRONT_FACE].setWrapU(Texture.WMClamp)
         self.faceTextures[PanoConstants.CBM_FRONT_FACE].setWrapV(Texture.WMClamp)
         

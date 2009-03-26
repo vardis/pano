@@ -1,4 +1,28 @@
-import os, logging, codecs
+'''
+    Copyright (c) 2008 Georgios Giannoudovardis, <vardis.g@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+'''
+
+import logging
+import codecs
 
 from constants import PanoConstants
 from DirectoryResourcesLocation import DirectoryResourcesLocation
@@ -71,6 +95,15 @@ class ResourceLoader:
                 for loc in locations:
                     if loc.containsResource(filename):
                         return loc.getResourceFullPath(filename)
+        return None
+
+    def openResourceStream(self, resType, filename):
+        if self.resLocations.has_key(resType):
+            locations = self.resLocations[resType]
+            if locations is not None:
+                for loc in locations:
+                    if loc.containsResource(filename):
+                        return loc.getResourceStream(filename)
         return None
     
     def listResources(self, resType, fullPaths=True):
@@ -197,8 +230,16 @@ class ResourceLoader:
         except Exception,e:
             self.log.exception('Failed to load script file: %s' % filename)
         finally:
-            if istream is not None:
+            if istream is not None: 
                 istream.close()
+
+	def loadTexture(self, filename):
+		'''
+		Loads the texture specified by the given filename.
+		Returns: A panda3d Texture object or None if the texture was not found.
+		'''
+		path = self.getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, filename)
+		return loader.loadTexture(path)
         
     def loadGeneric(self, resType, resObj, filename):
         assert resType is not None and resType != PanoConstants.RES_TYPE_ALL, 'invalid resource type in loadGeneric'
@@ -218,5 +259,3 @@ class ResourceLoader:
             raise ResourceNotFound('Unable to locate resource %s' % filename)
             
         
-           
-

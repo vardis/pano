@@ -1,3 +1,26 @@
+'''
+    Copyright (c) 2008 Georgios Giannoudovardis, <vardis.g@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+'''
+
 
 class PanoConstants:
     """
@@ -13,12 +36,22 @@ class PanoConstants:
     EVENT_ITEM_ADDED = "inventory.item.added"
     EVENT_ITEM_REMOVED = "inventory.item.removed"
     EVENT_ITEM_COUNT_CHANGED = "inventory.count.changed"
+    EVENT_ITEMS_RESTORED = "inventory.items.restored"
+    EVENT_SAVELOAD_ERROR = "saveload.error"
+    EVENT_SAVE_COMPLETED = "save.complete"
+    EVENT_LOAD_COMPLETED = "load.complete"
+    EVENT_CHANGE_NODE = "node.change"
+    EVENT_RESTORE_NODE = "node.restore"
+    
     
     # tasks' names
     TASK_GAME_LOOP = 'game_loop_task'
     TASK_MOUSE_POINTER = 'mouse_pointer_task'
     TASK_MUSIC = 'music_task'
     
+    # config variables in boot configuration
+    CVAR_GAME_DIR = 'game_dir'
+    CVAR_SAVES_DIR = 'saves_dir'
     
     # names of the configuration variables that define locations for each resource type
     CVAR_WIN_TITLE = 'game_title'
@@ -88,7 +121,6 @@ class PanoConstants:
     WIN_FULLSCREEN = 'fullscreen'
     WIN_TITLE = 'win_title'
     
-    #Constants for the faces of the cubemap
     CBM_FRONT_FACE = 1
     CBM_BACK_FACE = 2
     CBM_LEFT_FACE = 3
