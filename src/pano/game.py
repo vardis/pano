@@ -330,39 +330,39 @@ class PanoGame:
         '''
         Reads the boot configuration from the user's directory in ~/.pano/<game_name>/.config
         '''        
-        self.config.add(PanoConstants.CVAR_GAME_DIR, '.')
-        self.config.add(PanoConstants.CVAR_SAVES_DIR, 'saves')
-#        userDir = os.path.expanduser('~')
-#        bootCfgPath = os.path.join(os.path.join(userDir, self.name), '.config')
-#        if os.path.exists(bootCfgPath):
-#            cfg = SafeConfigParser()
-#            istream = None
-#            try:
-#                try:
-#                    istream = codecs.open(bootCfgPath, 'r', "utf-8")
-#                    cfg.readfp(istream)
-#                    if cfg.has_option('config', 'game_dir'):
-#                        self.gameDir = cfg.get('config', 'game_dir')
-#                    else:
-#                        self.log.critical('Missing game directory configuration option')
-#                        raise GameError('Missing boot config')
-#                    if cfg.has_option('config', 'saves_dir'):
-#                        self.savesDir = cfg.get('config', 'saves_dir')
-#                    else:
-#                        self.log.critical('Missing saves directory configuration option')
-#                        raise GameError('Missing boot config')
-#                except (MissingSectionHeaderError, ParsingError):
-#                    self.log.exception('Unexpected error while reading boot config')
-#                    raise GameError('Corrupted boot configuration')
-#                except IOError, e:
-#                    self.log.exception('Unexpected I/O error while reading boot config')
-#                    raise GameError('Failed to read boot configuration')
-#            finally:
-#                if istream is not None:
-#                    istream.close()
-#        else:
-#            self.log.critical('Missing boot configuration, cannot properly initialize')
-#            raise GameError('Failed boot init')
+#        self.config.add(PanoConstants.CVAR_GAME_DIR, '.')
+#        self.config.add(PanoConstants.CVAR_SAVES_DIR, 'saves')
+        userDir = os.path.expanduser('~')
+        bootCfgPath = os.path.join(os.path.join(userDir, self.name), '.config')
+        if os.path.exists(bootCfgPath):
+            cfg = SafeConfigParser()
+            istream = None
+            try:
+                try:
+                    istream = codecs.open(bootCfgPath, 'r', "utf-8")
+                    cfg.readfp(istream)
+                    if cfg.has_option('config', 'game_dir'):
+                        self.gameDir = cfg.get('config', 'game_dir')
+                    else:
+                        self.log.critical('Missing game directory configuration option')
+                        raise GameError('Missing boot config')
+                    if cfg.has_option('config', 'saves_dir'):
+                        self.savesDir = cfg.get('config', 'saves_dir')
+                    else:
+                        self.log.critical('Missing saves directory configuration option')
+                        raise GameError('Missing boot config')
+                except (MissingSectionHeaderError, ParsingError):
+                    self.log.exception('Unexpected error while reading boot config')
+                    raise GameError('Corrupted boot configuration')
+                except IOError, e:
+                    self.log.exception('Unexpected I/O error while reading boot config')
+                    raise GameError('Failed to read boot configuration')
+            finally:
+                if istream is not None:
+                    istream.close()
+        else:
+            self.log.critical('Missing boot configuration, cannot properly initialize')
+            raise GameError('Failed boot init')
 
     def _doSaveLoad(self):
         '''
