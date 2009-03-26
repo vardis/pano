@@ -1,3 +1,28 @@
+'''
+    Copyright (c) 2008 Georgios Giannoudovardis, <vardis.g@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+'''
+
+
+
 import logging
 
 from direct.interval.IntervalGlobal import *
@@ -10,9 +35,9 @@ from control.PausedState import PausedState
 
 class ExploreState(FSMState):
     
-    NAME = 'ExploreState'
+    NAME = 'exploreState'
     
-    def __init__(self, gameRef = None, node = None):        
+    def __init__(self, gameRef = None):        
         FSMState.__init__(self, gameRef, ExploreState.NAME)        
         self.log = logging.getLogger('pano.exploreState')
         self.activeNode = None
@@ -46,7 +71,8 @@ class ExploreState(FSMState):
         return (
                 PanoConstants.EVENT_GAME_RESUMED, 
                 PanoConstants.EVENT_GAME_PAUSED,
-                'goto_node'
+                PanoConstants.EVENT_CHANGE_NODE,
+                PanoConstants.EVENT_RESTORE_NODE
                 )
     
     def doMouseAction(self):        
@@ -114,32 +140,80 @@ class ExploreState(FSMState):
             self.suspend()            
         elif msg == PanoConstants.EVENT_GAME_RESUMED:            
             self.resume()
-        elif msg == 'goto_node':
+        elif msg == PanoConstants.EVENT_CHANGE_NODE:
             node = args[0]
             self.log.debug('Got message to go to node %s' % node)
             self.changeDisplayNode(node, 1.0)
+        elif msg == PanoConstants.EVENT_RESTORE_NODE:
+            node = args[0]
+            nodescriptCtx = args[1]
+            self.log.debug('Restoring node %s, got nodescript context named: %s' % (node, nodescriptCtx.getName()))
                     
             
     def onInputAction(self, action):
         if action == "acMouseAction":
             self.doMouseAction()
+        elif action == "save":            
+            self.getGame().requestSave(('my_save'))            
+        elif action == "load":
+            self.getGame().requestLoad(('my_save')) #_Fri_Mar_20_121647_2009.sav'))
         else:
             return False if self.nodeScript is None else self.nodeScript.onInputAction(action)
         return True
     
-    def changeDisplayNode(self, newNode, fadeDuration = 1.0):
+    def persistState(self, persistence):
+        ctx = persistence.createContext('exploreState_ctx')
+        ctx.addVar('node', self.activeNode.getName())
+                
+        if self.nodeScript is not None:
+            nodescriptCtx = self.nodeScript.persistState(persistence)  
+            ctx.addVar('nodescript', persistence.serializeContext(nodescriptCtx))                        
+        
+        return ctx
+    
+    def restoreState(self, persistence, ctx):
+        nodeName = ctx.getVar('node')
+        node = self.getGame().getResources().loadNode(nodeName)
+        
+        self._loadNode(nodeName)
+        
+        nodescriptCtx = ctx.getVar('nodescript')
+        self.nodeScript.restoreState(nodescriptCtx)
+        
+        self.changeDisplayNode(node)
+    
+    def changeDisplayNode(self, newNodeName, fadeDuration = 1.0):
         '''
         Displays the specified node and fades in & out the screen in fadeDuration seconds.        
         '''
+
+        # dispose old node and load new
+        self._loadNode(newNodeName)
         
+        # display node in a number of steps
+        game = self.getGame()
+        self.nodeTransition = Sequence(
+                                        Func(game.getView().fadeOut, fadeDuration / 2.0),
+                                        Wait(fadeDuration / 2.0),
+                                        Func(game.getView().displayNode, self.activeNode),                                    
+                                        Func(game.getView().mousePointer.setByName, "select"),
+                                        Func(game.getView().panoRenderer.drawDebugHotspots, self.drawDebugViz),
+                                        Func(self._setCameraLookAt, self.activeNode.getLookAt()),
+                                        Func(self._safeCallEnter),
+                                        Func(game.getView().fadeIn, fadeDuration / 2.0),
+                                        Wait(fadeDuration / 2.0),
+                                        Func(self._completeNodeTransition),
+                                        name = 'Node transition sequence'
+                                        )
+        self.nodeTransition.start()         
+        
+    def _loadNode(self, nodeName, forceReload = False):
         '''
-        Steps involved:
-          i. Invoke exit on node script of the previously displayed node.
-          ii. Load new node and its script.
-          iii. Display the new node
-          iv. Setup the camera look-at for the new node.
-          v. Invoke enter on the new node script, if any.
+        Loads the node specified by the given name while disposing the old node in the process.
         '''
+        if self.activeNode is not None and nodeName == self.activeNode.getName() and not forceReload:
+            return
+        
         if self.nodeScript is not None:
             self.nodeScript.exit()
             self.nodeScript = None
@@ -148,16 +222,17 @@ class ExploreState(FSMState):
         # the name of the node script class must match the filename into which it is defined
         if self.activeNode is not None:
             oldScriptName = self.activeNode.getScriptName()
-#            if oldScriptName is not None:
-#                del locals()[oldScriptName]
+            if oldScriptName is not None:
+                if __builtins__.has_key(oldScriptName):
+                    del __builtins__[oldScriptName]
 #        
 #                # verify
 #                if locals().has_key(oldScriptName + '_obj'):
 #                    self.log.error('Failed to clean old node script object instance and definition from the local context')        
-            
-        game = self.getGame()
-        self.activeNode = game.getResources().loadNode(newNode)
 
+        # loads the node script and inserts it in the builtins for global access
+        game = self.getGame()
+        self.activeNode = game.getResources().loadNode(nodeName)
         if self.activeNode.getScriptName() is not None:
             scriptPath = game.getResources().getResourceFullPath(PanoConstants.RES_TYPE_SCRIPTS, self.activeNode.getScriptName() + '.py')
             if scriptPath is not None:
@@ -172,27 +247,13 @@ class ExploreState(FSMState):
                     if fp is not None:
                         fp.close()
                         
-                exec('globals()[' + self.activeNode.getScriptName() + '] = ' + self.activeNode.getScriptName())
-                exec('self.nodeScript  = ' + self.activeNode.getScriptName() + '(game)')                        
+                exec('__builtins__[' + self.activeNode.getScriptName() + '] = ' + self.activeNode.getScriptName())                
+                exec('self.nodeScript  = ' + self.activeNode.getScriptName() + '(game)')
+                __builtins__['nodescript'] = self.nodeScript                
                 
                 # verify that the node script object extends FSMState
                 assert isinstance(self.nodeScript, BaseNodeScript), 'Node script object must subclass pano.control.FSMState'
-                
-        # display node
-        self.nodeTransition = Sequence(
-                                        Func(game.getView().fadeOut, fadeDuration / 2.0),
-                                        Wait(fadeDuration / 2.0),
-                                        Func(game.getView().displayNode, self.activeNode),                                    
-                                        Func(game.getView().mousePointer.setByName, "select"),
-                                        Func(game.getView().panoRenderer.drawDebugHotspots, self.drawDebugViz),
-                                        Func(self._setCameraLookAt, self.activeNode.getLookAt()),
-                                        Func(self._safeCallEnter),
-                                        Func(game.getView().fadeIn, fadeDuration / 2.0),
-                                        Wait(fadeDuration / 2.0),
-                                        Func(self._completeNodeTransition),
-                                        name = 'Node transition sequence'
-                                        )
-        self.nodeTransition.start()
+                       
         
     def _setCameraLookAt(self, lookat):
         '''

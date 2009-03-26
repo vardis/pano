@@ -1,3 +1,26 @@
+'''
+    Copyright (c) 2008 Georgios Giannoudovardis, <vardis.g@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+'''
+
 
 import logging
 
@@ -80,9 +103,9 @@ class VideoPlayer:
             self.log.error("Couldn't load video " + video)
             return None
         
-        if (base.sfxManagerList[0].getType().getName() != "OpenALAudioManager"):
-            self.log.error("OpenAL support is not enabled, cannot proceed.")
-            return None
+#        if (base.sfxManagerList[0].getType().getName() != "OpenALAudioManager"):
+#            self.log.error("OpenAL support is not enabled, cannot proceed.")
+#            return None
     
         if (videoTex.getType().getName() != "MovieTexture"):
             self.log.error("MovieTexture support is not enabled, cannot proceed.")
@@ -90,7 +113,7 @@ class VideoPlayer:
         
         geom.setTexture(videoTex)        
         if videoTex.getTexturesPower2():            
-            geom.setTexScale(TextureStage.getDefault(), videoTex.getTexScale()) #0.75, 0.5625videoTex.getTexScale())
+            geom.setTexScale(TextureStage.getDefault(), videoTex.getTexScale()) 
         
         if audio is not None:
             vidSound = loader.loadSfx(resources.getResourceFullPath(PanoConstants.RES_TYPE_SOUNDS, audio))
