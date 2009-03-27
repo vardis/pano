@@ -68,7 +68,7 @@ class NodeRaycaster:
         self.pickerRay=CollisionRay()
         self.pickerNode.addSolid(self.pickerRay)    
         
-        self.pickerNP = base.camera.attachNewNode(self.pickerNode)
+        self.pickerNP = self.renderer.getCamera().attachNewNode(self.pickerNode)
         self.traverser.addCollider(self.pickerNP, self.collisionsQueue)
         
     def raycastMouse(self, mouseX, mouseY):
@@ -80,7 +80,7 @@ class NodeRaycaster:
         '''        
         #This makes the ray's origin the camera and makes the ray point 
         #to the screen coordinates of the mouse
-        self.pickerRay.setFromLens(base.camNode, mouseX, mouseY)
+        self.pickerRay.setFromLens(self.renderer.getCamera().node(), mouseX, mouseY)
         
         #Check for collision only with the cubemap
         self.traverser.traverse(self.renderer.nodepath())

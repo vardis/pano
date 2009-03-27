@@ -24,11 +24,14 @@ THE SOFTWARE.
 import logging
 
 from pandac.PandaModules import WindowProperties
+from pandac.PandaModules import NodePath
 from direct.showbase.Transitions import Transitions
+from direct.interval.IntervalGlobal import *
 
 from pano.exceptions.PanoExceptions import GraphicsError
 from NodeRenderer import NodeRenderer
 from constants import PanoConstants
+from camera import CameraMouseControl
 from MousePointerDisplay import MousePointerDisplay
 from NodeRaycaster import NodeRaycaster
 from model.Node import Node
@@ -39,28 +42,77 @@ class GameView:
     def __init__(self, gameRef = None, title = ''):
         
         self.log = logging.getLogger('pano.view')
+                
         self.game = gameRef
+        
+        # reference to the panda3d window we use for rendering
         self.window = None
+        
+        # the active window properties
         self.windowProperties = None
+        
+        # the window title
         self.title = title
+        
+        # performs the rendering of the nodes
         self.panoRenderer = NodeRenderer(self.game.resources)
-        self.raycaster = NodeRaycaster(self.panoRenderer)        
+        
+        # detects the hotspots that the user selects with the mouse
+        self.raycaster = NodeRaycaster(self.panoRenderer)
+        
+        # renders the mouse pointer and updates its position according to the mouse        
         self.mousePointer = MousePointerDisplay(gameRef)
+        
+        # rotates the camera according to mouse movement
+        self.cameraControl = CameraMouseControl(self.game)
+        
+        # the view component of the inventory, i.e. renders the inventory model that we pass to it
         self.inventory = InventoryView(gameRef)
-        self.__talkBox = TalkBox(gameRef)         
+        
+        self.__talkBox = TalkBox(gameRef)
+        
+        # the Node instance that we are displaying         
         self.activeNode = None
-        self.transition = None   
+        
+        # the active transition: fade-in, fade-out or letter-box effect
+        self.transition = None                   
+        
+        # used to linearly interpolate the camera's orientation using a source and a target quaternion
+        self.camQuatInterval = None
         
     def initialize(self):
+        '''
+        Initialise self and all components on which we are depended.
+        '''
         self.windowProperties = base.win.getProperties()
         base.setFrameRateMeter(self.game.getConfig().getBool(PanoConstants.CVAR_DEBUG_FPS))
         self.panoRenderer.initialize()
         self.mousePointer.initialize()
+        
+        # enable rotation of camera by mouse
+        self.cameraControl.setCamera(self.panoRenderer.getCamera())
+        self.cameraControl.initialize()        
+        self.cameraControl.enable()
+        
         self.raycaster.initialize()
         self.__talkBox.initialize()
         self.inventory.initialize(self.game.getInventory())
         self.transition = Transitions(loader)        
-                     
+                
+    def update(self, millis):
+        if millis == 0.0 and self.camQuatInterval is not None:
+            self.camQuatInterval.pause()
+        elif self.camQuatInterval is not None:
+            if  self.camQuatInterval.isStopped(): # and not self.camQuatInterval.isPlaying():
+                self.camQuatInterval = None
+                self.cameraControl.enable()
+            elif not self.camQuatInterval.isPlaying():
+                self.camQuatInterval.resume()
+                
+        self.cameraControl.update(millis)
+        self.panoRenderer.render(millis)
+        self.talkBox.update(millis)
+        self.inventory.update(millis)
 
     def getTalkBox(self):
         return self.__talkBox
@@ -85,12 +137,15 @@ class GameView:
         
     def getActiveNode(self):
         return self.activeNode
-            
-    """
-    Returns a reference to a MousePointer object that controls the mouse pointer.
-    """
+                
     def getMousePointer(self):
+        """
+        Returns a reference to a MousePointer object that controls the mouse pointer.
+        """
         return self.mousePointer
+    
+    def getCameraController(self):
+        return self.cameraControl
     
     def getWindowProperties(self):
         return self.windowProperties
@@ -131,13 +186,7 @@ class GameView:
         self.window = base.win
     
     def closeWindow(self):
-        base.closeWindow(self.window)
-                     
-        
-    def update(self, millis):
-        self.panoRenderer.render(millis)
-        self.talkBox.update(millis)
-        self.inventory.update(millis)
+        base.closeWindow(self.window)        
         
     def fadeIn(self, seconds):
         """
@@ -199,6 +248,55 @@ class GameView:
             y = -1.0*((rp[0] + 1.0) / 2.0) * wp.getYSize()
             retList.append((x, y))
         return retList
+
+    def setCameraLookAt(self, lookat, duration = 0.0, blendType = PanoConstants.BLEND_TYPE_ABRUPT):
+        '''
+        Points the camera to the specified look-at point.
+        This point is defined through a string parameter which can take one of the following values:
+          a) face_xxxx, where xxxx can be front, back, left, right, top or bottom and denotes the center of the respective face of the cube node.
+          b) hotspot_xxx, where xxxx is the name of a hotspot defined within the context of the active node.
+        '''
+        wp = None
+        if lookat.startswith('face_'):
+            faceName = lookat[5:]
+            face = PanoConstants.CBM_FRONT_FACE
+            if faceName == 'front':
+                face = PanoConstants.CBM_FRONT_FACE
+            elif faceName == 'back':
+                face = PanoConstants.CBM_BACK_FACE
+            elif faceName == 'right':
+                face = PanoConstants.CBM_RIGHT_FACE
+            elif faceName == 'left':
+                face = PanoConstants.CBM_LEFT_FACE
+            elif faceName == 'top':
+                face = PanoConstants.CBM_TOP_FACE
+            elif faceName == 'bottom':
+                face = PanoConstants.CBM_BOTTOM_FACE
+            else:
+                self.log.error('Wrong lookat attribute: %s for node %s' % (lookat, self.activeNode.getNode()))
+                return
+            
+            wp = self.panoRenderer.getWorldPointFromFacePoint(face, (0.5, 0.5))
+            
+        elif lookat.startswith('hotspot_'):
+            hpName = lookat[8:]
+            hp = self.activeNode.getHotspot(hpName)
+            wp = self.panoRenderer.getHotspotWorldPos(hp)
+                        
+        if wp is not None:
+            camera = self.panoRenderer.getCamera()
+            if duration == 0.0:                            
+                camera.lookAt(wp[0], wp[1], wp[2])
+            else:                        
+                startQuat = camera.getQuat()                
+                camera.lookAt(wp[0], wp[1], wp[2])
+                targetQuat = camera.getQuat()
+                camera.setQuat(startQuat)                
+                self.camQuatInterval = LerpQuatInterval(base.cam, duration, targetQuat, None, startQuat, None, blendType=blendType, name='test')
+                print 'quat interval starting'
+                self.cameraControl.disable()
+                self.camQuatInterval.start()
+                
 
     talkBox = property(getTalkBox, setTalkBox, None, "TalkBox's Docstring")
         
