@@ -43,7 +43,19 @@ class InputActionMappings(DirectObject.DirectObject):
         self.globalMap = None
         self.map = None
         self.mapStack = [] 
-        self.eventsQueue = Queue.Queue(50)       
+        self.eventsQueue = Queue.Queue(50)   
+        
+    def enable(self):
+        '''
+        Enables the input mapping functionality.
+        '''
+        self.enabled = True
+        
+    def disable(self):
+        '''
+        Disables the input mapping functionality.
+        '''
+        self.enabled = False    
         
     def mapInput(self, inputEventName):
         """
@@ -51,6 +63,9 @@ class InputActionMappings(DirectObject.DirectObject):
         
         Returns: the name of the action that maps to this event.
         """
+        if not self.enabled:
+            return None
+        
         act = None
         if self.globalMap is not None:
             act = self.globalMap.mapInputEvent(inputEventName)

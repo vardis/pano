@@ -30,7 +30,6 @@ from direct.interval.IntervalGlobal import *
 from constants import PanoConstants
 from control.fsm import FSMState
 from control.NodeScript import BaseNodeScript
-from view.camera import CameraMouseControl
 from control.PausedState import PausedState
 
 class ExploreState(FSMState):
@@ -43,9 +42,9 @@ class ExploreState(FSMState):
         self.activeNode = None
         self.nodeScript = None    # script that controls the currently active node
         self.activeHotspot = None
-        self.cameraControl = CameraMouseControl(self.getGame())
         self.sounds = None
         self.drawDebugViz = False
+        self.nodeTransition = None
         
     def enter(self):
         
@@ -53,11 +52,6 @@ class ExploreState(FSMState):
         
         game = self.getGame()
         self.drawDebugViz = game.getConfig().getBool(PanoConstants.CVAR_DEBUG_HOTSPOTS, False)
-        
-        self.cameraControl.initialize()        
-                        
-        # enable rotation of camera by mouse
-        self.cameraControl.enable()
         
         game.getInput().addMappings('explore')
         self.sounds = game.getSoundsFx()
@@ -101,9 +95,8 @@ class ExploreState(FSMState):
         self.cameraControl.disable()                        
     
     def update(self, millis):
-        if not self.getGame().isPaused():
-            self.cameraControl.update(millis)
-            
+        if not self.getGame().isPaused() and (self.nodeTransition is None or not self.nodeTransition.isPlaying()):
+                        
             # returns the face code and image space coordinates of the hit point    
             result = self.getGame().getView().raycastNodeAtMouse()
             if result is not None:
@@ -126,14 +119,20 @@ class ExploreState(FSMState):
                     
             if self.nodeScript is not None:
                 self.nodeScript.update(millis)
+            
+        # reset transition if it is finished    
+        if self.nodeTransition != None and self.nodeTransition.isStopped(): 
+            self.nodeTransition = None  
     
     def suspend(self):        
-        self.cameraControl.disable()
-        self.nodeTransition.pause()
+        self.getGame().getView().getCameraController().disable()
+        if self.nodeTransition != None:
+            self.nodeTransition.pause()
     
     def resume(self):
-        self.cameraControl.enable()
-        self.nodeTransition.resume()
+        self.getGame().getView().getCameraController().enable()
+        if self.nodeTransition != None:            
+            self.nodeTransition.resume()
     
     def onMessage(self, msg, *args):
         
@@ -158,7 +157,7 @@ class ExploreState(FSMState):
             self.getGame().requestLoad(('my_save')) #_Fri_Mar_20_121647_2009.sav'))
         else:
             return False if self.nodeScript is None else self.nodeScript.onInputAction(action)
-        return True
+        return True    
     
     def persistState(self, persistence):
         ctx = persistence.createContext('exploreState_ctx')
@@ -190,16 +189,18 @@ class ExploreState(FSMState):
         # display node in a number of steps
         game = self.getGame()
         self.nodeTransition = Sequence(
+                                        Func(game.initGameSequence),
                                         Func(game.getView().fadeOut, fadeDuration / 2.0),
                                         Wait(0.2 + fadeDuration / 2.0),
                                         Func(game.getView().displayNode, self.activeNode),                                    
                                         Func(game.getView().mousePointer.setByName, "select"),
                                         Func(game.getView().panoRenderer.drawDebugHotspots, self.drawDebugViz),
-                                        Func(self._setCameraLookAt, self.activeNode.getLookAt()),
+                                        Func(game.getView().setCameraLookAt, self.activeNode.getLookAt()),
                                         Func(self._safeCallEnter),
                                         Func(game.getView().fadeIn, fadeDuration / 2.0),
                                         Wait(fadeDuration / 2.0),
                                         Func(self._completeNodeTransition),
+                                        Func(game.endGameSequence),
                                         name = 'Node transition sequence'
                                         )
         self.nodeTransition.start()         
@@ -254,44 +255,6 @@ class ExploreState(FSMState):
                 # verify that the node script object extends FSMState
                 assert isinstance(self.nodeScript, BaseNodeScript), 'Node script object must subclass pano.control.FSMState'
                        
-        
-    def _setCameraLookAt(self, lookat):
-        '''
-        Points the camera to the specified look-at point.
-        This point is defined through a string parameter which can take one of the following values:
-          a) face_xxxx, where xxxx can be front, back, left, right, top or bottom and denotes the center of the respective face of the cube node.
-          b) hotspot_xxx, where xxxx is the name of a hotspot defined within the context of the active node.
-        '''
-        wp = None
-        if lookat.startswith('face_'):
-            faceName = lookat[5:]
-            face = PanoConstants.CBM_FRONT_FACE
-            if faceName == 'front':
-                face = PanoConstants.CBM_FRONT_FACE
-            elif faceName == 'back':
-                face = PanoConstants.CBM_BACK_FACE
-            elif faceName == 'right':
-                face = PanoConstants.CBM_RIGHT_FACE
-            elif faceName == 'left':
-                face = PanoConstants.CBM_LEFT_FACE
-            elif faceName == 'top':
-                face = PanoConstants.CBM_TOP_FACE
-            elif faceName == 'bottom':
-                face = PanoConstants.CBM_BOTTOM_FACE
-            else:
-                self.log.error('Wrong lookat attribute: %s for node %s' % (lookat, self.activeNode.getNode()))
-                return
-            
-            wp = self.getGame().getView().panoRenderer.getWorldPointFromFacePoint(face, (0.5, 0.5))
-            
-        elif lookat.startswith('hotspot_'):
-            hpName = lookat[8:]
-            hp = self.activeNode.getHotspot(hpName)
-            wp = self.getGame().getView().panoRenderer.getHotspotWorldPos(hp)
-                        
-        if wp is not None:
-            camera = self.getGame().getView().panoRenderer.getCamera()
-            camera.lookAt(wp[0], wp[1], wp[2])
         
     def _safeCallEnter(self):
         if self.nodeScript is not None:

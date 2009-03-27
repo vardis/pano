@@ -196,6 +196,9 @@ class PanoGame:
                 except:
                     self.log.exception("Unexpected error while processing input action %s" % act)        
         
+        if self.paused:
+            millis = 0
+        
         # update state
         self.fsm.update(millis)       
         
@@ -206,6 +209,20 @@ class PanoGame:
         self.soundsFx.update(millis)     
         
         return Task.cont
+    
+    def initGameSequence(self):
+        '''
+        Called to prepare the state for a game sequence. For example it could disable user input or hide the mouse pointer.
+        '''
+        self.gameView.getMousePointer().hide()
+        self.inputMappings.disable()
+    
+    def endGameSequence(self):
+        '''
+        Called to restore the state after the completion of a game sequence.
+        '''
+        self.gameView.getMousePointer().show()
+        self.inputMappings.enable()
 
     def getName(self):
         return self.name
@@ -260,6 +277,7 @@ class PanoGame:
         if self.canPause():
 #            self.paused = self.fsm.changeGlobalState(PausedState.NAME)                
             self.paused = self.fsm.changeGlobalState('pausedState')
+            self.paused = True
     
     def resume(self):
         """
@@ -305,7 +323,7 @@ class PanoGame:
         self.loadRequest = request
 
     def getInitialNode(self):
-        return 'node3'
+        return 'node1'
 
     def persistState(self, persistence):
         ctx = persistence.createContext('gameCtx')

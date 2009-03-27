@@ -196,3 +196,9 @@ class PanoConstants:
     CONSOLE_CULL_BIN_NAME = "console_pointer_bin"
     CONSOLE_CULL_BIN_VAL = 70
     
+    BLEND_TYPE_EASEIN = "easeIn"
+    BLEND_TYPE_EASEOUT = "easeOut"
+    BLEND_TYPE_EASEINOUT = "easeInOut"
+    BLEND_TYPE_ABRUPT = "noBlend"
+    
+    

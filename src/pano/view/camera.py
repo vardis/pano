@@ -69,15 +69,31 @@ class CameraMouseControl:
     rightWidth = 0.2
     rightHeight = 0.7
     
-    def __init__(self, gameRef):
+    def __init__(self, gameRef, camera = None):
         self.log = logging.getLogger('pano.camera')
         self.game = gameRef
+        
+        # the camera we are controlling
+        self.camera = camera
+        
         self.active = False
         
     def initialize(self):
         self.active = False
         self.mouseHSpeed = self.game.getConfig().getFloat(PanoConstants.CVAR_CAM_HSPEED)
         self.mouseVSpeed =  self.game.getConfig().getFloat(PanoConstants.CVAR_CAM_VSPEED)
+        
+    def getCamera(self):
+        '''
+        Returns the camera under our control.
+        '''
+        return self.camera
+    
+    def setCamera(self, camera):
+        '''
+        Sets the camera to control.
+        '''
+        self.camera = camera
 
     def isActive(self):
         return self.active
@@ -123,7 +139,7 @@ class CameraMouseControl:
         The speed of rotation is controlled by the fields self.mouseHSpeed and self.mouseVSpeed and is frame depended
         by multiplying it with the elapsed time since the last update.
         """
-        if not self.active:
+        if not self.active or self.camera is None:
             return
         
         if base.mouseWatcherNode.hasMouse():
@@ -160,7 +176,7 @@ class CameraMouseControl:
                 # Rotate around the global Y axis in a clockwise fashion            
                 y_rot = -self.mouseHSpeed * secs
             
-            hpr = base.camera.getHpr()            
-            base.camera.setHpr((hpr[0] + y_rot) % 360, (hpr[1] + x_rot) % 360, hpr[2])            
+            hpr = self.camera.getHpr()            
+            self.camera.setHpr((hpr[0] + y_rot) % 360, (hpr[1] + x_rot) % 360, hpr[2])            
 
 

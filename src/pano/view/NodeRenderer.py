@@ -532,9 +532,9 @@ class NodeRenderer:
     
     def getCamera(self):
         '''
-        Returns the camera that is used for rendering this node.
+        Returns the NodePath of the camera that is used for rendering this node.
         '''
-        return base.camera
+        return base.cam
     
     
     def isFaceInFrustum(self, face):
