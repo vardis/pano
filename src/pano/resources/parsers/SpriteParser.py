@@ -31,6 +31,7 @@ class SpriteParser:
     
     SPRITE_SECTION      = 'sprite'
     SPRITE_OPT_EGGFILE  = 'egg_file'
+    SPRITE_OPT_IMAGE  = 'image'
     SPRITE_OPT_FPS      = 'frame_rate'
     SPRITE_OPT_WIDTH    = 'width'
     SPRITE_OPT_HEIGHT   = 'height'
@@ -48,6 +49,9 @@ class SpriteParser:
             
             if cfg.has_option(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_EGGFILE):
                 sprite.setEggFile(cfg.get(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_EGGFILE))
+                
+            if cfg.has_option(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_IMAGE):
+                sprite.setImage(cfg.get(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_IMAGE))
             
             if cfg.has_option(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_FPS):
                 sprite.setFrameRate(cfg.getfloat(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_FPS))
@@ -63,9 +67,6 @@ class SpriteParser:
                 
             if cfg.has_option(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_AUDIO):
                 sprite.setAudio(cfg.get(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_AUDIO))
-            
-            assert sprite.getEggFile() is not None or sprite.getVideo() is not None, 'No sprite image source has been specified'                     
-                
             
         except (MissingSectionHeaderError, ParsingError):
             raise ParseException(error='error.parse.invalid', resFile=sprite.getName() + '.spr')

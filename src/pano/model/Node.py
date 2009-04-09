@@ -36,6 +36,7 @@ class Node:
         self.description = desc
         self.cubemap = None
         self.image = None
+        self.extension = None
         self.hotspots = hotspots if hotspots is not None else {}
         self.scriptName = scriptName if scriptName is not None else name            
         self.lookat = lookat
@@ -97,5 +98,9 @@ class Node:
     def setLookAt(self, lookat):
         self.lookat = lookat
         
-        
+    def getExtension(self):
+        return self.extension
+    
+    def setExtension(self, extension):
+        self.extension = extension
     

@@ -21,6 +21,7 @@ THE SOFTWARE.
 
 '''
 
+from pandac.PandaModules import CardMaker
 
 from constants import PanoConstants
 from view.VideoPlayer import VideoPlayer
@@ -152,10 +153,28 @@ class SpritesUtil:
         textureCard.setPythonTag('sprite', sprite)                
         return textureCard
     
+    def createImageSprite(resources, sprite, parent):
+        """
+        Creates a node responsible for rendering a sprite whose visual representation consists of a single image.
+        
+        We use the CardMaker in order to generate a quad where the image will be applied as a texture.        
+        
+        Returns: the NodePath for the created node.
+        """
+        tex = resources.loadTexture(sprite.getImage())
+        cm = CardMaker(sprite.getName())
+        cm.setFrame(-0.5, 0.5, -0.5, 0.5)
+        cm.setColor(1,1,1,1)
+        card = parent.attachNewNode(cm.generate())
+        card.setTexture(tex)
+        card.setPythonTag('sprite', sprite)
+        return card
+    
     def getSpriteNodeName(spriteName):
         return PanoConstants.SPRITES_NAME_PREFIX + spriteName
     
     createVideoSprite         = staticmethod(createVideoSprite)
     createImageSequenceSprite = staticmethod(createImageSequenceSprite)
+    createImageSprite         = staticmethod(createImageSprite)
     getSpriteNodeName         = staticmethod(getSpriteNodeName)
     

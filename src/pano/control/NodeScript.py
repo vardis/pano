@@ -25,6 +25,7 @@ THE SOFTWARE.
 
 import logging
 
+from constants import PanoConstants
 from fsm import FSMState
 
 class BaseNodeScript(FSMState):
@@ -36,6 +37,15 @@ class BaseNodeScript(FSMState):
     def __init__(self, game, name):
         FSMState.__init__(self, game, name)
         self.log = logging.getLogger('pano.baseNodeScript')
+        
+#    def enter(self):
+#        FSMState.enter(self)
+#        
+#    def exti(self):
+#        FSMState.exit(self)
+        
+    def registerMessages(self):
+        return [PanoConstants.EVENT_HOTSPOT_ACTION, PanoConstants.EVENT_HOTSPOT_LOOKAT]
         
         
         

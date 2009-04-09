@@ -32,5 +32,5 @@ class BaseAction:
     def getDescription(self):
         return self.description
         
-    def execute(self, game):
+    def execute(self, game, params):
         pass

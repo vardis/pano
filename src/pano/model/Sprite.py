@@ -30,6 +30,7 @@ class Sprite:
     def __init__(self, name, eggFile=None, frameRate=0, width=0, height=0, video=None, audio=None):
         self.__name = name
         self.__eggFile = eggFile
+        self.image = None
         self.__frameRate = frameRate
         self.__width = width
         self.__height = height
@@ -91,6 +92,11 @@ class Sprite:
     def setAudio(self, value):
         self.__audio = value
 
+    def getImage(self):
+        return self.image
+    
+    def setImage(self, image):
+        self.image = image
         
     eggFile = property(getEggFile, setEggFile, None, "EggFile's Docstring")
 

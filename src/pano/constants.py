@@ -37,11 +37,14 @@ class PanoConstants:
     EVENT_ITEM_REMOVED = "inventory.item.removed"
     EVENT_ITEM_COUNT_CHANGED = "inventory.count.changed"
     EVENT_ITEMS_RESTORED = "inventory.items.restored"
+    EVENT_ITEMS_COMBINED = "inventory.items.combined"   # args[0]: first item, args[1]: second item
     EVENT_SAVELOAD_ERROR = "saveload.error"
     EVENT_SAVE_COMPLETED = "save.complete"
     EVENT_LOAD_COMPLETED = "load.complete"
     EVENT_CHANGE_NODE = "node.change"
     EVENT_RESTORE_NODE = "node.restore"
+    EVENT_HOTSPOT_ACTION = "hotspot.action"
+    EVENT_HOTSPOT_LOOKAT = "hotspot.lookat"
     
     
     # tasks' names
@@ -80,8 +83,6 @@ class PanoConstants:
     CVAR_RESOURCES_SCRIPTS = 'resources_scripts'
     
     # names of the cvars which are related to the talk box
-    CVAR_TALKBOX_X         = 'talkbox_x'
-    CVAR_TALKBOX_Y         = 'talkbox_y'
     CVAR_TALKBOX_FONT      = 'talkbox_font'
     CVAR_TALKBOX_BGCOLOR   = 'talkbox_bg_color'
     CVAR_TALKBOX_IMAGE   = 'talkbox_image'
@@ -106,9 +107,12 @@ class PanoConstants:
     CVAR_INVENTORY_POINTER = 'inventory_mouse_pointer'
     CVAR_INVENTORY_FONT = 'inventory_font_name'
     CVAR_INVENTORY_FONT_COLOR = 'inventory_font_color'
+    CVAR_INVENTORY_FONT_BG_COLOR = 'inventory_font_bg_color'
     CVAR_INVENTORY_POS = 'inventory_pos'
+    CVAR_INVENTORY_REL_POS = 'inventory_rel_pos'
     CVAR_INVENTORY_SIZE = 'inventory_size'
     CVAR_INVENTORY_TEXT_POS = 'inventory_item_text_pos'
+    CVAR_INVENTORY_TEXT_REL_POS = 'inventory_item_text_rel_pos'
     CVAR_INVENTORY_TEXT_SCALE = 'inventory_item_text_scale'
     CVAR_INVENTORY_OPACITY = 'inventory_opacity'
     CVAR_INVENTORY_SLOTS = 'inventory_slots_provider'
@@ -164,6 +168,14 @@ class PanoConstants:
     CAM_CONTROL_BOTTOM_REGION = 2
     CAM_CONTROL_LEFT_REGION = 3
     CAM_CONTROL_RIGHT_REGION = 4
+
+    # constants for the states' names
+    STATE_INIT      = 'initState'
+    STATE_EXPLORE   = 'exploreState'
+    STATE_PAUSED    = 'pausedState'
+    STATE_INVENTORY = 'inventoryState'
+    STATE_INTRO     = 'introState'
+    STATE_CONSOLE   = 'consoleState'
     
     # default path to configuration file
     CONFIG_FILE = "Config.prc"

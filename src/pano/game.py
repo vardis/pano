@@ -22,18 +22,11 @@ THE SOFTWARE.
 '''
 
 
+from __future__ import with_statement
 
 import sys, os, codecs
 import logging.config
 from ConfigParser import SafeConfigParser
- 
-# defer opening of the main window until we read the window properties from the
-# configuration and setup a WindowProperties to initialise the window.
-#from pandac.PandaModules import loadPrcFileData
-#loadPrcFileData("", "want-directtools #t")
-#loadPrcFileData("", "want-tk #t")
-#loadPrcFileData("", "window-type none")
-import direct.directbase.DirectStart
  
 from pandac.PandaModules import loadPrcFile
 from pandac.PandaModules import loadPrcFileData
@@ -101,6 +94,7 @@ class PanoGame:
         self.mouseMode = PanoConstants.MOUSE_UI_MODE
         
         self.paused = False
+        self.isGameSequenceActive = False
 
         self.gameActions = GameActions(self) 
         
@@ -116,40 +110,27 @@ class PanoGame:
         self.loadRequest = None
         
         self.quitRequested = False
-
-            
-    def initialise(self, task):
-                        
+                    
         # read the boot configuration 
         self._readBootConfig()
-                
+        
         os.chdir(self.config.get(PanoConstants.CVAR_GAME_DIR))
+        with open('Config.prc') as cfgFile:
+            loadPrcFileData('game-config', cfgFile.read())
+            
+    def initialise(self, task):                                                        
                         
         # setup the game's FSM
         self.fsm = FSM(self)
         statesFactory = self.fsm.getFactory()
-        statesFactory.registerState('initState', InitGameState)
-        statesFactory.registerState('exploreState', ExploreState)
-        statesFactory.registerState('pausedState', PausedState)
-        statesFactory.registerState('consoleState', ConsoleState)
-        statesFactory.registerState('introState', IntroState)
-        statesFactory.registerState('inventoryState', InventoryState)
+        statesFactory.registerState(PanoConstants.STATE_INIT, InitGameState)
+        statesFactory.registerState(PanoConstants.STATE_EXPLORE, ExploreState)
+        statesFactory.registerState(PanoConstants.STATE_PAUSED, PausedState)
+        statesFactory.registerState(PanoConstants.STATE_CONSOLE, ConsoleState)
+        statesFactory.registerState(PanoConstants.STATE_INTRO, IntroState)
+        statesFactory.registerState(PanoConstants.STATE_INVENTORY, InventoryState)
         
-#        initState = InitGameState(gameRef = self)
-#        exploreState = ExploreState(gameRef = self)
-#        pausedState = PausedState(gameRef = self)
-#        consoleState = ConsoleState(self)
-#        introState = IntroState(gameRef = self)
-#        inventoryState = InventoryState(self) 
-#
-#        self.fsm.addValidState(initState)
-#        self.fsm.addValidState(exploreState)
-#        self.fsm.addValidState(pausedState)
-#        self.fsm.addValidState(consoleState)
-#        self.fsm.addValidState(introState)
-#        self.fsm.addValidState(inventoryState)
-#        self.fsm.changeState(InitGameState.NAME)
-        self.fsm.changeState('initState')
+        self.fsm.changeState(PanoConstants.STATE_INIT)
         
         self.saveLoad = GameSaveLoad(game = self, savesDir = self.config.get(PanoConstants.CVAR_SAVES_DIR))
         
@@ -216,6 +197,7 @@ class PanoGame:
         '''
         self.gameView.getMousePointer().hide()
         self.inputMappings.disable()
+        self.isGameSequenceActive = True
     
     def endGameSequence(self):
         '''
@@ -223,6 +205,7 @@ class PanoGame:
         '''
         self.gameView.getMousePointer().show()
         self.inputMappings.enable()
+        self.isGameSequenceActive = False
 
     def getName(self):
         return self.name
@@ -267,7 +250,7 @@ class PanoGame:
         @todo: Publish the pause-request event and gather any vetos, for now accept it always. Will probably use the messenger object for this.
         """
         # the current state will decide...
-        return self.fsm.allowPausing()
+        return self.fsm.allowPausing() and not self.isGameSequenceActive
         
     def pause(self):
         """
@@ -299,15 +282,12 @@ class PanoGame:
         if self.console is not None:
             self.console.toggle()
             self.consoleVisible = True
-#            self.fsm.changeGlobalState(ConsoleState.NAME)
-#            self.fsm.pushState(ConsoleState.NAME)
             self.fsm.pushState('consoleState')
             
     def hideDebugConsole(self):
         if self.console is not None:
             self.console.toggle()
             self.consoleVisible = False
-#            self.fsm.changeGlobalState(self.fsm.getPreviousGlobalState())
             self.fsm.popState()
             
     def isDebugConsoleVisible(self):
@@ -323,7 +303,7 @@ class PanoGame:
         self.loadRequest = request
 
     def getInitialNode(self):
-        return 'node1'
+        return 'node3'
 
     def persistState(self, persistence):
         ctx = persistence.createContext('gameCtx')
@@ -412,8 +392,10 @@ class PanoGame:
                 self.loadRequest = None
 
 
-#os.chdir(sys.argv[1])
 game = PanoGame()
+
+import direct.directbase.DirectStart
+
 taskMgr.add(game.initialise, "Game initialisation task")
         
 run()

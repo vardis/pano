@@ -49,7 +49,7 @@ class GameActions:
         try:
             act = self.actions[name]
             if act is not None:
-                act.execute(self.game)
+                act.execute(self.game, params)
         except: 
             self.log.exception('unexpected error')
 
@@ -61,3 +61,4 @@ class GameActions:
             
     def builtinNames(self):
         return builtinActions.BuiltinActionsNames
+    

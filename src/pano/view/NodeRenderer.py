@@ -98,8 +98,7 @@ class NodeRenderer:
         self.faceToWorldMatrices = {}
         
         #Stores the textures of the faces. E.g.:
-        #frontTexture = self.faceTextures[CBM_FRONT_FACE]
-        self.faceTextures = { }
+        #frontTexture = self.faceTextures[CBM_FRONT_FACE]        
         self.facesGeomNodes = {}
         
         # the normal of each face, indexed by the face constant (e.g. PanoConstants.CBM_TOP_FACE) 
@@ -131,11 +130,14 @@ class NodeRenderer:
     
     
     def initialize(self):
+       
         # creates the root node 
         self.rootNode = render.attachNewNode(PanoConstants.NODE_ROOT_NODE)
         
-        base.camLens.setFar(100000)
+        base.camLens.setFar(10000)
         base.camLens.setFocalLength(1)
+#        base.camLens.setFov(90.0, 90)
+#        base.camLens.setAspectRatio(1.0)
         self.loadCubeModel()
         
     def loadCubeModel(self):   
@@ -186,8 +188,7 @@ class NodeRenderer:
             geomNode = self.cmap.find("**/Cube/=name=" + n)
             state = geomNode.node().getGeomState(0)
             self.facesGeomNodes[i] = geomNode.node()
-            tex = state.getAttrib(TextureAttrib.getClassType()).getTexture()
-            self.faceTextures[i] = tex 
+             
                                     
         # builds matrices used in transforming points from/to world space and the faces' image space
         self.buildWorldToFaceMatrices() 
@@ -358,7 +359,8 @@ class NodeRenderer:
             t2 = hp.ye / dim[1]
             we = self.getWorldPointFromFacePoint(hp.getFace(), (t1, t2))
             
-            box = loader.loadModel(self.resources.getResourceFullPath(PanoConstants.RES_TYPE_MODELS, 'box.egg.pz'))
+            box = self.resources.loadModel('box.egg.pz') #loader.loadModel(self.resources.getResourceFullPath(PanoConstants.RES_TYPE_MODELS, 'box.egg.pz'))
+            box.setName('debug_' + hp.getName())
             
             # we want to set as the position of our box, the respective world space position of the leftmost top corner of the hotspot
             # because image space and world space X and Y axis may have opposite directions, we use min() to choose correctly between
@@ -369,7 +371,7 @@ class NodeRenderer:
                          max(0.2, math.fabs(we[0] - wo[0])), 
                          max(0.2, math.fabs(we[1] - wo[1])), 
                          max(0.2, math.fabs(we[2] - wo[2])))                
-            box.setRenderModeWireframe()                                
+            box.setRenderModeWireframe()                                        
             box.reparentTo(self.debugGeomsParent)
 
 # setups node for rendering the sprite associated with this hotspot
@@ -387,7 +389,7 @@ class NodeRenderer:
                 centerPos = self.getWorldPointFromFacePoint(hp.getFace(), (t1, t2))
                 
                 # align nodePath's center with the hotspot's
-                nodePath.setPos(VBase3(centerPos[0], centerPos[1], centerPos[2]) + VBase3(n[0], n[1], n[2]) * 0.01)                
+                nodePath.setPos(VBase3(centerPos[0], centerPos[1], centerPos[2]) + VBase3(n[0], n[1], n[2]) * 0.001)                
                 
                 # scale appropriately to cover the hotspot
                 nodePath.setScale(hp.width * self.faceDim / dim[0], 1.0, hp.height * self.faceDim / dim[1])
@@ -416,6 +418,10 @@ class NodeRenderer:
                 nodePath = SpritesUtil.createImageSequenceSprite(self.resources, sprite, self.spritesParent)
             elif sprite.getVideo() is not None:
                 nodePath = SpritesUtil.createVideoSprite(self.resources, sprite, self.spritesParent)
+            elif sprite.getImage() is not None:
+                nodePath = SpritesUtil.createImageSprite(self.resources, sprite, self.spritesParent)
+            else:
+                self.log.error('Could not determine type for sprite: %s' % sprite.getName())
             
             nodePath.setName(nodeName)
             self.sprites[nodeName] = nodePath  
@@ -430,6 +436,23 @@ class NodeRenderer:
         if np is not None:
             np.removeNode()
             del self.sprites[nodeName]
+            
+    def removeHotspot(self, hotspot):
+        spriteName = hotspot.getSprite()
+        if spriteName is not None:
+            self.removeSprite(spriteName)
+            
+        # remove the hotspot's debug geometry
+        if self.debugGeomsParent is not None:
+            np = self.debugGeomsParent.find('debug_' + hotspot.getName())
+            if np != None and not np.isEmpty():
+                print 'FOUND NODE'
+                np.removeNode()
+            
+    def replaceHotspotSprite(self, hotspot, newSprite):
+        self.removeSprite(hotspot.getSprite())
+        self.addSprite(newSprite)
+            
     
     def getSpriteRenderInterface(self, spriteName):
         """
@@ -586,8 +609,8 @@ class NodeRenderer:
         Returns a tuple containing the width and height of the cubemap textures.
         tuple[0] holds the width while tuple[1] holds the height of the textures.
         """
-        if self.faceTextures.has_key(face):
-            tex = self.faceTextures[face]
+        if self.facesGeomNodes.has_key(face):
+            tex = self.facesGeomNodes[face].getGeomState(0).getTexture().getTexture()
             if tex is not None:
                 return (tex.getXSize(), tex.getYSize())
             
@@ -595,23 +618,30 @@ class NodeRenderer:
     
     def _replaceCubemapTextures(self):
         
-        prefixFilename = self.node.getCubemap()        
+        prefixFilename = self.node.getCubemap()
+        ext = self.node.getExtension() if self.node.getExtension() is not None else 'jpg'         
         faceCodes = { 
-                     PanoConstants.CBM_FRONT_FACE : '_fr.jpg',
-                     PanoConstants.CBM_BACK_FACE : '_bk.jpg',
-                     PanoConstants.CBM_LEFT_FACE : '_lt.jpg',
-                     PanoConstants.CBM_RIGHT_FACE : '_rt.jpg',
-                     PanoConstants.CBM_TOP_FACE : '_top.jpg',
-                     PanoConstants.CBM_BOTTOM_FACE : '_bt.jpg'
+                     PanoConstants.CBM_FRONT_FACE : '_fr.' + ext,
+                     PanoConstants.CBM_BACK_FACE : '_bk.' + ext,
+                     PanoConstants.CBM_LEFT_FACE : '_lt.' + ext,
+                     PanoConstants.CBM_RIGHT_FACE : '_rt.' + ext,
+                     PanoConstants.CBM_TOP_FACE : '_top.' + ext,
+                     PanoConstants.CBM_BOTTOM_FACE : '_bt.' + ext
                      }
         
         for face, suffix in faceCodes.items():
-            tex = self.resources.loadTexture(prefixFilename + suffix)
-            tex.setWrapU(Texture.WMClamp)
-            tex.setWrapV(Texture.WMClamp)
-        
-            rs = self.facesGeomNodes[face].getGeomState(0).setAttrib(TextureAttrib.make(tex))
-            self.facesGeomNodes[face].setGeomState(0, rs)
+            self.setFaceTexture(face, prefixFilename + suffix)
+            
+    def setFaceTexture(self, face, filename):
+        '''
+        Sets the texture of the specified face of the cubemap.        
+        '''    
+        tex = self.resources.loadTexture(filename)
+        tex.setWrapU(Texture.WMClamp)
+        tex.setWrapV(Texture.WMClamp)
+        tex.setTexturesPower2(0) 
+        rs = self.facesGeomNodes[face].getGeomState(0).setAttrib(TextureAttrib.make(tex))
+        self.facesGeomNodes[face].setGeomState(0, rs)
 
 
     

@@ -73,14 +73,24 @@ class ExploreState(FSMState):
                 PanoConstants.EVENT_RESTORE_NODE
                 )
     
-    def doMouseAction(self):        
+    def onHotspotAction(self):        
         if self.activeHotspot is not None:
             if self.log.isEnabledFor(logging.DEBUG):                    
                 self.log.debug('Clicked on hotspot %s, (%s)', self.activeHotspot.getName(), self.activeHotspot.getDescription())
             
             if self.activeHotspot.hasAction():
-                self.getGame().actions().execute(self.activeHotspot.getAction(), self.activeHotspot.getActionArgs())                
-            self.getGame().getView().getTalkBox().showText(self.activeHotspot.getDescription(), 3.0)                                        
+                self.getGame().actions().execute(self.activeHotspot.getAction(), *self.activeHotspot.getActionArgs())                                            
+            
+            # send message to notify about interaction with this hotspot
+            self.getMessenger().sendMessage(PanoConstants.EVENT_HOTSPOT_ACTION, [self.activeHotspot])    
+            
+    def onHotspotLookAt(self):                                    
+        if self.activeHotspot is not None:
+            if self.log.isEnabledFor(logging.DEBUG):                    
+                self.log.debug('Looked at hotspot %s, (%s)', self.activeHotspot.getName(), self.activeHotspot.getDescription())
+                
+            self.getGame().getView().getTalkBox().showText(self.activeHotspot.getDescription(), 3.0)
+            self.getMessenger().sendMessage(PanoConstants.EVENT_HOTSPOT_LOOKAT, [self.activeHotspot])
                                 
     def exit(self):             
         FSMState.exit(self)
@@ -107,7 +117,7 @@ class ExploreState(FSMState):
                 
                 self.activeHotspot = None
                 for h in self.activeNode.getHotspots():
-                    if h.getFace() == face and x >= h.getXo() and x <= h.getXe() and y >= h.getYo() and y <= h.getYe():
+                    if h.getFace() == face and x >= h.getXo() and x <= h.getXe() and y >= h.getYo() and y <= h.getYe() and h.getActive():
                         self.activeHotspot = h
                         
                 if self.activeHotspot is not None:
@@ -150,7 +160,9 @@ class ExploreState(FSMState):
             
     def onInputAction(self, action):
         if action == "acMouseAction":
-            self.doMouseAction()
+            self.onHotspotAction()
+        elif action == "acMouseLook":
+            self.onHotspotLookAt()
         elif action == "save":            
             self.getGame().requestSave(('my_save'))            
         elif action == "load":
@@ -232,7 +244,7 @@ class ExploreState(FSMState):
         game = self.getGame()
         self.activeNode = game.getResources().loadNode(nodeName)
         if self.activeNode is None:
-            print 'Warning failed to load node ' , nodeName
+            self.log.error('Warning failed to load node %s' % nodeName)
             
         if self.activeNode.getScriptName() is not None:
             scriptPath = game.getResources().getResourceFullPath(PanoConstants.RES_TYPE_SCRIPTS, self.activeNode.getScriptName() + '.py')
@@ -248,7 +260,7 @@ class ExploreState(FSMState):
                     if fp is not None:
                         fp.close()
                         
-                exec('__builtins__[' + self.activeNode.getScriptName() + '] = ' + self.activeNode.getScriptName())                
+#                exec('__builtins__[' + self.activeNode.getScriptName() + '] = ' + self.activeNode.getScriptName())                
                 exec('self.nodeScript  = ' + self.activeNode.getScriptName() + '(game)')
                 __builtins__['nodescript'] = self.nodeScript                
                 

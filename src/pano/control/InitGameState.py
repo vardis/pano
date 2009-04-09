@@ -108,13 +108,23 @@ class InitGameState(FSMState):
     def enter(self):
         if self.log.isEnabledFor(logging.DEBUG):
             self.log.debug('entered initial state')
-            
-        self.printPlatformInformation() 
-        
-        game = self.getGame()
         
         # load all configuration variables to game.config
         self.configure()
+        
+        # sets window settings and hides the system mouse
+        game = self.getGame()
+        winProps = { 
+                    PanoConstants.WIN_MOUSE_POINTER : False,
+                    PanoConstants.WIN_SIZE : (game.getConfig().getInt(PanoConstants.CVAR_WIN_WIDTH), game.getConfig().getInt(PanoConstants.CVAR_WIN_HEIGHT)),
+                    PanoConstants.WIN_FULLSCREEN : game.getConfig().getBool(PanoConstants.CVAR_WIN_FULLSCREEN),
+                    PanoConstants.WIN_TITLE : game.getConfig().get(PanoConstants.CVAR_WIN_TITLE)
+        }
+        game.getView().setWindowProperties(winProps)
+        game.getView().openWindow()
+            
+        # show in the logs the platform we're running on
+        self.logPlatformInformation()                 
         
 		# configure resource locations
         self.setupResourcesLocations()
@@ -127,16 +137,7 @@ class InitGameState(FSMState):
             
         # load global input mappings
         game.getInput().setGlobalMappings('global')                
-        
-        # sets window settings and hides the system mouse
-        winProps = { 
-                    PanoConstants.WIN_MOUSE_POINTER : False,
-                    PanoConstants.WIN_SIZE : (game.getConfig().getInt(PanoConstants.CVAR_WIN_WIDTH), game.getConfig().getInt(PanoConstants.CVAR_WIN_HEIGHT)),
-                    PanoConstants.WIN_FULLSCREEN : game.getConfig().getBool(PanoConstants.CVAR_WIN_FULLSCREEN),
-                    PanoConstants.WIN_TITLE : game.getConfig().get(PanoConstants.CVAR_WIN_TITLE)
-        }
-        game.getView().setWindowProperties(winProps)
-        game.getView().openWindow()
+                
         game.getView().initialize()
         
         # init components
@@ -151,7 +152,7 @@ class InitGameState(FSMState):
         if self.millis > 2:
             self.getGame().getState().changeState('introState')
 
-    def printPlatformInformation(self):
+    def logPlatformInformation(self):
         di = base.pipe.getDisplayInformation()
         self.log.info('********************')
         self.log.info('Platform Information')
