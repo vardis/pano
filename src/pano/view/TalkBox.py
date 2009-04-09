@@ -51,8 +51,7 @@ class TalkBox:
     def initialize(self):
         self.__talkBoxNode = aspect2d.attachNewNode('talkBox')
         self.__textNodeParent = self.__talkBoxNode.attachNewNode('talkBox_text_parent')
-        self.setX(self.game.getConfig().getFloat(PanoConstants.CVAR_TALKBOX_X))
-        self.setY(self.game.getConfig().getFloat(PanoConstants.CVAR_TALKBOX_Y))
+        
         self.setFontName(self.game.getConfig().get(PanoConstants.CVAR_TALKBOX_FONT))
         self.setBackgroundColor(self.game.getConfig().getVec4(PanoConstants.CVAR_TALKBOX_BGCOLOR))
         self.setBackgroundImage(self.game.getConfig().getVec4(PanoConstants.CVAR_TALKBOX_IMAGE))
@@ -180,13 +179,6 @@ class TalkBox:
     def setText(self, value):
         self.__text = value        
 
-    def getX(self):
-        return self.__x
-
-
-    def getY(self):
-        return self.__y
-
     def getFontName(self):
         return self.__fontName
 
@@ -201,14 +193,6 @@ class TalkBox:
 
     def getTextColor(self):
         return self.__textColor
-
-
-    def setX(self, value):
-        self.__x = value
-
-
-    def setY(self, value):
-        self.__y = value
 
     def setFontName(self, value):
         self.__fontName = value
@@ -226,10 +210,6 @@ class TalkBox:
         self.__textColor = value        
 
     
-    x = property(getX, setX, None, "X's Docstring")
-
-    y = property(getY, setY, None, "Y's Docstring")
-
     fontName = property(getFontName, setFontName, None, "Font's Docstring")
 
     backgroundColor = property(getBackgroundColor, setBackgroundColor, None, "BackgroundColor's Docstring")

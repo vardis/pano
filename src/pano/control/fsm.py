@@ -222,7 +222,7 @@ class FSM:
         The old state is not exited but remains ready to be resumed when popState will be called. 
         """
         self.statesStack.append(self.currentState)
-#        self.changeState(stateName, True, False)        
+        self.currentState.suspend()  
         self.currentState = self.factory.create(stateName)
         self.currentState.enter()
     
@@ -232,10 +232,10 @@ class FSM:
         As the previously active state was not exited, there won't be a call to its enter method.
         """
         assert len(self.statesStack) > 0, 'popState called on empty state stack'
-        oldState = self.statesStack.pop()
-#        self.changeState(self.statesStack.pop(), False, True)
+        oldState = self.statesStack.pop()        
         self.currentState.exit()
         self.currentState = oldState
+        self.currentState.resume()
     
     def revertState(self,):
         """

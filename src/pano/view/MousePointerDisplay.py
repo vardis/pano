@@ -170,6 +170,12 @@ class MousePointerDisplay:
                                               )
             
             self.pointerImage = image
+            self.mousePointer.setTransparency(TransparencyAttrib.MAlpha)            
+            self.mousePointer.setBin(PanoConstants.MOUSE_CULL_BIN_NAME, 0)
+            self.mousePointer.setDepthTest(False)
+            self.mousePointer.setDepthWrite(False)            
+            self.mouseHidden = False
+            self.show()
             return True
         else:
             return False

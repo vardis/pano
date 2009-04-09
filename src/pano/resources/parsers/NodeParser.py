@@ -34,6 +34,7 @@ class NodeParser:
     NODE_OPT_DESC    = 'description'
     NODE_OPT_CUBEMAP = 'cubemap'
     NODE_OPT_IMAGE   = 'image'
+    NODE_OPT_EXTENSION = 'extension'    
     NODE_OPT_SCRIPT  = 'script'
     NODE_OPT_LOOKAT  = 'lookat'
     
@@ -89,6 +90,9 @@ class NodeParser:
             if cfg.has_option(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_LOOKAT):
                 node.setLookAt(cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_LOOKAT))
                 
+            if cfg.has_option(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_EXTENSION):
+                node.setExtension(cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_EXTENSION))
+                
             for s in cfg.sections():
                 if s.startswith('hotspot_'):
                     hp = Hotspot(name = s[8:])
@@ -120,7 +124,10 @@ class NodeParser:
                         hp.setHeight(cfg.getint(s, NodeParser.HOTSPOT_OPT_HEIGHT))
                         
                     if cfg.has_option(s, NodeParser.HOTSPOT_OPT_ACTION):
-                        hp.setAction(cfg.get(s, NodeParser.HOTSPOT_OPT_ACTION))                            
+                        actionStr = cfg.get(s, NodeParser.HOTSPOT_OPT_ACTION)
+                        argList = [x.strip() for x in actionStr.split(',')]
+                        hp.setAction(argList.pop(0))
+                        hp.setActionArgs(argList)                            
                         
                     if cfg.has_option(s, NodeParser.HOTSPOT_OPT_ACTIONARGS):
                         hp.setActionArgs(cfg.get(s, NodeParser.HOTSPOT_OPT_ACTIONARGS))

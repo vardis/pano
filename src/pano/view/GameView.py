@@ -219,7 +219,27 @@ class GameView:
         if base.screenshot(namePrefix = filename, defaultFilename = False) is None:
             raise GraphicsError('Call to base.screenshot failed')
         
+    def relativeToAbsolute(self, point):
+        '''
+        Translates the given point from relative coordinates to absolute screen coordinates.
+        Returns a tuple of the form (x, y).
+        '''
+        wp = self.getWindowProperties()
+        return (point[0] * wp.getXSize(), point[1] * wp.getYSize())
+    
+    def absoluteToRelative(self, point):
+        '''
+        Translates the given point from absolute coordinates to relative screen coordinates.
+        Returns a tuple of the form (x, y).
+        '''
+        wp = self.getWindowProperties()
+        return (float(point[0]) / wp.getXSize(), float(point[1]) / wp.getYSize())
+    
+        
     def convertScreenToAspectCoords(self, pointsList):
+        '''
+        Converts a list of points defined in absolute window coordinates to aspect relative coordinates.
+        '''
         wp = self.getWindowProperties()
         # the two factors below will convert x and y components into the [0.0...2*base.a2dRight] and [0...2*base.a2dTop] 
         # ranges respectively

@@ -252,7 +252,8 @@ class InventoryView:
         self.itemTextNode = None    # nodepath that acts as a parent to the TextNode
         self.fontName = None        # the name of the font to use when rendering items' descriptions
         self.font = None            # the Panda3D font resource
-        self.fontColor = (1.0, 1.0, 1.0, 1.0)    # color of the text for an item's description                                           
+        self.fontColor = (1.0, 1.0, 1.0, 1.0)    # colour of the text for an item's description      
+        self.fontBgColor = (0.0, 0.0, 0.0, 1.0)  # background colour of the text
         
         # provides the layout of the slots
         self.slotsLayout = None     
@@ -264,7 +265,7 @@ class InventoryView:
 
     def initialize(self, inventory):
         """
-        Initializes the inventory, call this method only once otherwise resources could be leaked
+        Initialises the inventory, call this method only once otherwise resources could be leaked
         and rendering artifacts created.
         """
         if self.node is not None:
@@ -273,17 +274,31 @@ class InventoryView:
         self.iconsNode = self.node.attachNewNode(InventoryView.ICONS_NODE)
         
         cfg = self.game.getConfig()             
+        view = self.game.getView()
         
         if self.backdropImageObject is not None:
             self.backdropImageObject.destroy()
         self.backdropImage = cfg.get(PanoConstants.CVAR_INVENTORY_BACKDROP)
-        self.pos = cfg.getVec2(PanoConstants.CVAR_INVENTORY_POS, (0.0, 0.0))
+        
+        self.pos = cfg.getVec2(PanoConstants.CVAR_INVENTORY_POS)
+        if self.pos is None:
+            self.pos = cfg.getVec2(PanoConstants.CVAR_INVENTORY_REL_POS)
+            self.pos = view.relativeToAbsolute(self.pos)
+                                
+        self.textPos = cfg.getVec2(PanoConstants.CVAR_INVENTORY_TEXT_POS)
+        if self.textPos is None:
+            self.textPos = cfg.getVec2(PanoConstants.CVAR_INVENTORY_REL_POS)
+            self.textPos = view.relativeToAbsolute(self.textPos)
+                        
+        self.pos, self.textPos = view.convertScreenToAspectCoords([self.pos, self.textPos])
+            
         self.size = cfg.getVec2(PanoConstants.CVAR_INVENTORY_SIZE, (1.0, 1.0))
-        self.textPos = cfg.getVec2(PanoConstants.CVAR_INVENTORY_TEXT_POS, (0.0, 0.0))
+            
         self.textScale = cfg.getFloat(PanoConstants.CVAR_INVENTORY_TEXT_SCALE, 0.07)
         self.opacity = cfg.getFloat(PanoConstants.CVAR_INVENTORY_OPACITY)
         self.fontName = cfg.get(PanoConstants.CVAR_INVENTORY_FONT)
         self.fontColor = cfg.getVec4(PanoConstants.CVAR_INVENTORY_FONT_COLOR)
+        self.fontBgColor = cfg.getVec4(PanoConstants.CVAR_INVENTORY_FONT_BG_COLOR)
         self.mousePointer = cfg.get(PanoConstants.CVAR_INVENTORY_POINTER)
         
         layout = cfg.get(PanoConstants.CVAR_INVENTORY_SLOTS)                
@@ -389,7 +404,7 @@ class InventoryView:
             parent = self.node,
             image = imagePath, 
             pos = (self.pos[0], 0.0, self.pos[1]), 
-            scale= (self.size[0], 1.0, self.size[1]),
+#            scale= (self.size[0], 1.0, self.size[1]),
             sort = 0)
         self.backdropImageObject.setTransparency(TransparencyAttrib.MAlpha)
         self.backdropImageObject.setBin("fixed", 41)
@@ -417,9 +432,9 @@ class InventoryView:
         
         self.itemText = DirectButton(
              parent=self.itemTextNode,
-             text=translated, 
+             text=translated + ' x30', 
              text_font=self.font,
-             text_bg=(0.0, 0.0, 0.0, 1.0),
+             text_bg=(self.fontBgColor[0], self.fontBgColor[1], self.fontBgColor[2], self.fontBgColor[3]),
              text_fg=(self.fontColor[0], self.fontColor[1], self.fontColor[2], self.fontColor[3]),
              text_scale=self.textScale, 
              frameColor=(0,0,0,0),

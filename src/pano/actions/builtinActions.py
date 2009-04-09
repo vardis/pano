@@ -21,8 +21,9 @@ THE SOFTWARE.
 
 '''
 
-
+from constants import PanoConstants
 from actions.BaseAction import BaseAction
+from control.InventoryState import InventoryState
 
 BuiltinActionsNames = [    
      'acVoid',
@@ -33,7 +34,8 @@ BuiltinActionsNames = [
      'acToggleConsole',
      'acHideConsole',
      'acChangeState',
-     'acToggleInventory'
+     'acToggleInventory',
+     'acGotoNode'
      ]
 
 def registerBultins(gameActions):    
@@ -45,37 +47,38 @@ def registerBultins(gameActions):
     gameActions.registerAction(HideDebugConsoleAction())
     gameActions.registerAction(ToggleDebugConsoleAction())
     gameActions.registerAction(ToggleInventoryAction())
+    gameActions.registerAction(GotoNodeAction())
 
 class VoidAction(BaseAction):
     def __init__(self):
         BaseAction.__init__(self, 'acVoid', 'Does nothing')
         
-    def execute(self, game):
-        BaseAction.execute(self, game)
+    def execute(self, game, params):
+        BaseAction.execute(self, game, params)
 
 class PauseGameAction(BaseAction):
     
     def __init__(self):
         BaseAction.__init__(self, 'acPause', 'Pauses the game')
         
-    def execute(self, game):
-        BaseAction.execute(self, game)
+    def execute(self, game, params):
+        BaseAction.execute(self, game, params)
         game.pause()
         
 class ResumeGameAction(BaseAction):
     def __init__(self):
         BaseAction.__init__(self, 'acResume', 'Resumes the game')
         
-    def execute(self, game):
-        BaseAction.execute(self, game)
+    def execute(self, game, params):
+        BaseAction.execute(self, game, params)
         game.resume()            
 
 class ShowDebugConsoleAction(BaseAction):
     def __init__(self):
         BaseAction.__init__(self, 'acShowConsole', 'Show the debug console')
         
-    def execute(self, game):
-        BaseAction.execute(self, game)
+    def execute(self, game, params):
+        BaseAction.execute(self, game, params)
         if not game.isDebugConsoleVisible():
             game.showDebugConsole()
             
@@ -83,8 +86,8 @@ class ToggleDebugConsoleAction(BaseAction):
     def __init__(self):
         BaseAction.__init__(self, 'acToggleConsole', 'Toggles the debug console visibility')
         
-    def execute(self, game):
-        BaseAction.execute(self, game)
+    def execute(self, game, params):
+        BaseAction.execute(self, game, params)
         if not game.isDebugConsoleVisible():
             game.showDebugConsole()
         else:
@@ -94,8 +97,8 @@ class HideDebugConsoleAction(BaseAction):
     def __init__(self):
         BaseAction.__init__(self, 'acHideConsole', 'Hides the debug console')
         
-    def execute(self, game):
-        BaseAction.execute(self, game)
+    def execute(self, game, params):
+        BaseAction.execute(self, game, params)
         game.hideDebugConsole()        
         
 class ExitGameAction(BaseAction):
@@ -103,8 +106,8 @@ class ExitGameAction(BaseAction):
     def __init__(self):
         BaseAction.__init__(self, 'acExit', 'Exits the game')
         
-    def execute(self, game):
-        BaseAction.execute(self, game)
+    def execute(self, game, params):
+        BaseAction.execute(self, game, params)
         game.quit()
         
 class ChangeState(BaseAction):
@@ -112,21 +115,29 @@ class ChangeState(BaseAction):
     def __init__(self):
         BaseAction.__init__(self, 'acChangeState', 'Changes the state of the game')
         
-    def execute(self, game, state):
-        BaseAction.execute(self, game)
-        game.getState().changeState(state)
+    def execute(self, game, params):
+        BaseAction.execute(self, game, params)
+        game.getState().changeState(params[0])
         
-        
-from control.InventoryState import InventoryState        
         
 class ToggleInventoryAction(BaseAction):
     def __init__(self):
         BaseAction.__init__(self, 'acToggleInventory', 'Toggles the visibility of the inventory')
         
-    def execute(self, game):
-        BaseAction.execute(self, game)
-        if game.getState().getCurrentState().getName() == InventoryState.NAME:
+    def execute(self, game, params):
+        BaseAction.execute(self, game, params)
+        if game.getState().getCurrentState().getName() == PanoConstants.STATE_INVENTORY:
             game.getState().popState()
         else:
-            game.getState().pushState(InventoryState.NAME)
+            game.getState().pushState(PanoConstants.STATE_INVENTORY)
                             
+class GotoNodeAction(BaseAction):
+    def __init__(self):
+        BaseAction.__init__(self, 'acGotoNode', 'Changes the currently active node.')
+        
+    def execute(self, game, params):
+        BaseAction.execute(self, game, params)
+        state = game.getState().getCurrentState() 
+        if state.getName() == PanoConstants.STATE_EXPLORE:
+            state.changeDisplayNode(params[0])
+            
