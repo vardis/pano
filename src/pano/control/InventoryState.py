@@ -31,8 +31,7 @@ class InventoryState(FSMState):
     """
     Controls the user interaction with the inventory screen controls.
     """
-    
-    NAME = 'inventoryState'
+        
     INVENTORY_MSGS = [
                 PanoConstants.EVENT_ITEM_REMOVED,
                 PanoConstants.EVENT_ITEM_ADDED,
@@ -42,11 +41,10 @@ class InventoryState(FSMState):
                 ]
     
     def __init__(self, gameRef = None):
-        FSMState.__init__(self, gameRef, InventoryState.NAME)
-        self.log = logging.getLogger('pano.inventoryState')        
-        self.activeSlot = None
-        self.activeItem = None
+        FSMState.__init__(self, gameRef, PanoConstants.STATE_INVENTORY)
+        self.log = logging.getLogger('pano.inventoryState')                
         self.startSlot = None
+        self.inventory = None
         self.inventoryView = None
         
     def registerMessages(self):        
@@ -56,8 +54,12 @@ class InventoryState(FSMState):
         FSMState.enter(self)                
         self.getGame().getInput().pushMappings('inventory')        
         
+        self.inventory = self.getGame().getInventory()
+        
         self.inventoryView = self.getGame().getView().getInventoryView()
-        self.inventoryView.redraw()        
+        self.inventoryView.redraw()
+        self.inventoryView.clearText()
+#        self.inventoryView.enableDebugRendering()        
         self.inventoryView.show()
         
     def exit(self):             
@@ -68,28 +70,33 @@ class InventoryState(FSMState):
     def update(self, millis):
         """
         Updates the state of the inventory.
-        During an update we only need to check for the following:
-            1) if a drag operation has been initiated or just ended.
-            2) if the user highlights a different item, then we need to update the item description
+        Currently it only checks if the user highlights a different item, then we need to update the item description
+        an the mouse pointer. 
+        The rules for the mouse pointer are as follows:
+            a) When an item is selected, then the pointer displays the image of the item (item.getImage())
+            b) When an item is already selected and the mouse hovers over an item, then the pointer displays
+               the ON or selected image of the item (i.e. item.getSelectedImage())
+            c) When no item is selected, then the default pointer is used (specified by the InventoryView.getMousePointerName())
         """
         if self.inventoryView.isVisible() and base.mouseWatcherNode.hasMouse():       
             slotNum = self.inventoryView.getSlotAtScreenPos(base.win.getPointer(0).getX(), base.win.getPointer(0).getY())            
             if slotNum is not None:            
                 # if the active slot has changed, update the item description text                
-                slot = self.getGame().getInventory().getSlotByNum(slotNum)                            
-                if slot is not None and slot != self.activeSlot:
-                    self.activeSlot = slot
+                slot = self.inventory.getSlotByNum(slotNum)                            
+                if slot is not None and slot != self.inventory.getActiveSlot():
+                    self.inventory.setActiveSlot(slot)
                     if not slot.isFree():                        
                         self.inventoryView.setText(slot.getItem().getDescription())
-                        if self.activeItem is not None:
-                            self.game.getView().getMousePointer().setImageAsPointer(self.activeItem.getSelectedImage(), 0.3)
+                        if self.inventory.getActiveItem() is not None:
+                            self.game.getView().getMousePointer().setImageAsPointer(self.inventory.getActiveItem().getSelectedImage(), 0.3)
+                    else:
+                        if self.inventory.getActiveItem() is not None:
+                            self.game.getView().getMousePointer().setImageAsPointer(self.inventory.getActiveItem().getImage(), 0.3)
             else:
-                self.activeSlot = None
+                self.inventory.setActiveSlot(None)
+                if self.inventory.getActiveItem() is not None:
+                    self.game.getView().getMousePointer().setImageAsPointer(self.inventory.getActiveItem().getImage(), 0.3)
                 self.inventoryView.clearText()
-                if self.activeItem is None:
-                    self.game.getView().getMousePointer().setByName(self.inventoryView.getMousePointerName())
-                else:
-                    self.game.getView().getMousePointer().setImageAsPointer(self.activeItem.getImage(), 0.3)
                     
     def onMessage(self, msg, *args):                
         if msg in self.INVENTORY_MSGS and self.inventoryView is not None:
@@ -98,19 +105,26 @@ class InventoryState(FSMState):
     
     def onInputAction(self, action):   
         self.log.debug('ACTION %s' % action) 
-        if action == "item_select" and self.activeSlot is not None:
-            self.log.debug('select action and activeslot is: %s' % self.activeSlot)
-            if self.activeItem is None  and not self.activeSlot.isFree():
+        
+        if action == "item_select" and self.inventory.getActiveSlot() is not None:
+            self.log.debug('select action and active slot is: %s' % self.inventory.getActiveSlot())
+            
+            if self.inventory.getActiveItem() is None  and not self.inventory.getActiveSlot().isFree():
                 self._setActiveItem()
-            elif self.activeItem is not None  and not self.activeSlot.isFree():
+                
+            elif self.inventory.getActiveItem() is not None  and not self.inventory.getActiveSlot().isFree():
                 self._interactItems()
-            elif self.activeItem is not None  and self.activeSlot.isFree():
-                self._moveItem()    
-        elif (action == "cancel" or action == "item_look") and self.activeItem is not None:
-            self._clearActiveItem()  
+                
+            elif self.inventory.getActiveItem() is not None  and self.inventory.getActiveSlot().isFree():
+                self._moveItem()
+                    
+        elif (action == "cancel" or action == "item_look") and self.inventory.getActiveItem() is not None:
+            self._clearActiveItem()
+              
         elif action == "enable_debug":
             self.log.debug('Enabling inventory debug rendering')
             self.inventoryView.enableDebugRendering()          
+            
         elif action == "disable_debug":
             self.log.debug('Disabling inventory debug rendering')
             self.inventoryView.disableDebugRendering()
@@ -123,33 +137,33 @@ class InventoryState(FSMState):
         """
         When this is called it assumes that there is an activeSlot.
         """
-        self.activeItem = self.activeSlot.getItem()
-        self.startSlot = self.activeSlot
+        self.inventory.setActiveItem(self.inventory.getActiveSlot().getItem())
+        self.startSlot = self.inventory.getActiveSlot()
         
         # change pointer to indicate the active item             
-        if not self.game.getView().getMousePointer().setImageAsPointer(self.activeItem.getImage(), 0.3):
-            self.log.error('Failed to set mouse pointer to selected image %s' % self.activeItem.getSelectedImage())
+        if not self.game.getView().getMousePointer().setImageAsPointer(self.inventory.getActiveItem().getImage(), 0.3):
+            self.log.error('Failed to set mouse pointer to selected image %s' % self.inventory.getActiveItem().getSelectedImage())
             
-        self.log.debug('set active item to %s' % self.activeItem)
+        self.log.debug('set active item to %s' % self.inventory.getActiveItem())
         
     def _clearActiveItem(self):
-        self.activeItem = None
+        self.inventory.setActiveItem(None)
         self.startSlot = None
         # return pointer to normal
         self.game.getView().getMousePointer().setByName(self.inventoryView.getMousePointerName())
         
     def _interactItems(self):
-        dropSlot = self.activeSlot
+        dropSlot = self.inventory.getActiveSlot()
         if dropSlot.getNum() != self.startSlot.getNum():                    
             # broadcast message for combining the two items
             eventName = "%s-into-%s" % (self.startSlot.getItem().getName(), dropSlot.getItem().getName())
-            self.log.debug("Emitting items interact event %s" % eventName)
+            self.log.debug("Emiting items interact event %s" % eventName)
             self.getMessenger().sendMessage(eventName)
                 
         self._clearActiveItem()
     
     def _moveItem(self):
-        self.activeSlot.setItem(self.activeItem)
+        self.inventory.getActiveSlot().setItem(self.inventory.getActiveItem())
         self.startSlot.setItem(None)        
         self._clearActiveItem()
         self.inventoryView.redraw()

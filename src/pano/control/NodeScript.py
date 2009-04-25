@@ -33,19 +33,25 @@ class BaseNodeScript(FSMState):
     Contains logic for controlling user interaction within a game node.
     '''
 
-
     def __init__(self, game, name):
         FSMState.__init__(self, game, name)
         self.log = logging.getLogger('pano.baseNodeScript')
         
-#    def enter(self):
-#        FSMState.enter(self)
-#        
-#    def exti(self):
-#        FSMState.exit(self)
+    def preDisplay(self):
+        pass
         
-    def registerMessages(self):
+    def registerMessages(self):        
         return [PanoConstants.EVENT_HOTSPOT_ACTION, PanoConstants.EVENT_HOTSPOT_LOOKAT]
+    
+    def onMessage(self, msg, *args):
+        """
+        if msg === PanoConstants.EVENT_GAME_PAUSED: ....
+        """        
+        pass
+    
+    def pickItem(self, itemName):
+        pass
+    
         
         
         

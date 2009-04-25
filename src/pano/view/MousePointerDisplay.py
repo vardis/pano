@@ -88,9 +88,11 @@ class MousePointerDisplay:
     def _destroyPointer(self):        
         if self.mousePointer is not None:
             if self.isImagePointer:
-                self.mousePointer.destroy()                
+                self.mousePointer.destroy()
+                self.mousePointer = None                
             else:
                 self.mousePointer.removeNode()
+#                self.mousePointer.detachNode() 
             
             if self.pointerParentNP is not None:
                 self.pointerParentNP.node().removeAllChildren()

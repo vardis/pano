@@ -25,7 +25,7 @@ import logging
 from ConfigParser import *
 
 from constants import PanoConstants
-from pano.exceptions.ParseException import ParseException
+from errors.ParseException import ParseException
 
 class SoundParser:
     
