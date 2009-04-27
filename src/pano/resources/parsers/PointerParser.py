@@ -23,7 +23,7 @@ THE SOFTWARE.
 
 from ConfigParser import SafeConfigParser
 
-from errors.ParseException import ParseException
+from pano.exceptions.ParseException import ParseException
 from model.MousePointer import MousePointer
 
 class PointerParser:    

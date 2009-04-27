@@ -22,20 +22,17 @@ THE SOFTWARE.
 '''
 
 
-class ActionMappings(object):
+class ActionMappings:
     """
     Stores the mappings of the input events to game specific actions.
     """
     
-    def __init__(self, name):        
+    def __init__(self, name, _mappings = {}):        
         self.name = name
-        self.mappings = {} # keys are the event names and values the action names        
+        self.mappings = _mappings # keys are the event names and values the action names
     
     def getName(self):
-        return self.name    
-    
-    def setMappings(self, newMap):
-        self.mappings = newMap
+        return self.name
     
     def addMapping(self, eventName, actionName):
         """
@@ -74,9 +71,7 @@ class ActionMappings(object):
         newMap = self.mappings.copy()                        
         for k, v in other.mappings.items():
             newMap[k] = v
-        acMap = ActionMappings(self.name)
-        acMap.setMappings(newMap)
-        return acMap
+        return ActionMappings(self.name, newMap)
             
     def subtract(self, other):
         """
@@ -86,11 +81,9 @@ class ActionMappings(object):
         for k in other.mappings.keys():
             if newMap.has_key(k):
                 del newMap[k]
-        
-        acMap = ActionMappings(self.name)
-        acMap.setMappings(newMap)
-        return acMap         
-                       
+                
+        return ActionMappings(self.name, newMap) 
+                
     def getEvents(self):
         """
         Returns a list of all input event names for which a mapping exists.
@@ -101,8 +94,6 @@ class ActionMappings(object):
         """
         Returns a list of all game action names for which a mapping exists.
         """
-        return self.mappings.values()        
+        return self.mappings.values()
     
-    def __str__(self):
-        return "Mappings %s, values: %s" % (self.name, self.mappings)
     

@@ -31,9 +31,11 @@ from constants import PanoConstants
 from control.fsm import FSMState
 
 class PausedState(FSMState):
-        
+    
+    NAME = 'pausedState'
+    
     def __init__(self, gameRef = None):        
-        FSMState.__init__(self, gameRef, PanoConstants.STATE_PAUSED)        
+        FSMState.__init__(self, gameRef, PausedState.NAME)        
         self.log = logging.getLogger('pano.pausedState')
         
         self.msgKey = "Game Paused"

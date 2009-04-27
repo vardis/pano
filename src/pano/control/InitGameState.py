@@ -27,8 +27,8 @@ import os, platform
 from ConfigParser import SafeConfigParser
 
 from pandac.PandaModules import getModelPath
-#from pandac.PandaModules import getTexturePath
-#from pandac.PandaModules import getSoundPath
+from pandac.PandaModules import getTexturePath
+from pandac.PandaModules import getSoundPath
 from pandac.PandaModules import ConfigVariableString
 from pandac.PandaModules import Filename
 from pandac.PandaModules import Notify
@@ -43,24 +43,21 @@ from IntroState import IntroState
 from resources.DirectoryResourcesLocation import DirectoryResourcesLocation 
 
 class InitGameState(FSMState):
-    '''
-    Controls the state of the game when we are initialising for the first time. 
-    '''
+    
+    NAME = 'initState'
     
     def __init__(self, gameRef):
-        FSMState.__init__(self, gameRef, PanoConstants.STATE_INIT)
+        FSMState.__init__(self, gameRef, InitGameState.NAME)
         
         self.log = logging.getLogger('pano.initState')        
         self.millis = 0
         
     def setupResourcesLocations(self):
 
-        # as the resource paths are relative to the currently working directory, we add '.' to the model path    
+        # as the resource paths are relative to the currently working directory, we add '.' to the model path	
         getModelPath( ).appendPath( os.getcwd( ) )
-        
-        # these don't exist in 1.6+
-#        getTexturePath( ).appendPath( os.getcwd( ) )
-#        getSoundPath( ).appendPath( os.getcwd( ) )        
+        getTexturePath( ).appendPath( os.getcwd( ) )
+        getSoundPath( ).appendPath( os.getcwd( ) )        
 
         # add resource locations
         configs_to_types = {
@@ -72,36 +69,23 @@ class InitGameState(FSMState):
                               PanoConstants.CVAR_RESOURCES_MODELS : PanoConstants.RES_TYPE_MODELS,
                               PanoConstants.CVAR_RESOURCES_SPRITES : PanoConstants.RES_TYPE_SPRITES,
                               PanoConstants.CVAR_RESOURCES_PLAYLISTS : PanoConstants.RES_TYPE_PLAYLISTS,
-                              PanoConstants.CVAR_RESOURCES_SFX : PanoConstants.RES_TYPE_SFX,
-                              PanoConstants.CVAR_RESOURCES_MUSIC : PanoConstants.RES_TYPE_MUSIC,
-                              PanoConstants.CVAR_RESOURCES_SOUNDS_DEFS : PanoConstants.RES_TYPE_SOUNDS_DEFS,
+                              PanoConstants.CVAR_RESOURCES_SOUNDS : PanoConstants.RES_TYPE_SOUNDS,
                               PanoConstants.CVAR_RESOURCES_VIDEOS : PanoConstants.RES_TYPE_VIDEOS,
                               PanoConstants.CVAR_RESOURCES_MAPPINGS : PanoConstants.RES_TYPE_MAPPINGS,
                               PanoConstants.CVAR_RESOURCES_ITEMS : PanoConstants.RES_TYPE_ITEMS,
-                              PanoConstants.CVAR_RESOURCES_SCRIPTS : PanoConstants.RES_TYPE_SCRIPTS,
-                              PanoConstants.CVAR_RESOURCES_TEXTS : PanoConstants.RES_TYPE_TEXTS,
-                              PanoConstants.CVAR_RESOURCES_BINARIES : PanoConstants.RES_TYPE_BINARIES
+                              PanoConstants.CVAR_RESOURCES_SCRIPTS : PanoConstants.RES_TYPE_SCRIPTS
                               }
 
         res = self.getGame().getResources()
         for config in configs_to_types.keys():
             locations = self.game.getConfig().get(config)
             if locations:
-                for path in [str.strip(s) for s in locations.split(',')]:
-                    # path can have a name prefixed and separated by a ':', e.g. my_textures:data/textures
-                    loc = None
-                    if ':' in path:
-                        resName, resPath = path.split(':')
-                        loc = DirectoryResourcesLocation(directory=resPath, name=resName, description='', resTypes=configs_to_types[config])
-                    else:                    
-                        loc = DirectoryResourcesLocation(directory=path, name=path, description='', resTypes=configs_to_types[config])
+                for path in [str.strip(s) for s in locations.split(',')]:                    
+                    loc = DirectoryResourcesLocation(directory=path, name=path, description='', resTypes=configs_to_types[config])
                     res.addResourcesLocation(loc)                
         
     def configure(self):
-        '''
-        Loads the game's configuration file (i.e. game.cfg) and stores all defined variables in the game's configuration
-        which is accessed by PanoGame.getConfig(.)
-        '''
+        
         vars = self.game.getConfig()        
         istream = None        
         try:
@@ -122,8 +106,6 @@ class InitGameState(FSMState):
                 
         
     def enter(self):
-        FSMState.enter(self)
-        
         if self.log.isEnabledFor(logging.DEBUG):
             self.log.debug('entered initial state')
         
@@ -144,8 +126,8 @@ class InitGameState(FSMState):
         # show in the logs the platform we're running on
         self.logPlatformInformation()                 
         
-        # configure resource locations
-        self.setupResourcesLocations()                    
+		# configure resource locations
+        self.setupResourcesLocations()
                 
         # disables Panda's mouse based camera control
         base.disableMouse()
@@ -161,18 +143,14 @@ class InitGameState(FSMState):
         # init components
         game.getI18n().initialize()        
         game.getMusic().initialize()
-        
-        self._setupPreloads()
 #   
     def exit(self):
-        FSMState.exit(self)            
+        pass            
         
     def update(self, millis):
         self.millis += millis
         if self.millis > 2:
-            self.getGame().getState().changeState(PanoConstants.STATE_INTRO)
-#            self.getGame().getState().changeState(PanoConstants.STATE_EXPLORE)
-#            self.getGame().getState().changeState(PanoConstants.STATE_CREDITS)
+            self.getGame().getState().changeState('introState')
 
     def logPlatformInformation(self):
         di = base.pipe.getDisplayInformation()
@@ -187,34 +165,4 @@ class InitGameState(FSMState):
         self.log.info('**Texture memory: %s' % di.getTextureMemory())
         self.log.info('**Python version: %s, build: %s' % (platform.python_version(), platform.python_build()))
         
-    def _setupPreloads(self):
-        preloadVars = {                  
-                      PanoConstants.CVAR_PRELOAD_NODES : PanoConstants.RES_TYPE_NODES,
-                      PanoConstants.CVAR_PRELOAD_TEXTURES : PanoConstants.RES_TYPE_TEXTURES,
-                      PanoConstants.CVAR_PRELOAD_FONTS : PanoConstants.RES_TYPE_FONTS,
-                      PanoConstants.CVAR_PRELOAD_POINTERS : PanoConstants.RES_TYPE_POINTERS,
-                      PanoConstants.CVAR_PRELOAD_LANGS : PanoConstants.RES_TYPE_LANGS,
-                      PanoConstants.CVAR_PRELOAD_MODELS : PanoConstants.RES_TYPE_MODELS,
-                      PanoConstants.CVAR_PRELOAD_SPRITES : PanoConstants.RES_TYPE_SPRITES,
-                      PanoConstants.CVAR_PRELOAD_PLAYLISTS : PanoConstants.RES_TYPE_PLAYLISTS,
-                      PanoConstants.CVAR_PRELOAD_SFX : PanoConstants.RES_TYPE_SFX,
-                      PanoConstants.CVAR_PRELOAD_MUSIC : PanoConstants.RES_TYPE_MUSIC,
-                      PanoConstants.CVAR_PRELOAD_SOUNDS_DEFS : PanoConstants.RES_TYPE_SOUNDS_DEFS,
-                      PanoConstants.CVAR_PRELOAD_VIDEOS : PanoConstants.RES_TYPE_VIDEOS,
-                      PanoConstants.CVAR_PRELOAD_MAPPINGS : PanoConstants.RES_TYPE_MAPPINGS,
-                      PanoConstants.CVAR_PRELOAD_ITEMS : PanoConstants.RES_TYPE_ITEMS,
-                      PanoConstants.CVAR_PRELOAD_SCRIPTS : PanoConstants.RES_TYPE_SCRIPTS,
-                      PanoConstants.CVAR_PRELOAD_TEXTS : PanoConstants.RES_TYPE_TEXTS,
-                      PanoConstants.CVAR_PRELOAD_BINARIES : PanoConstants.RES_TYPE_BINARIES,
-                      PanoConstants.CVAR_PRELOAD_LOCATIONS : ''
-                       }
-        res = self.game.getResources()
-        for var, resType in preloadVars.items():
-            value = self.game.getConfig().get(var)
-            if value is not None:
-                if var == PanoConstants.CVAR_PRELOAD_LOCATIONS:                    
-                    for location in [str.strip(s) for s in value.split(',')]:
-                        res.preloadResourceLocation(location)
-                else:
-                    res.preloadResources(resType) 
-                
+	

@@ -1,4 +1,3 @@
-
 '''
     Copyright (c) 2008 Georgios Giannoudovardis, <vardis.g@gmail.com>
 
@@ -45,7 +44,6 @@ class PanoConstants:
     EVENT_CHANGE_NODE = "node.change"
     EVENT_RESTORE_NODE = "node.restore"
     EVENT_HOTSPOT_ACTION = "hotspot.action"
-    EVENT_HOTSPOT_ITEM_INTERACTION = "hotspot.item.interact"
     EVENT_HOTSPOT_LOOKAT = "hotspot.lookat"
     
     
@@ -78,45 +76,11 @@ class PanoConstants:
     CVAR_RESOURCES_MODELS = 'resources_models'
     CVAR_RESOURCES_SPRITES = 'resources_sprites'
     CVAR_RESOURCES_PLAYLISTS = 'resources_playlists'
-    CVAR_RESOURCES_SFX = 'resources_sfx'
-    CVAR_RESOURCES_MUSIC = 'resources_music'
-    CVAR_RESOURCES_SOUNDS_DEFS = 'resources_sounds_defs'
+    CVAR_RESOURCES_SOUNDS = 'resources_sounds'
     CVAR_RESOURCES_VIDEOS = 'resources_videos'
     CVAR_RESOURCES_MAPPINGS = 'resources_mappings'
     CVAR_RESOURCES_ITEMS = 'resources_items'
     CVAR_RESOURCES_SCRIPTS = 'resources_scripts'
-    CVAR_RESOURCES_TEXTS = 'resources_texts'
-    CVAR_RESOURCES_BINARIES = 'resources_binaries'
-    
-    # cvars related to preloading
-    CVAR_PRELOAD_POINTERS = 'preloads_pointers'
-    CVAR_PRELOAD_NODES = 'preloads_nodes'
-    CVAR_PRELOAD_TEXTURES = 'preloads_textures'
-    CVAR_PRELOAD_FONTS = 'preloads_fonts'
-    CVAR_PRELOAD_POINTERS = 'preloads_pointers'
-    CVAR_PRELOAD_LANGS = 'preloads_langs'
-    CVAR_PRELOAD_MODELS = 'preloads_models'
-    CVAR_PRELOAD_SPRITES = 'preloads_sprites'
-    CVAR_PRELOAD_PLAYLISTS = 'preloads_playlists'
-    CVAR_PRELOAD_SFX = 'preloads_sfx'
-    CVAR_PRELOAD_MUSIC = 'preloads_music'
-    CVAR_PRELOAD_SOUNDS_DEFS = 'preloads_sounds_defs'
-    CVAR_PRELOAD_VIDEOS = 'preloads_videos'
-    CVAR_PRELOAD_MAPPINGS = 'preloads_mappings'
-    CVAR_PRELOAD_ITEMS = 'preloads_items'
-    CVAR_PRELOAD_SCRIPTS = 'preloads_scripts'
-    CVAR_PRELOAD_LOCATIONS = 'preloads_locations'
-    CVAR_PRELOAD_TEXTS = 'preloads_texts'
-    CVAR_PRELOAD_BINARIES = 'preloads_binaries'
-
-    # names of vars related to the credits state
-    CVAR_CREDITS_BACKGROUND   = 'credits_background'
-    CVAR_CREDITS_FONT         = 'credits_font'
-    CVAR_CREDITS_FONT_COLOR   = 'credits_font_color'
-    CVAR_CREDITS_FONT_SCALE   = 'credits_font_scale'
-    CVAR_CREDITS_SCROLL_SPEED = 'credits_scroll_speed'
-    CVAR_CREDITS_TEXT_FILE    = 'credits_text_file'
-    CVAR_CREDITS_MUSIC    = 'credits_music'
     
     # names of the cvars which are related to the talk box
     CVAR_TALKBOX_FONT      = 'talkbox_font'
@@ -172,7 +136,7 @@ class PanoConstants:
     RES_TYPE_NODES = 1
     RES_TYPE_TEXTURES = 2
     RES_TYPE_FONTS = 3
-    RES_TYPE_SFX = 4
+    RES_TYPE_SOUNDS = 4
     RES_TYPE_POINTERS = 5
     RES_TYPE_MODELS = 6
     RES_TYPE_LANGS = 7
@@ -182,10 +146,6 @@ class PanoConstants:
     RES_TYPE_MAPPINGS = 11
     RES_TYPE_ITEMS = 12
     RES_TYPE_SCRIPTS = 13
-    RES_TYPE_MUSIC = 14
-    RES_TYPE_SOUNDS_DEFS = 15
-    RES_TYPE_TEXTS = 16
-    RES_TYPE_BINARIES = 17
     RES_TYPE_ALL = 100
     
     #Constants for the predefined mouse pointers
@@ -193,6 +153,10 @@ class PanoConstants:
     TALK_POINTER = "talk"
     EXAMINE_POINTER = "examine"
     EXIT_POINTER = "exit"
+    LOOK_UP_POINTER = 5
+    LOOK_DOWN_POINTER = 6
+    LOOK_LEFT_POINTER = 7
+    LOOK_RIGHT_POINTER = 8
     
     #Mouse modes
     MOUSE_PANORAMA_MODE = 1
@@ -212,7 +176,6 @@ class PanoConstants:
     STATE_INVENTORY = 'inventoryState'
     STATE_INTRO     = 'introState'
     STATE_CONSOLE   = 'consoleState'
-    STATE_CREDITS   = 'creditsState'
     
     # default path to configuration file
     CONFIG_FILE = "Config.prc"

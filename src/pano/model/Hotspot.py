@@ -22,7 +22,7 @@ THE SOFTWARE.
 '''
 
 
-class Hotspot(object):
+class Hotspot:
     """
     Represents the model of a game hotspot. A hotspot is a rectangular area on the
     panoramic view that can interact with the user through the mouse.
@@ -30,7 +30,7 @@ class Hotspot(object):
     of the top left corner of its rectangular area and the width and height of its area.
     """
     
-    def __init__(self, name='', description='', face=None, x=0, y = 0, width = 0, height=0, action=None):
+    def __init__(self, name='', description='', face=None, x=0, y = 0, width = 0, height=0, action=None, args = ()):
         self.__name = name
         self.__description = description
         self.__face = face
@@ -46,11 +46,10 @@ class Hotspot(object):
         self.__width = width
         self.__height = height
         self.__action = action
-        self.__actionArgs = ()
+        self.__actionArgs = args
         self.__cursor = None
         self.__active = True
-        self.__sprite = None
-        self.itemInteractive = False        
+        self.__sprite = None        
 
     def getName(self):
         return self.__name
@@ -150,7 +149,7 @@ class Hotspot(object):
         return self.__cursor
 
 
-    def isActive(self):
+    def getActive(self):
         return self.__active
 
 
@@ -169,15 +168,11 @@ class Hotspot(object):
     def setSprite(self, value):
         self.__sprite = value
 
-    def isItemInteractive(self):
-       return self.itemInteractive
-
-    def setItemInteractive(self, flag):
-       self.itemInteractive = flag
-
+   
+            
     cursor = property(getCursor, setCursor, None, "Cursor's Docstring")
 
-    active = property(isActive, setActive, None, "Active's Docstring")
+    active = property(getActive, setActive, None, "Active's Docstring")
 
     sprite = property(getSprite, setSprite, None, "Sprite's Docstring")
 

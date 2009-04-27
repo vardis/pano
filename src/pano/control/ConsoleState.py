@@ -30,9 +30,10 @@ from actions.builtinActions import ShowDebugConsoleAction, HideDebugConsoleActio
 
 class ConsoleState(FSMState):
     
+    NAME = 'consoleState'
     
     def __init__(self, gameRef):
-        FSMState.__init__(self, gameRef, PanoConstants.STATE_CONSOLE)        
+        FSMState.__init__(self, gameRef, ConsoleState.NAME)        
         self.log = logging.getLogger('pano.consoleState')
         
     def enter(self):

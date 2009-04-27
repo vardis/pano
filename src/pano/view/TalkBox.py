@@ -61,6 +61,7 @@ class TalkBox:
     def update(self, millis):
         if self.timeout is not None:        
             self.accumTime += millis
+#            print self.accumTime
             if (self.timeout - self.accumTime) <= 0:
                 self.timeout = None
                 self.accumTime = 0.0                
@@ -118,7 +119,6 @@ class TalkBox:
     
             if self.__bgLabel is not None:
                 self.__bgLabel.destroy()
-                self.__bgLabel = None
                 
             self.__bgLabel = DirectLabel(parent=self.__textNodeParent, 
                              text='',                          
@@ -130,7 +130,6 @@ class TalkBox:
             
             if self.__textLabel is not None:
                 self.__textLabel.destroy()
-                self.__textLabel = None
                 
             self.__textLabel = DirectButton(
              parent=self.__textNodeParent,

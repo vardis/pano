@@ -103,7 +103,7 @@ class MusicPlayer:
             self.sound.stop()
         
         print 'active track ', self.activeTrack
-        soundPath = self.game.getResources().getResourceFullPath(PanoConstants.RES_TYPE_MUSIC, self.activeTrack[2])
+        soundPath = self.game.getResources().getResourceFullPath(PanoConstants.RES_TYPE_SOUNDS, self.activeTrack[2])
         print 'sound path ', soundPath
         self.sound = loader.loadSfx(soundPath)
         if self.sound is not None:
@@ -117,9 +117,9 @@ class MusicPlayer:
         return self.stopped
 
 
-    def stop(self):
-        self.stopped = True
-        if self.sound is not None:
+    def setStopped(self, value):
+        self.stopped = value
+        if self.sound is not None and value:
             self.sound.stop()
 
 

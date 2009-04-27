@@ -78,13 +78,7 @@ class Inventory:
         # keyed by item name, contains InventoryItem instances
         self.items = {}
         self.slots = [] 
-        self.setSlotsCount(slotsCount)  
-        
-        # the picked item
-        self.activeItem = None
-        
-        # the slot containing the picked item
-        self.activeSlot = None                           
+        self.setSlotsCount(slotsCount)                             
             
     def hasItem(self, itemName):
         """
@@ -212,18 +206,6 @@ class Inventory:
             if s.isFree():
                 return s
         return None
-
-    def getActiveItem(self):
-        return self.activeItem
-    
-    def setActiveItem(self, item):
-        self.activeItem = item
-        
-    def getActiveSlot(self):
-        return self.activeSlot
-    
-    def setActiveSlot(self, slot):
-        self.activeSlot = slot
 
     def persistState(self, persistence):
         '''
