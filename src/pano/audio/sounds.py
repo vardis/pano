@@ -80,7 +80,7 @@ class SoundsPlayer():
         
         Returns: a Sound object or None if playback failed
         """
-        fp = self.game.getResources().getResourceFullPath(PanoConstants.RES_TYPE_SOUNDS, filename)
+        fp = self.game.getResources().getResourceFullPath(PanoConstants.RES_TYPE_SFX, filename)
         sound = loader.loadSfx(fp)
         spi = SoundPlaybackInterface(sound)
         spi.setLoop(loop)

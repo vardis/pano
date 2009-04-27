@@ -78,7 +78,7 @@ class panda3dIOClass( DirectObject.DirectObject ):
     self.windowEvent( base.win )
     
     # try to load the defined font
-    fixedWidthFont = loader.loadFont(self.font)
+    fixedWidthFont = loader.loadFont(parent.game.getResources().getResourceFullPath(PanoConstants.RES_TYPE_FONTS, self.font))
     # if font is not valid use default font
     if not fixedWidthFont.isValid():
       if self.font is None:

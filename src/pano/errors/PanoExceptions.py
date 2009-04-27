@@ -21,6 +21,7 @@ THE SOFTWARE.
 
 '''
 
+import exceptions
 
 class GameError(Exception):
     def __init__(self, msg):
@@ -59,3 +60,6 @@ class SoundError(GameError):
     def __init__(self, msg):
         GameError.__init__(self, msg)
 
+class ResourceNotFound(GameError):
+    def __init__(self, filename):
+        GameError.__init__(self, 'Unable to locate resource %s' % filename)

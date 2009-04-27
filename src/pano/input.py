@@ -40,6 +40,7 @@ class InputActionMappings(DirectObject.DirectObject):
     def __init__(self, gameRef):
         self.log = logging.getLogger('pano.inputMap')
         self.game = gameRef
+        self.enabled = True
         self.globalMap = None
         self.map = None
         self.mapStack = [] 
@@ -77,11 +78,13 @@ class InputActionMappings(DirectObject.DirectObject):
     
     def setGlobalMappings(self, actionMap):
         if isinstance(actionMap, ActionMappings): 
-            self.globalMap = actionMap
+            self.globalMap = actionMap            
         elif isinstance(actionMap, str):
             self.globalMap = self._getMappings(actionMap)
             
         if self.globalMap is not None:
+            if self.log.isEnabledFor(logging.DEBUG):
+                self.log.debug('set global mappings to %s' % self.globalMap)
             self._registerPandaEvents()
         
     def setMappings(self, actionMap):
@@ -95,6 +98,8 @@ class InputActionMappings(DirectObject.DirectObject):
             self.map = self._getMappings(actionMap)
             
         if self.map is not None:
+            if self.log.isEnabledFor(logging.DEBUG):
+                self.log.debug('set mappings to %s' % self.map)
             self._registerPandaEvents()
             
     def addMappings(self, mappingName):
@@ -121,7 +126,7 @@ class InputActionMappings(DirectObject.DirectObject):
         The old map is saved and can later be reactivated by a corresponding pop operation.        
         """
         # push original mappings if they are not in stack
-        if len(self.mapStack) == 0:
+        if self.map is not None:
             self.mapStack.append(self.map)
             
         self.mapStack.append(self._getMappings(mappingName))
@@ -131,17 +136,18 @@ class InputActionMappings(DirectObject.DirectObject):
         """
         Removes the current map and replaces it with the mappings stored by a previous push operation.
         """
-        sz = len(self.mapStack) 
-        if sz >= 2:
-            self.mapStack.pop()
+        self.mapStack.pop()
+        if len(self.mapStack) > 0:
             self.setMappings(self.mapStack[-1])
-        elif sz == 1:
-            self.setMappings(self.mapStack.pop())            
+        else:
+            self.clearMappings()      
     
     def clearGlobalMappings(self):
         """
         Clears the current map and any stack history.
         """
+        if self.log.isEnabledFor(logging.DEBUG):
+                self.log.debug('cleared global mappings')
         self.globalMap = None        
         self._registerPandaEvents()
     
@@ -149,6 +155,8 @@ class InputActionMappings(DirectObject.DirectObject):
         """
         Clears the current map and any stack history.
         """
+        if self.log.isEnabledFor(logging.DEBUG):
+                self.log.debug('cleared mappings')
         self.map = None
         self.mapStack = []
         self._registerPandaEvents()

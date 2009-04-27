@@ -24,7 +24,7 @@ THE SOFTWARE.
 from ConfigParser import SafeConfigParser
 
 from constants import PanoConstants
-from pano.exceptions.ParseException import ParseException
+from errors.ParseException import ParseException
 from model.Node import Node
 from model.Hotspot import Hotspot
 
@@ -38,19 +38,20 @@ class NodeParser:
     NODE_OPT_SCRIPT  = 'script'
     NODE_OPT_LOOKAT  = 'lookat'
     
-    HOTSPOT_OPT_LOOKTEXT    = 'look_text'
-    HOTSPOT_OPT_FACE        = 'face'    
-    HOTSPOT_OPT_XO          = 'xo'
-    HOTSPOT_OPT_YO          = 'yo'
-    HOTSPOT_OPT_WIDTH       = 'width'
-    HOTSPOT_OPT_HEIGHT      = 'height'
-    HOTSPOT_OPT_XE          = 'xe'
-    HOTSPOT_OPT_YE          = 'ye'
-    HOTSPOT_OPT_ACTIVE      = 'active'
-    HOTSPOT_OPT_CURSOR      = 'cursor'
-    HOTSPOT_OPT_ACTION      = 'action'
-    HOTSPOT_OPT_ACTIONARGS  = 'action_args'
-    HOTSPOT_OPT_SPRITE      = 'sprite'
+    HOTSPOT_OPT_LOOKTEXT     = 'look_text'
+    HOTSPOT_OPT_FACE         = 'face'    
+    HOTSPOT_OPT_XO           = 'xo'
+    HOTSPOT_OPT_YO           = 'yo'
+    HOTSPOT_OPT_WIDTH        = 'width'
+    HOTSPOT_OPT_HEIGHT       = 'height'
+    HOTSPOT_OPT_XE           = 'xe'
+    HOTSPOT_OPT_YE           = 'ye'
+    HOTSPOT_OPT_ACTIVE       = 'active'
+    HOTSPOT_OPT_CURSOR       = 'cursor'
+    HOTSPOT_OPT_ACTION       = 'action'
+    HOTSPOT_OPT_ACTIONARGS   = 'action_args'
+    HOTSPOT_OPT_SPRITE       = 'sprite'
+    HOTSPOT_OPT_ITEMINTERACT = 'interacts_items'
     
     
     def __init__(self):
@@ -92,7 +93,7 @@ class NodeParser:
                 
             if cfg.has_option(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_EXTENSION):
                 node.setExtension(cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_EXTENSION))
-                
+        
             for s in cfg.sections():
                 if s.startswith('hotspot_'):
                     hp = Hotspot(name = s[8:])
@@ -141,9 +142,12 @@ class NodeParser:
                     if cfg.has_option(s, NodeParser.HOTSPOT_OPT_SPRITE):
                         hp.setSprite(cfg.get(s, NodeParser.HOTSPOT_OPT_SPRITE))
                         
+                    if cfg.has_option(s, NodeParser.HOTSPOT_OPT_ITEMINTERACT):
+                        hp.setItemInteractive(cfg.getboolean(s, NodeParser.HOTSPOT_OPT_ITEMINTERACT)) 
+                        
                     node.addHotspot(hp)
                 
-        except (MissingSectionHeaderError, ParsingError):
+        except (ConfigParser.MissingSectionHeaderError, ParsingError):
             raise ParseException(error='error.parse.invalid', resFile=node.getName() + '.node')
         
         except IOError, e:
