@@ -23,6 +23,7 @@ THE SOFTWARE.
 
 
 from __future__ import with_statement
+from __future__ import absolute_import 
 
 import sys, os, codecs
 import logging.config
@@ -30,14 +31,15 @@ from ConfigParser import SafeConfigParser
  
 from pandac.PandaModules import loadPrcFile
 from pandac.PandaModules import loadPrcFileData
+
 from pandac.PandaModules import WindowProperties
 from direct.task.Task import Task
 
 from external.interactiveConsole.interactiveConsole import pandaConsole, INPUT_CONSOLE, INPUT_GUI, OUTPUT_PYTHON, OUTPUT_IRC
 
 from constants import PanoConstants
-from cvars import ConfigVars 
-from pano.exceptions.PanoExceptions import *
+from cvars import ConfigVars
+from errors.PanoExceptions import *  
 from input import InputActionMappings
 from resources.ResourceLoader import ResourceLoader
 from view.GameView import GameView
@@ -47,6 +49,7 @@ from control.PausedState import PausedState
 from control.ConsoleState import ConsoleState
 from control.IntroState import IntroState
 from control.InventoryState import InventoryState
+from control.CreditsState import CreditsState
 from control.fsm import FSM
 from actions.GameActions import GameActions
 from resources.i18n import i18n
@@ -54,7 +57,7 @@ from audio.music import MusicPlayer
 from audio.sounds import SoundsPlayer
 from messaging import Messenger
 from model.inventory import Inventory
-from persistence import GameSaveLoad
+from persistence import *
 
 
 class PanoGame:
@@ -108,6 +111,7 @@ class PanoGame:
         self.saveLoad = None
         self.saveRequest = None
         self.loadRequest = None
+        self.persistence = None
         
         self.quitRequested = False
                     
@@ -121,7 +125,7 @@ class PanoGame:
     def initialise(self, task):                                                        
                         
         # setup the game's FSM
-        self.fsm = FSM(self)
+        self.fsm = FSM('panoFSM', self)
         statesFactory = self.fsm.getFactory()
         statesFactory.registerState(PanoConstants.STATE_INIT, InitGameState)
         statesFactory.registerState(PanoConstants.STATE_EXPLORE, ExploreState)
@@ -129,9 +133,11 @@ class PanoGame:
         statesFactory.registerState(PanoConstants.STATE_CONSOLE, ConsoleState)
         statesFactory.registerState(PanoConstants.STATE_INTRO, IntroState)
         statesFactory.registerState(PanoConstants.STATE_INVENTORY, InventoryState)
+        statesFactory.registerState(PanoConstants.STATE_CREDITS, CreditsState)
         
         self.fsm.changeState(PanoConstants.STATE_INIT)
         
+        self.persistence = PersistenceManager()
         self.saveLoad = GameSaveLoad(game = self, savesDir = self.config.get(PanoConstants.CVAR_SAVES_DIR))
         
         # create and start the main game loop task
@@ -165,7 +171,6 @@ class PanoGame:
         events = self.inputMappings.getEvents()
         if len(events) > 0:
             for ev, act in events:
-                print ev, act
                 try:    
                     processed = self.fsm.onInputAction(act)             
                     if not(processed):
@@ -240,6 +245,9 @@ class PanoGame:
     def getInventory(self):
         return self.inventory
 
+    def getPersistence(self):
+        return self.persistence
+
     def actions(self):
         return self.gameActions
     
@@ -275,7 +283,7 @@ class PanoGame:
     
     def enableDebugConsole(self):
         if self.console is None:
-            self.console = pandaConsole( INPUT_GUI|OUTPUT_PYTHON, locals() )
+            self.console = pandaConsole( self, INPUT_GUI|OUTPUT_PYTHON, locals() )
             self.console.toggle()
             
     def showDebugConsole(self):
@@ -303,26 +311,7 @@ class PanoGame:
         self.loadRequest = request
 
     def getInitialNode(self):
-        return 'node3'
-
-    def persistState(self, persistence):
-        ctx = persistence.createContext('gameCtx')
-        ctx.addVar('consoleVisible', self.consoleVisible)
-        ctx.addVar('paused', self.paused)
-        ctx.addVar('config', self.config)
-        return ctx        
-    
-    def restoreState(self, persistence, ctx):
-        consoleVisible = ctx.getVar('consoleVisible')
-        self.paused = ctx.getVar('paused')
-        self.config = ctx.getVar('config')
-        
-        if not self.consoleVisible and consoleVisible:
-            if self.console is None:
-                self.enableDebugConsole()
-            self.showDebugConsole()
-        self.consoleVisible = consoleVisible 
-        
+        return 'x_mark'        
 
     def _readBootConfig(self):
         '''
@@ -371,7 +360,7 @@ class PanoGame:
         '''
         if self.saveRequest is not None:            
             try:
-                self.saveLoad.save(self.saveRequest)
+                self.saveLoad.save(self.persistence, self.saveRequest)
             except SaveGameError, e:
                 self.log.exception('Save action failed due to unexpected error.')
                 self.msn.sendMessage(PanoConstants.EVENT_SAVELOAD_ERROR, [self.saveRequest])
@@ -382,7 +371,7 @@ class PanoGame:
                     
         elif self.loadRequest is not None:            
             try:
-                self.saveLoad.load(self.loadRequest)
+                self.saveLoad.load(self.persistence, self.loadRequest)
             except LoadGameError, e:
                 self.log.exception('Load action failed due to unexpected error.')
                 self.msn.sendMessage(PanoConstants.EVENT_SAVELOAD_ERROR, [self.loadRequest])

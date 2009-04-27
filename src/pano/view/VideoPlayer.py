@@ -24,8 +24,10 @@ THE SOFTWARE.
 
 import logging
 
+from pandac.PandaModules import AudioSound
 from pandac.PandaModules import CardMaker
 from pandac.PandaModules import NodePath
+from pandac.PandaModules import Texture
 from pandac.PandaModules import TextureStage
 
 from constants import PanoConstants
@@ -41,10 +43,13 @@ class VideoPlayer:
         self.vidSound = None
         self.animInterface = None
         
+        # has the length of a movie in seconds
+        self.totalTime = 0.0
+        
     def dispose(self):
         self._releaseResources()
         
-    def playFullScreen(self, video, audio):
+    def playFullScreen(self, video, audio = None):
         
         self._releaseResources()
         
@@ -57,13 +62,15 @@ class VideoPlayer:
         self.texCardNode.reparentTo(render2d)
         self.texCardNode.setTexture(self.videoTex)
         if audio is not None:
-            self.vidSound = loader.loadSfx(self.resources.getResourceFullPath(PanoConstants.RES_TYPE_SOUNDS, audio))
+            self.vidSound = loader.loadSfx(self.resources.getResourceFullPath(PanoConstants.RES_TYPE_MUSIC, audio))
             self.videoTex.synchronizeTo(self.vidSound)
             
         self.animInterface = self.videoTex
         if self.vidSound is not None:
             self.animInterface = self.vidSound
             
+        self.totalTime = self.videoTex.getTime()
+        self.animInterface.setLoop(False)
         self.animInterface.play()
             
     def stop(self):        
@@ -76,9 +83,12 @@ class VideoPlayer:
             self.animInterface.stop()
             self.animInterface.setTime(t)
             
-    def hasFinished(self):
+    def hasFinished(self):        
         if self.animInterface is not None:
-             return self.animInterface.getTime() >= self.animInterface.length() 
+            if type(self.animInterface) == AudioSound:
+                return self.animInterface.getTime() >= self.animInterface.length()
+            else:                
+                return self.totalTime <= self.animInterface.getTime()
         else:
             return True
             
@@ -94,6 +104,7 @@ class VideoPlayer:
         self.videoTex = None
         self.vidSound = None
         self.animInterface = None
+        self.totalTime = 0.0
             
     def renderToTexture(resources, geom, video, audio):
         
@@ -111,12 +122,14 @@ class VideoPlayer:
             self.log.error("MovieTexture support is not enabled, cannot proceed.")
             return None
         
-        geom.setTexture(videoTex)        
+        geom.setTexture(videoTex)      
+        videoTex.setWrapU(Texture.WMClamp)
+        videoTex.setWrapV(Texture.WMClamp)  
         if videoTex.getTexturesPower2():            
             geom.setTexScale(TextureStage.getDefault(), videoTex.getTexScale()) 
         
         if audio is not None:
-            vidSound = loader.loadSfx(resources.getResourceFullPath(PanoConstants.RES_TYPE_SOUNDS, audio))
+            vidSound = loader.loadSfx(resources.getResourceFullPath(PanoConstants.RES_TYPE_MUSIC, audio))
             videoTex.synchronizeTo(vidSound)
             return vidSound
         else:

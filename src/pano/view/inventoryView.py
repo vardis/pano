@@ -164,7 +164,7 @@ class GridSlotsLayout(SlotsLayout):
         else:
             return None
         
-    def enableDebugRendring(self, game):
+    def enableDebugRendering(self, game):
         
         if self.debugNode is not None:
             return
@@ -196,8 +196,9 @@ class GridSlotsLayout(SlotsLayout):
             v_offnp.reparentTo(self.debugNode)
             
     def disableDebugRendering(self, game):
-        self.debugNode.node().removeAllChildren()
-        self.debugNode.removeNode()
+#        self.debugNode.node().removeAllChildren()
+#        self.debugNode.removeNode()
+        self.debugNode.detachNode()
         self.debugNode = None
     
 class ImageBasedSlotsLayout(SlotsLayout):
@@ -261,7 +262,9 @@ class InventoryView:
         # stores image objects for each item's icon
         self.itemIcons = []
         
-        self.mousePointer = InventoryView.POINTER_NAME        
+        self.mousePointer = InventoryView.POINTER_NAME
+        
+        self.debugLayout = False        
 
     def initialize(self, inventory):
         """
@@ -270,6 +273,8 @@ class InventoryView:
         """
         if self.node is not None:
             self.node.removeNode()
+#            self.node.detachNode()
+            
         self.node = aspect2d.attachNewNode(InventoryView.INVENTORY_SCENE_NODE)
         self.iconsNode = self.node.attachNewNode(InventoryView.ICONS_NODE)
         
@@ -278,6 +283,7 @@ class InventoryView:
         
         if self.backdropImageObject is not None:
             self.backdropImageObject.destroy()
+            self.backdropImageObject = None
         self.backdropImage = cfg.get(PanoConstants.CVAR_INVENTORY_BACKDROP)
         
         self.pos = cfg.getVec2(PanoConstants.CVAR_INVENTORY_POS)
@@ -335,13 +341,17 @@ class InventoryView:
         """
         Shows the inventory.
         """
-        self.node.show()        
+        self.node.show()
+        if self.debugLayout:
+            self.enableDebugRendering()        
     
     def hide(self):
         """
         Hides the inventory.
         """
         self.node.hide()
+        if self.debugLayout:
+            self.disableDebugRendering()
     
     def isVisible(self):
         """
@@ -378,10 +388,12 @@ class InventoryView:
         return self.node
     
     def enableDebugRendering(self):
-        self.slotsLayout.enableDebugRendring(self.game)
+        self.slotsLayout.enableDebugRendering(self.game)
+        self.debugLayout = True
         
     def disableDebugRendering(self):
-        self.slotsLayout.disableDebugRendering(self.game)            
+        self.slotsLayout.disableDebugRendering(self.game)
+        self.debugLayout = False            
     
     def _createBackdrop(self, show = True):
         """
@@ -392,10 +404,12 @@ class InventoryView:
         """
         if self.backdropImageObject is not None:
             self.backdropImageObject.destroy()
+#            self.backdropImageObject.detachNode()
             self.backdropImageObject = None
         
         if self.backdropNode is not None:
             self.backdropNode.removeNode()
+#            self.backdropNode.detachNode()
             
         imagePath = self.game.getResources().getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, self.backdropImage)        
             
@@ -404,8 +418,8 @@ class InventoryView:
             parent = self.node,
             image = imagePath, 
             pos = (self.pos[0], 0.0, self.pos[1]), 
-#            scale= (self.size[0], 1.0, self.size[1]),
             sort = 0)
+        print dir(self.backdropImageObject)
         self.backdropImageObject.setTransparency(TransparencyAttrib.MAlpha)
         self.backdropImageObject.setBin("fixed", 41)
         
@@ -432,7 +446,7 @@ class InventoryView:
         
         self.itemText = DirectButton(
              parent=self.itemTextNode,
-             text=translated + ' x30', 
+             text=translated, 
              text_font=self.font,
              text_bg=(self.fontBgColor[0], self.fontBgColor[1], self.fontBgColor[2], self.fontBgColor[3]),
              text_fg=(self.fontColor[0], self.fontColor[1], self.fontColor[2], self.fontColor[3]),
@@ -465,7 +479,7 @@ class InventoryView:
         
         self.iconsNode.node().removeAllChildren()
         for icon in self.itemIcons:
-            icon.destroy()
+            icon.destroy()            
         self.itemIcons = []
         
         for i in xrange(self.inventory.getSlotsCount()):

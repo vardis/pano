@@ -33,11 +33,15 @@ from control.ExploreState import ExploreState
 from view.VideoPlayer import VideoPlayer
 
 class IntroState(FSMState):
+    '''
+    Controls the state of the game when displaying the introductory videos.
     
-    NAME = 'introState'
+    It displays the video sequences defined in the configuration and allows the user to interrupt
+    the introduction by pressing a key.
+    '''
     
     def __init__(self, gameRef = None, node = None):        
-        FSMState.__init__(self, gameRef, self.NAME)        
+        FSMState.__init__(self, gameRef, PanoConstants.STATE_INTRO)        
         self.log = logging.getLogger('pano.introState')
 
         self.videoPlayer = None
@@ -67,8 +71,10 @@ class IntroState(FSMState):
         
         self.transitioning = False
                 
+        self.game.getInput().pushMappings('intro')
     
     def exit(self):
+        self.game.getInput().popMappings()
         self.videos = None
         self.activeVid = -1
         self.transitioning = False
@@ -78,7 +84,7 @@ class IntroState(FSMState):
         
         if self.videos is None or len(self.videos) == 0:
             self.log.debug('No videos defined, switching to explore state')
-            self.getGame().getState().changeState('exploreState')
+            self.getGame().getState().changeState(PanoConstants.STATE_EXPLORE)
             return
         
         # wait for transition to end
@@ -89,7 +95,7 @@ class IntroState(FSMState):
             self.activeVid = 0
             self._playActiveIdVideo()            
         else:                    
-            if self.videoPlayer.hasFinished():
+            if self.videoPlayer is None or self.videoPlayer.hasFinished():
                 # active video ended, check if there are more
                 self.activeVid += 1
                 if self.activeVid < len(self.videos):
@@ -100,12 +106,28 @@ class IntroState(FSMState):
                         self._playActiveIdVideo()
                 else:
                     # played through all the list, we are done
-                    if self.videoPlayer is not None:
-                        self.videoPlayer.stop()
-                        self.videoPlayer.dispose()
-                    self.log.debug('all videos done')
-                    self.getGame().getState().changeState('exploreState')
+                    self._stopPlayback()
+                    self.log.debug('all videos done') 
+                    self.getGame().getState().changeState(PanoConstants.STATE_EXPLORE)
+    
+    def onInputAction(self, action):
+        if action == "interrupt":
             
+            if self.log.isEnabledFor(logging.DEBUG):
+                self.log.debug('Intro interrupted')
+            
+            self._stopPlayback()
+            self.activeVid = len(self.videos)
+            
+            return True
+        else:
+            return False
+        
+    def _stopPlayback(self):
+        if self.videoPlayer is not None:
+            self.videoPlayer.stop()
+            self.videoPlayer.dispose()
+            self.videoPlayer = None
             
     def _playActiveIdVideo(self):
         
