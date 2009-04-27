@@ -121,13 +121,13 @@ class CameraMouseControl:
     def enable(self):
         """
         The controller is activated and any mouse movement will result in a change to the camera's orientation. 
-        """
+        """        
         self.active = True
         
     def disable(self):
         """
         The camera will not be affected anymore by this controller.
-        """            
+        """        
         self.active = False
         
     def update(self, millisElapsed):

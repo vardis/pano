@@ -20,8 +20,7 @@ from console import customConsoleClass
 import sys, traceback
 
 class pandaConsole:
-  def __init__( self, game, interfaces=INPUT_GUI|INPUT_CONSOLE|OUTPUT_PYTHON|OUTPUT_IRC, localsEnv=globals):
-    self.game = game
+  def __init__( self, interfaces=INPUT_GUI|INPUT_CONSOLE|OUTPUT_PYTHON|OUTPUT_IRC, localsEnv=globals ):
     self.guiEnabled     = (interfaces & INPUT_GUI)
     self.consoleEnabled = (interfaces & INPUT_CONSOLE)
     self.pythonEnabled  = (interfaces & OUTPUT_PYTHON)

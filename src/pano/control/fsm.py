@@ -29,7 +29,7 @@ from constants import PanoConstants
 from messaging import Messenger
 from control.StatesFactory import StatesFactory
 
-class FSMState(object):
+class FSMState:
     def __init__(self, gameRef = None, name = ''):
         self.log = logging.getLogger('pano.fsm_state')
         self.name = name
@@ -46,7 +46,6 @@ class FSMState(object):
         return self.msn
                 
     def enter(self):
-        print 'entered in ' , self.name
         self.msn.acceptMessage(PanoConstants.EVENT_GAME_EXIT, self.onMessage)
         self.msn.acceptMessage(PanoConstants.EVENT_GAME_PAUSED, self.onMessage)
         self.msn.acceptMessage(PanoConstants.EVENT_GAME_RESUMED, self.onMessage)
@@ -78,13 +77,13 @@ class FSMState(object):
         """
         Returns a list of event names that this FSMState instance is interested in receiving.
         A subscription will then be done for these messages.
-        """         
+        """ 
         return []
 
     def onMessage(self, msg, *args):
         """
         if msg === PanoConstants.EVENT_GAME_PAUSED: ....
-        """        
+        """
         pass
     
     def onInputAction(self, action):
@@ -105,7 +104,7 @@ class FSMState(object):
     def restoreState(self, persistence, ctx):
         pass
 
-class FSM(object):
+class FSM:
     """
     A finite state machine has a set of valid states and can have only
     one active state at each time. Along with the active state, a global 
@@ -116,10 +115,9 @@ class FSM(object):
     states.
     """
     
-    def __init__(self, name, gameRef = None):
+    def __init__(self, gameRef = None):
                 
         self.log = logging.getLogger('pano.fsm')
-        self.name = name
         self.game = gameRef        
         self.factory = StatesFactory(self.game)            
         self.states = {}    # contains all the valid states for this FSM keyed by name        
@@ -129,7 +127,6 @@ class FSM(object):
         self.previousState = None                
         self.statesStack = []
         self.globalStatesStack = []
-        self.scheduledChange = None
         
     def getGlobalState(self):
         return self.globalState                
@@ -159,29 +156,11 @@ class FSM(object):
 #        return self.states.keys()
     
     def update(self, millis):
-        
-        if self.scheduledChange is not None:
-            t = self.scheduledChange[1] - millis
-            if t > 0:
-                self.scheduledChange[1] = t
-            else:
-                stateName = self.scheduledChange[0]
-                self.scheduledChange = None
-                self.changeState(stateName)                
-        
         if self.globalState is not None:
             self.globalState.update(millis)
             
         if self.currentState is not None:
             self.currentState.update(millis)
-            
-    def scheduleStateChange(self, stateName, delay = 0):
-        '''
-        Schedules the change to the specified state in the time frame specified by the delay parameter.
-        If delay is zero then the change will occur at the next update cycle of the FSM.
-        Note: delay is assumed to be in milliseconds.
-        '''
-        self.scheduledChange = [stateName, delay]
             
     def changeState(self, stateName, pushNew=False, popOld=False):
         '''
@@ -314,8 +293,6 @@ class FSM(object):
     
     def restoreState(self, persistence, ctx):
         
-        self._reset()
-        
         if ctx.hasVar('globalState'):
             globalStateName = ctx.getVar('globalState')
             self.globalState = self.factory.create(globalStateName)
@@ -350,38 +327,9 @@ class FSM(object):
                 stateCtx = persistence.deserializeContext(ctx.getVar('state_context_' + state))
                 stateObj.restoreState(persistence, stateCtx)
                 
-    def _reset(self):
-        '''
-        Resets the state machine by disposing and removing all associated states. Thus the resulting
-        fsm will not contain any states.
-        '''        
-        if self.log.isEnabledFor(logging.DEBUG):
-            self.log.debug('reseting state machine %s' % self.name)
         
-        if self.log.isEnabledFor(logging.DEBUG):
-            self.log.debug('destroying global state')
             
-        if self.globalState is not None:
-            self.globalState.exit()
-            self.globalState = None
-
-        if self.log.isEnabledFor(logging.DEBUG):
-            self.log.debug('destroying current state')
-        if self.currentState is not None:
-            self.currentState.exit()
-            self.currentState = None
-            
-        if self.log.isEnabledFor(logging.DEBUG):
-            self.log.debug('destroying states stack')
-        for state in self.statesStack:            
-            state.exit()
-        self.statesStack = []
         
-        if self.log.isEnabledFor(logging.DEBUG):
-            self.log.debug('destroying global states stack')
-        for state in self.globalStatesStack:
-            state.exit()
-        self.globalStatesStack = []
             
         
     

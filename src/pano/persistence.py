@@ -27,7 +27,7 @@ import os, cPickle
 import datetime, logging
 
 from constants import PanoConstants
-from errors.PanoExceptions import *
+from pano.exceptions.PanoExceptions import *
 from messaging import Messenger
 
 class PersistenceContext:
@@ -55,20 +55,9 @@ class PersistenceContext:
 
         
 class PersistenceManager:
-    '''
-    Manages the creation, serialisation and de-serialisation of the persistence contexts.
-    '''
-    
     def __init__(self):
-        # the global context
-        self.globalCtx = self.createContext('global')
+        pass
     
-    def getGlobal(self):
-        return self.globalCtx
-    
-    def setGlobal(self, ctx):
-        self.globalCtx = ctx
-        
     def createContext(self, name):
         return PersistenceContext(name)
     
@@ -112,7 +101,6 @@ class SavedGameData:
         self.datetime = None
         self.activeNode = None
         self.gameCtx = None
-        self.globalCtx = None
         self.fsmCtx = None
         self.inventoryCtx = None
 
@@ -134,14 +122,13 @@ class SavedGameData:
     def getGameCtx(self):
         return self.gameCtx
 
+
     def getFsmCtx(self):
         return self.fsmCtx
 
+
     def getInventoryCtx(self):
         return self.inventoryCtx
-
-    def getGlobalCtx(self):
-        return self.globalCtx
 
     def setName(self, name):
         self.name = name
@@ -161,14 +148,14 @@ class SavedGameData:
     def setGameCtx(self, value):
         self.gameCtx = value
 
+
     def setFsmCtx(self, value):
         self.fsmCtx = value
+
 
     def setInventoryCtx(self, value):
         self.inventoryCtx = value
 
-    def setGlobalCtx(self, value):
-        self.globalCtx = value
 
 class GameSaveLoad:
     
@@ -177,7 +164,8 @@ class GameSaveLoad:
     def __init__(self, game, savesDir = 'saves'):
         self.log = logging.getLogger('pano.saveLoad')
         self.game = game
-        self.savesDir = savesDir        
+        self.savesDir = savesDir
+        self.pm = PersistenceManager()
     
     def getSavesDir(self):
         '''
@@ -198,11 +186,12 @@ class GameSaveLoad:
         '''
         return [] 
     
-    def save(self, persistenceMgr, name):
+    def save(self, name):
         
         save = SavedGameData()        
         
-        # save the state of the various game components into persistence contexts        
+        # save the state of the various game components into persistence contexts
+        gameCtx = self.game.persistState(self.pm)       
         fsmCtx = self.game.getState().persistState(self.pm)                     
         inventoryCtx = self.game.getInventory().persistState(self.pm)
         # in the future, add more here...
@@ -224,11 +213,11 @@ class GameSaveLoad:
         save.setScreenshot(screenName)
         save.setActiveNode(self.game.getView().getActiveNode().getName())
         
-        # serialise (pickle) all gathered contexts
-        try:            
-            save.setInventoryCtx(persistenceMgr.serializeContext(inventoryCtx))
-            save.setFsmCtx(persistenceMgr.serializeContext(fsmCtx))
-            save.setGlobalCtx(persistenceMgr.serializeContext(persistenceMgr.getGlobal()))
+        # serialize (pickle) all gathered contexts
+        try:
+            save.setGameCtx(self.pm.serializeContext(gameCtx))
+            save.setInventoryCtx(self.pm.serializeContext(inventoryCtx))
+            save.setFsmCtx(self.pm.serializeContext(fsmCtx))
             # in the future, add more here...
         except PersistenceError, e:
             self.log.exception('Unexpected error while serializing data.')            
@@ -246,7 +235,7 @@ class GameSaveLoad:
                 fp.close()
         
     
-    def load(self, persistenceMgr, saveName):       
+    def load(self, saveName):       
         fp = None 
         try:
             fp = open(os.path.join(self.savesDir, saveName + '.sav'), 'r')
@@ -259,18 +248,18 @@ class GameSaveLoad:
             print 'Saved game was created at %s' % save.getDatetime().strftime(self.DATE_FORMAT)
             
             # de-serialize pickled contexts
-            try:            
-                inventoryCtx = persistenceMgr.deserializeContext(save.getInventoryCtx())    
-                fsmCtx = persistenceMgr.deserializeContext(save.getFsmCtx())
-                globalCtx = persistenceMgr.deserializeContext(save.getGlobalCtx())        
+            try:
+                gameCtx = self.pm.deserializeContext(save.getGameCtx())
+                inventoryCtx = self.pm.deserializeContext(save.getInventoryCtx())    
+                fsmCtx = self.pm.deserializeContext(save.getFsmCtx())        
             except PersistenceError, e:
                 self.log.exception('Unexpected error while deserializing data.')
                 raise LoadGameError('Failed to read serialized data.')
             
-            # load back the states            
-            self.game.getInventory().restoreState(persistenceMgr, inventoryCtx)
-            self.game.getState().restoreState(persistenceMgr, fsmCtx)
-            persistenceMgr.setGlobal(globalCtx)
+            # load back the states
+            self.game.restoreState(self.pm, gameCtx)
+            self.game.getInventory().restoreState(self.pm, inventoryCtx)
+            self.game.getState().restoreState(self.pm, fsmCtx)
             # more to follow...
             
 #            msn = Messenger(self)

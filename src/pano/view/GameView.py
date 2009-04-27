@@ -28,7 +28,7 @@ from pandac.PandaModules import NodePath
 from direct.showbase.Transitions import Transitions
 from direct.interval.IntervalGlobal import *
 
-from errors.PanoExceptions import GraphicsError
+from pano.exceptions.PanoExceptions import GraphicsError
 from NodeRenderer import NodeRenderer
 from constants import PanoConstants
 from camera import CameraMouseControl
@@ -37,7 +37,6 @@ from NodeRaycaster import NodeRaycaster
 from model.Node import Node
 from TalkBox import TalkBox
 from inventoryView import InventoryView
-from view.VideoPlayer import VideoPlayer
 
 class GameView:    
     def __init__(self, gameRef = None, title = ''):
@@ -81,10 +80,6 @@ class GameView:
         # used to linearly interpolate the camera's orientation using a source and a target quaternion
         self.camQuatInterval = None
         
-        self.activeVideo = None
-        self.videoPlayer = None
-        self.videoCallback = None
-        
     def initialize(self):
         '''
         Initialise self and all components on which we are depended.
@@ -102,8 +97,7 @@ class GameView:
         self.raycaster.initialize()
         self.__talkBox.initialize()
         self.inventory.initialize(self.game.getInventory())
-        self.transition = Transitions(loader)
-                
+        self.transition = Transitions(loader)        
                 
     def update(self, millis):
         if millis == 0.0 and self.camQuatInterval is not None:
@@ -114,10 +108,6 @@ class GameView:
                 self.cameraControl.enable()
             elif not self.camQuatInterval.isPlaying():
                 self.camQuatInterval.resume()
-                
-        if self.activeVideo is not None and self.videoPlayer is not None:
-            if self.videoPlayer.hasFinished():
-                self.stopVideo()
                 
         self.cameraControl.update(millis)
         self.panoRenderer.render(millis)
@@ -133,15 +123,9 @@ class GameView:
     def getInventoryView(self):
         return self.inventory
         
-    def displayNode(self, node):        
+    def displayNode(self, node):
         self.activeNode = node
-        if type(node) == str:
-            self.activeNode = self.game.getResources().loadNode(node)
-        
         self.panoRenderer.displayNode(self.activeNode)
-        
-    def clearScene(self):
-        self.panoRenderer.clearScene()
         
     def raycastNodeAtMouse(self):
         #This gives up the screen coordinates of the mouse
@@ -200,13 +184,9 @@ class GameView:
         else:
             base.openMainWindow(props = self.windowProperties, type='onscreen')        
         self.window = base.win
-        messenger.send("window-event", [self.window])
     
     def closeWindow(self):
-        base.closeWindow(self.window)    
-        
-    def getWindow(self):
-        return self.window    
+        base.closeWindow(self.window)        
         
     def fadeIn(self, seconds):
         """
@@ -333,27 +313,10 @@ class GameView:
                 targetQuat = camera.getQuat()
                 camera.setQuat(startQuat)                
                 self.camQuatInterval = LerpQuatInterval(base.cam, duration, targetQuat, None, startQuat, None, blendType=blendType, name='test')
+                print 'quat interval starting'
                 self.cameraControl.disable()
                 self.camQuatInterval.start()
                 
-
-    def playVideo(self, videoFile, endCallback):        
-        self.stopVideo()
-        self.videoPlayer = VideoPlayer('fullscreen_player', self.game.getResources())
-        self.videoPlayer.playFullScreen(videoFile)
-        self.activeVideo = self.videoPlayer.getAnimInterface()
-        if self.activeVideo is None:
-            log.error('Could not playback video ' + videoFile)
-        else:
-            self.videoCallback = endCallback
-            self.activeVideo.play()
-    
-    def stopVideo(self):
-        if self.videoPlayer is not None:
-            self.videoPlayer.stop()
-            self.videoPlayer.dispose()
-            self.videoPlayer = None
-            self.videoCallback()
 
     talkBox = property(getTalkBox, setTalkBox, None, "TalkBox's Docstring")
         

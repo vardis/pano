@@ -25,7 +25,7 @@ import logging
 from ConfigParser import *
 
 from constants import PanoConstants
-from errors.ParseException import ParseException
+from pano.exceptions.ParseException import ParseException
 
 class FontParser:
     def __init__(self):

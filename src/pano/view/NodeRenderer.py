@@ -136,7 +136,7 @@ class NodeRenderer:
         
         base.camLens.setFar(10000)
         base.camLens.setFocalLength(1)
-#        base.camLens.setFov(45.0, 45)
+#        base.camLens.setFov(90.0, 90)
 #        base.camLens.setAspectRatio(1.0)
         self.loadCubeModel()
         
@@ -165,8 +165,6 @@ class NodeRenderer:
         
         # disable depth write for the cube map
         self.cmap.setDepthWrite(False)    
-        self.cmap.setDepthTest(False)
-        self.cmap.setBin("fixed", 1)
         
         if self.log.isEnabledFor(logging.DEBUG):
             self.log.debug(self.cmap.ls())
@@ -182,7 +180,8 @@ class NodeRenderer:
                            PanoConstants.CBM_TOP_FACE    : ((-self.faceHalfDim, -self.faceHalfDim, self.faceHalfDim), (self.faceHalfDim, self.faceHalfDim, self.faceHalfDim)),
                            PanoConstants.CBM_BOTTOM_FACE : ((-self.faceHalfDim, -self.faceHalfDim, -self.faceHalfDim), (self.faceHalfDim, self.faceHalfDim, -self.faceHalfDim))
                            }
-                                        
+                                
+        print self.cmap.ls()
 
         # caches references to the textures of each cubemap face
         for i, n in self.cubeGeomsNames.items():
@@ -212,13 +211,6 @@ class NodeRenderer:
     def render(self, millis):
         pass
             
-    def clearScene(self):
-        '''
-        Clears the scenegraph effectively removing all nodes from rendering.
-        '''
-        self.initScene()
-        self.cmap.hide()       
-            
     def initScene(self):
         """
         Sets the scene to an initial state by destroying any rendering resources allocated that far
@@ -229,11 +221,8 @@ class NodeRenderer:
             debugGeoms = self.debugGeomsParent.getChildrenAsList()            
             for box in debugGeoms:
                 box.removeNode()
-#                box.detachNode()
-                
-            #self.debugGeomsParent.node().removeAllChildren()           
-            self.debugGeomsParent.removeNode()
-#            self.debugGeomsParent.detachNode() 
+            self.debugGeomsParent.node().removeAllChildren()           
+            self.debugGeomsParent.removeNode() 
             
         # same for hotspots        
         if self.spritesParent is not None:
@@ -243,11 +232,8 @@ class NodeRenderer:
                     video = hp.getPythonTag('video')
                     video.stop()
                 hp.removeNode()
-#                hp.detachNode()
-                
-            #self.spritesParent.node().removeAllChildren()
+            self.spritesParent.node().removeAllChildren()
             self.spritesParent.removeNode()
-#            self.spritesParent.detachNode()
             
         self.debugGeomsParent = self.cmap.attachNewNode(PanoConstants.NODE_DEBUG_GEOMS_PARENT)        
         self.spritesParent = self.cmap.attachNewNode(PanoConstants.NODE_SPRITES_PARENT)
@@ -280,6 +266,9 @@ class NodeRenderer:
         
         self.cmap.show()
         
+        print self.cmap.ls()
+                     
+        
     def pauseAnimations(self):
         """
         Stops all node animations.
@@ -291,10 +280,8 @@ class NodeRenderer:
                 video.stop()
                 video.setTime(t)
             else:
-                seqNP = np.find('**/+SequenceNode')
-                if seqNP is not None and not seqNP.isEmpty():
-                    seq = seqNP.node()                
-                    seq.pose(seq.getFrame())           
+                seq = np.find('**/+SequenceNode').node()                
+                seq.pose(seq.getFrame())           
             
     def resumeAnimations(self):
         """
@@ -305,11 +292,8 @@ class NodeRenderer:
                 video = np.getPythonTag('video')                
                 video.play()                
             else:
-                seqNP = np.find('**/+SequenceNode')
-                if seqNP is not None and not seqNP.isEmpty():
-                    seq = seqNP.node()                
-                    seq.loop(False)                
-                                
+                seq = np.find('**/+SequenceNode').node()
+                seq.loop(False)                
         
     def buildWorldToFaceMatrices(self):
         """
@@ -359,16 +343,41 @@ class NodeRenderer:
         Creates nodes for the collision geometry (a box) and the sprite.
         """
         for hp in self.node.getHotspots():
-            self._renderHotspotDebugGeom(hp)
-            self._renderHotspotGeom(hp)                 
             
-    def _renderHotspotGeom(self, hp):
-        '''
-        Setups node for rendering the sprite associated with this hotspot.
-        While the details of creating the sprite nodes are hidden in addSprite, we still have
-        to align the returned node with the surface covered by the hotspot in world space.
-        '''        
-        if hp.sprite is not None:
+            dim = self.getFaceTextureDimensions(hp.getFace())
+            
+# create a box that covers the hotspot's boundaries in order to indicate its position
+# and scale inside the world
+                
+            # get world space coords of top left corner
+            t1 = hp.xo / dim[0]
+            t2 = hp.yo / dim[1]
+            wo = self.getWorldPointFromFacePoint(hp.getFace(), (t1, t2))
+            
+            # get world space coords of bottom right corner
+            t1 = hp.xe / dim[0]
+            t2 = hp.ye / dim[1]
+            we = self.getWorldPointFromFacePoint(hp.getFace(), (t1, t2))
+            
+            box = self.resources.loadModel('box.egg.pz') #loader.loadModel(self.resources.getResourceFullPath(PanoConstants.RES_TYPE_MODELS, 'box.egg.pz'))
+            box.setName('debug_' + hp.getName())
+            
+            # we want to set as the position of our box, the respective world space position of the leftmost top corner of the hotspot
+            # because image space and world space X and Y axis may have opposite directions, we use min() to choose correctly between
+            # wo and we elements for setPos(): since the leftmost top corner has the smallest coordinates in image space, it will follow
+            # suite in the world space as well.
+            box.setPos(min(wo[0], we[0]), wo[1], min(wo[2], we[2]))
+            box.setScale(
+                         max(0.2, math.fabs(we[0] - wo[0])), 
+                         max(0.2, math.fabs(we[1] - wo[1])), 
+                         max(0.2, math.fabs(we[2] - wo[2])))                
+            box.setRenderModeWireframe()                                        
+            box.reparentTo(self.debugGeomsParent)
+
+# setups node for rendering the sprite associated with this hotspot
+# while the details of creating the sprite nodes are hidden in addSprite, we still have
+# to align the returned node with the surface covered by the hotspot in world space.                        
+            if hp.sprite is not None:
                 sprite = self.resources.loadSprite(hp.sprite)
                 nodePath = self.addSprite(sprite)                
                 
@@ -379,60 +388,15 @@ class NodeRenderer:
                 t2 = (hp.yo + hp.height / 2.0) / dim[1]
                 centerPos = self.getWorldPointFromFacePoint(hp.getFace(), (t1, t2))
                 
-                # align nodePath's center with the hotspot's                
-                nodePath.setPos(VBase3(centerPos[0], centerPos[1], centerPos[2])) # + VBase3(n[0], n[1], n[2]) * 0.001)                
+                # align nodePath's center with the hotspot's
+                nodePath.setPos(VBase3(centerPos[0], centerPos[1], centerPos[2]) + VBase3(n[0], n[1], n[2]) * 0.001)                
                 
-                # scale appropriately to cover the hotspot                
+                # scale appropriately to cover the hotspot
                 nodePath.setScale(hp.width * self.faceDim / dim[0], 1.0, hp.height * self.faceDim / dim[1])
                 
                 # to orientate, we will align the center point with a point at a small distance along the face normal
                 lookAt = centerPos - VBase3(n[0], n[1], n[2])
-                nodePath.lookAt(lookAt[0], lookAt[1], lookAt[2]) 
-                
-                nodePath.setDepthTest(False)
-                nodePath.setDepthWrite(False)                    
-                nodePath.setBin("fixed", 2)
-                                
-                if not hp.isActive():
-                    nodePath.hide()          
-
-    def _renderHotspotDebugGeom(self, hp):
-        '''
-        Creates a box that covers the hotspot's boundaries in order to indicate its position
-        and scale in the scene.
-        '''
-        dim = self.getFaceTextureDimensions(hp.getFace())            
-                
-        # get world space coords of top left corner
-        t1 = hp.xo / dim[0]
-        t2 = hp.yo / dim[1]
-        wo = self.getWorldPointFromFacePoint(hp.getFace(), (t1, t2))
-        
-        # get world space coords of bottom right corner
-        t1 = hp.xe / dim[0]
-        t2 = hp.ye / dim[1]
-        we = self.getWorldPointFromFacePoint(hp.getFace(), (t1, t2))
-        
-        box = self.resources.loadModel('box.egg') 
-        box.setName('debug_' + hp.getName())
-        
-        # we want to set as the position of our box, the respective world space position of the leftmost top corner of the hotspot
-        # because image space and world space X and Y axis may have opposite directions, we use min() to choose correctly between
-        # wo and we elements for setPos(): since the leftmost top corner has the smallest coordinates in image space, it will follow
-        # suite in the world space as well.
-        box.setPos(min(wo[0], we[0]), min(wo[1], we[1]), min(wo[2], we[2]))    
-        box.setScale(
-                     max(0.2, math.fabs(we[0] - wo[0])), 
-                     max(0.2, math.fabs(we[1] - wo[1])), 
-                     max(0.2, math.fabs(we[2] - wo[2])))   
-                             
-        box.setDepthTest(False)
-        box.setDepthWrite(False)                    
-        box.setBin("fixed", 3)
-        
-        box.setRenderModeWireframe()                                        
-        box.reparentTo(self.debugGeomsParent)
-        
+                nodePath.lookAt(lookAt[0], lookAt[1], lookAt[2])                    
 
     def addSprite(self, sprite):
         """
@@ -447,7 +411,6 @@ class NodeRenderer:
         Note: You don't need to manually add the sprites of each hotspot of a game node as these
         are automatically added when you display the node.
         """
-        self.log.debug('Adding sprite %s' % sprite.getName())
         nodeName = SpritesUtil.getSpriteNodeName(sprite.getName())
         nodePath = None
         if not self.sprites.has_key(nodeName):                    
@@ -468,16 +431,13 @@ class NodeRenderer:
         """
         Removes the named sprite from rendering.
         """
-        self.log.debug('Removing sprite %s' % spriteName)
         nodeName = SpritesUtil.getSpriteNodeName(spriteName)
         np = self.spritesParent.find(nodeName)
         if np is not None:
-#            np.detachNode()
             np.removeNode()
             del self.sprites[nodeName]
             
     def removeHotspot(self, hotspot):
-        self.log.debug('Removing hotspot %s' % hotspot.getName())
         spriteName = hotspot.getSprite()
         if spriteName is not None:
             self.removeSprite(spriteName)
@@ -486,27 +446,13 @@ class NodeRenderer:
         if self.debugGeomsParent is not None:
             np = self.debugGeomsParent.find('debug_' + hotspot.getName())
             if np != None and not np.isEmpty():
-#                np.detachNode()                
+                print 'FOUND NODE'
                 np.removeNode()
             
-    def hideHotspot(self, hp):
-        self.log.debug('Hiding hotspot %s' % hp.getName())
-        spriteName = hp.getSprite()
-        if spriteName is not None:
-            sri = self.getSpriteRenderInterface(spriteName)
-            sri.hide()
-            
-    def showHotspot(self, hp):
-        self.log.debug('Showing hotspot %s' % hp.getName())
-        spriteName = hp.getSprite()
-        if spriteName is not None:
-            sri = self.getSpriteRenderInterface(spriteName)
-            sri.show()
-            
     def replaceHotspotSprite(self, hotspot, newSprite):
-        self.log.debug("Replacing hotspot's %s sprite with %s" % (hp.getName(), newSprite))
         self.removeSprite(hotspot.getSprite())
-        self._renderHotspotGeom(hotspot)            
+        self.addSprite(newSprite)
+            
     
     def getSpriteRenderInterface(self, spriteName):
         """
@@ -665,11 +611,6 @@ class NodeRenderer:
         """
         if self.facesGeomNodes.has_key(face):
             tex = self.facesGeomNodes[face].getGeomState(0).getTexture().getTexture()
-            # for Panda 1.6
-#            rs = self.facesGeomNodes[face].getGeomState(0)
-#            ta = rs.getAttrib(TextureAttrib.getClassType())
-#            tex = ta.getTexture()
-            
             if tex is not None:
                 return (tex.getXSize(), tex.getYSize())
             
@@ -697,7 +638,8 @@ class NodeRenderer:
         '''    
         tex = self.resources.loadTexture(filename)
         tex.setWrapU(Texture.WMClamp)
-        tex.setWrapV(Texture.WMClamp)        
+        tex.setWrapV(Texture.WMClamp)
+        tex.setTexturesPower2(0) 
         rs = self.facesGeomNodes[face].getGeomState(0).setAttrib(TextureAttrib.make(tex))
         self.facesGeomNodes[face].setGeomState(0, rs)
 
