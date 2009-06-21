@@ -21,16 +21,16 @@ THE SOFTWARE.
 
 '''
 
-from constants             import PanoConstants
-from model.Font            import Font
-from model.Node            import Node
-from model.Sound           import Sound
-from model.MousePointer    import MousePointer
-from model.LangFile        import LangFile
-from model.Sprite          import Sprite
-from model.Playlist        import Playlist
-from model.ActionMappings  import ActionMappings
-from model.InventoryItem   import InventoryItem
+from pano.constants             import PanoConstants
+from pano.model.Font            import Font
+from pano.model.Node            import Node
+from pano.model.Sound           import Sound
+from pano.model.MousePointer    import MousePointer
+from pano.model.LangFile        import LangFile
+from pano.model.Sprite          import Sprite
+from pano.model.Playlist        import Playlist
+from pano.model.ActionMappings  import ActionMappings
+from pano.model.InventoryItem   import InventoryItem
 
 class ResourcesTypes:
     """
@@ -53,8 +53,33 @@ class ResourcesTypes:
             PanoConstants.RES_TYPE_ITEMS : ('.item'),
             PanoConstants.RES_TYPE_SCRIPTS : ('.py'),
             PanoConstants.RES_TYPE_TEXTS : ('.txt', '.py'),
-            PanoConstants.RES_TYPE_BINARIES : ('.bin')
+            PanoConstants.RES_TYPE_BINARIES : ('.bin'),
+            PanoConstants.RES_TYPE_SHADERS : ('.sha')
     }
+    
+    resTypesNames = { 
+            PanoConstants.RES_TYPE_NODES : 'Node',
+            PanoConstants.RES_TYPE_MODELS : 'Model',
+            PanoConstants.RES_TYPE_TEXTURES : 'Texture',
+            PanoConstants.RES_TYPE_FONTS : 'Font',
+            PanoConstants.RES_TYPE_SOUNDS_DEFS : 'Sound Definition',
+            PanoConstants.RES_TYPE_SFX : 'Sound file',
+            PanoConstants.RES_TYPE_MUSIC : 'Music file',
+            PanoConstants.RES_TYPE_POINTERS : 'Pointer',
+            PanoConstants.RES_TYPE_LANGS : 'Language file',
+            PanoConstants.RES_TYPE_SPRITES : 'Sprite',
+            PanoConstants.RES_TYPE_PLAYLISTS : 'Music Playlist',
+            PanoConstants.RES_TYPE_VIDEOS : 'Video',
+            PanoConstants.RES_TYPE_MAPPINGS : 'Input mappings',
+            PanoConstants.RES_TYPE_ITEMS : 'Item',
+            PanoConstants.RES_TYPE_SCRIPTS : 'Script',
+            PanoConstants.RES_TYPE_TEXTS : 'Text file',
+            PanoConstants.RES_TYPE_BINARIES : 'Binary file',
+            PanoConstants.RES_TYPE_SHADERS : 'Shader'
+    }
+
+    def listAllTypes():
+        return ResourcesTypes.resTypesNames.keys()
 
     def getExtensions(resType):
         """
@@ -66,7 +91,7 @@ class ResourcesTypes:
             return list(ResourcesTypes.resTypesExtensions[resType])
         elif resType == PanoConstants.RES_TYPE_ALL:
             all = []
-            for val in resTypesExtensions.values():
+            for val in ResourcesTypes.resTypesExtensions.values():
                 all.append(list(val))
             return all
         else:
@@ -94,12 +119,7 @@ class ResourcesTypes:
         
     def isStreamResource(resType):
         return resType in (
-            PanoConstants.RES_TYPE_SCRIPTS,                        
-            PanoConstants.RES_TYPE_MODELS,
-            PanoConstants.RES_TYPE_TEXTURES,            
-            PanoConstants.RES_TYPE_SFX,
-            PanoConstants.RES_TYPE_MUSIC,
-            PanoConstants.RES_TYPE_VIDEOS,
+            PanoConstants.RES_TYPE_SCRIPTS,                                    
             PanoConstants.RES_TYPE_TEXTS,
             PanoConstants.RES_TYPE_BINARIES       
                            )
@@ -110,7 +130,8 @@ class ResourcesTypes:
             PanoConstants.RES_TYPE_TEXTURES,            
             PanoConstants.RES_TYPE_SFX,
             PanoConstants.RES_TYPE_MUSIC,
-            PanoConstants.RES_TYPE_VIDEOS       
+            PanoConstants.RES_TYPE_VIDEOS,
+            PanoConstants.RES_TYPE_SHADERS       
                            )
             
     def constructParsedResource(resType, name):
@@ -132,7 +153,17 @@ class ResourcesTypes:
         
         assert constructors.has_key(resType)        
         return constructors[resType](name)
+
+
+    def typeToStr(resType):
+        '''
+        Returns a descriptive name for the given resource type.
+        @param resType: A constant that identifies the resource type.
+        '''
+        return ResourcesTypes.resTypesNames.get(resType)
             
+    listAllTypes = staticmethod(listAllTypes)
+    typeToStr = staticmethod(typeToStr)
     getExtensions = staticmethod(getExtensions)
     isExtensionOfType = staticmethod(isExtensionOfType)
     isPandaResource = staticmethod(isPandaResource)

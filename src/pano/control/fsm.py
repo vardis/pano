@@ -25,9 +25,9 @@ THE SOFTWARE.
 
 import logging 
 
-from constants import PanoConstants
-from messaging import Messenger
-from control.StatesFactory import StatesFactory
+from pano.constants import PanoConstants
+from pano.messaging import Messenger
+from pano.control.StatesFactory import StatesFactory
 
 class FSMState(object):
     def __init__(self, gameRef = None, name = ''):
@@ -46,7 +46,7 @@ class FSMState(object):
         return self.msn
                 
     def enter(self):
-        print 'entered in ' , self.name
+        self.log.debug('entered in %s' % self.name)
         self.msn.acceptMessage(PanoConstants.EVENT_GAME_EXIT, self.onMessage)
         self.msn.acceptMessage(PanoConstants.EVENT_GAME_PAUSED, self.onMessage)
         self.msn.acceptMessage(PanoConstants.EVENT_GAME_RESUMED, self.onMessage)

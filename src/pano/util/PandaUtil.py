@@ -47,8 +47,22 @@ class PandaUtil(object):
             h = base.a2dTop - base.a2dBottom
         return winHeight * units / h
     
+    def findSceneNode(nodeName, root = render):
+        '''
+        Searches for a scene node with the given name starting from the specified root node.
+        @param nodeName: The name of the node to lookup.
+        @param root: The node from which the search will initiate. It defaults to render.
+        @return: A pandac.PandaModules.NodePath instance if the node was found or None.  
+        '''
+        np = root.find("**/" + nodeName)
+        if np is None or np.isEmpty():
+            return None
+        else:
+            return np
+    
     getFontPixelPerfectScale = staticmethod(getFontPixelPerfectScale)
     unitsToPixelsY = staticmethod(unitsToPixelsY)
+    findSceneNode = staticmethod(findSceneNode)
     
 
         

@@ -1,0 +1,5 @@
+[mappings]
+p =  acPause
+mouse1 = acMouseAction
+mouse3 = acMouseLook
+escape = acExit

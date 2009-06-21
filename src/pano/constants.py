@@ -46,8 +46,7 @@ class PanoConstants:
     EVENT_RESTORE_NODE = "node.restore"
     EVENT_HOTSPOT_ACTION = "hotspot.action"
     EVENT_HOTSPOT_ITEM_INTERACTION = "hotspot.item.interact"
-    EVENT_HOTSPOT_LOOKAT = "hotspot.lookat"
-    
+    EVENT_HOTSPOT_LOOKAT = "hotspot.lookat"    
     
     # tasks' names
     TASK_GAME_LOOP = 'game_loop_task'
@@ -59,6 +58,7 @@ class PanoConstants:
     CVAR_SAVES_DIR = 'saves_dir'
     
     # names of the configuration variables that define locations for each resource type
+    CVAR_INIT_NODE = 'game_initial_node'
     CVAR_WIN_TITLE = 'game_title'
     CVAR_WIN_WIDTH = 'display_width'
     CVAR_WIN_HEIGHT = 'display_height'
@@ -70,6 +70,7 @@ class PanoConstants:
     CVAR_DEBUG_FPS = 'debug_show_fps'
     CVAR_DEBUG_CONSOLE = 'debug_enable_console'
     
+    CVAR_RESOURCES_ALL = 'resources_all'
     CVAR_RESOURCES_NODES = 'resources_nodes'
     CVAR_RESOURCES_TEXTURES = 'resources_textures'
     CVAR_RESOURCES_FONTS = 'resources_fonts'
@@ -87,6 +88,7 @@ class PanoConstants:
     CVAR_RESOURCES_SCRIPTS = 'resources_scripts'
     CVAR_RESOURCES_TEXTS = 'resources_texts'
     CVAR_RESOURCES_BINARIES = 'resources_binaries'
+    CVAR_RESOURCES_SHADERS = 'resources_shaders'
     
     # cvars related to preloading
     CVAR_PRELOAD_POINTERS = 'preloads_pointers'
@@ -108,6 +110,7 @@ class PanoConstants:
     CVAR_PRELOAD_LOCATIONS = 'preloads_locations'
     CVAR_PRELOAD_TEXTS = 'preloads_texts'
     CVAR_PRELOAD_BINARIES = 'preloads_binaries'
+    CVAR_PRELOAD_SHADERS = 'preloads_shaders'
 
     # names of vars related to the credits state
     CVAR_CREDITS_BACKGROUND   = 'credits_background'
@@ -186,6 +189,7 @@ class PanoConstants:
     RES_TYPE_SOUNDS_DEFS = 15
     RES_TYPE_TEXTS = 16
     RES_TYPE_BINARIES = 17
+    RES_TYPE_SHADERS = 18
     RES_TYPE_ALL = 100
     
     #Constants for the predefined mouse pointers
@@ -223,12 +227,16 @@ class PanoConstants:
     # scenegraph node that acts as the common ancestor of all nodes which are involved with the rendering
     # of the currently active game node
     NODE_ROOT_NODE = "root_node"
+    NODE2D_ROOT_NODE = "root_node2D"
     
     # name of scenegraph node where the cubemap is stored
     NODE_CUBEMAP = 'cmap'
     
     # scenegraph node that acts as the common ancestor of all nodes that store debug geometries
     NODE_DEBUG_GEOMS_PARENT = 'debug_geoms'
+
+    # scenegraph node that acts as the common ancestor of all nodes that store hotspots collision geometries 
+    NODE_COLLISIONS_GEOMS_PARENT = 'collision_geoms'
     
     # scenegraph node that acts as the common ancestor of all nodes that store sprites 
     NODE_SPRITES_PARENT = 'sprites_tex_cards'
@@ -249,5 +257,17 @@ class PanoConstants:
     BLEND_TYPE_EASEOUT = "easeOut"
     BLEND_TYPE_EASEINOUT = "easeInOut"
     BLEND_TYPE_ABRUPT = "noBlend"
+    
+    # render ordering
+    RENDER_ORDER_CUBEMAP     = 1    
+    RENDER_ORDER_BACKGROUND_IMAGE = 1
+    RENDER_ORDER_SPRITES     = RENDER_ORDER_BACKGROUND_IMAGE + 1
+    
+    # leave a gap of 10 orders for layeriing sprites
+    NUM_SPRITES_ZORDERS       = 10
+    
+    RENDER_ORDER_MENU        = RENDER_ORDER_SPRITES + NUM_SPRITES_ZORDERS + 1
+    RENDER_ORDER_DEBUG_GEOMS = RENDER_ORDER_MENU + 1    
+    RENDER_ORDER_CONSOLE     = 5
     
     
