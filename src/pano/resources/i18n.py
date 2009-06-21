@@ -23,8 +23,8 @@ THE SOFTWARE.
 
 import logging
 
-from constants import PanoConstants
-from model.LangFile import LangFile
+from pano.constants import PanoConstants
+from pano.model.LangFile import LangFile
 
 """
 import codecs 

@@ -21,9 +21,9 @@ THE SOFTWARE.
 
 '''
 
-from constants import PanoConstants
-from actions.BaseAction import BaseAction
-from control.InventoryState import InventoryState
+from pano.constants import PanoConstants
+from pano.actions.BaseAction import BaseAction
+from pano.control.InventoryState import InventoryState
 
 BuiltinActionsNames = [    
      'acVoid',

@@ -58,54 +58,56 @@ class NodeRaycaster:
                processing.
         """
         self.traverser = CollisionTraverser('Hotspots collision traverser')
-        base.cTrav = self.traverser    
-        
-        self.collisionsQueue = CollisionHandlerQueue()
-        
+        self.collisionsQueue = CollisionHandlerQueue()        
         self.pickerNode = CollisionNode('mouseRay')
-        self.pickerNode.setFromCollideMask(GeomNode.getDefaultCollideMask())
-    
-        self.pickerRay=CollisionRay()
-        self.pickerNode.addSolid(self.pickerRay)    
-        
-        self.pickerNP = self.renderer.getCamera().attachNewNode(self.pickerNode)
+        self.pickerRay = CollisionRay()
+        self.pickerNode.addSolid(self.pickerRay)
+        self.pickerNP = self.renderer.getCamera().attachNewNode(self.pickerNode)        
         self.traverser.addCollider(self.pickerNP, self.collisionsQueue)
         
-    def raycastMouse(self, mouseX, mouseY):
-        '''
-        Raycasts a camera ray against the rendered node and returns information
-        regarding the hit point, if any.
+    
+    def dispose(self):
+        if self.pickerNP is not None:
+            self.traverser.removeCollider(self.pickerNP)
+            self.pickerNode.clearSolids()
+            self.pickerNP.removeNode()
+            
         
-        Returns: The face code and the x, y coordinates in the image space of the face. 
+    def raycastWindow(self, x, y, returnAll = False):
+        '''
+        Raycasts a camera ray, whose origin is implicitly defined by the given window coordinates, against 
+        the rendered scene returns information regarding the hit point, if any.
+        
+        @param x: The x window coordinate of the ray's origin.
+        @param y: The y window coordinate of the ray's origin. 
+        @param returnAll: If set to False then only the closest collided geometry is returned, otherwise
+        all nodepaths whose collision nodes were intersected by the camera ray will be returned. 
+        @return: : The topmost intersected NodePath, a list of intersected NodePath if returnAll was set to True, 
+        or None if no collision occurred. 
         '''        
         #This makes the ray's origin the camera and makes the ray point 
         #to the screen coordinates of the mouse
-        self.pickerRay.setFromLens(self.renderer.getCamera().node(), mouseX, mouseY)
+        self.pickerRay.setFromLens(self.renderer.getCamera().node(), x, y)
         
-        #Check for collision only with the cubemap
-        self.traverser.traverse(self.renderer.nodepath())
+        #Check for collision only with the node
+        self.traverser.traverse(self.renderer.getSceneRoot())
+        
         if self.collisionsQueue.getNumEntries() > 0:
-            self.collisionsQueue.sortEntries()
-            cEntry = self.collisionsQueue.getEntry(0)
-            
-#            if self.log.isEnabledFor(logging.DEBUG):
-#                self.log.debug(cEntry)
-            
-            #We have the point and normal of the collision
-            p = cEntry.getSurfacePoint(render)
-            n = cEntry.getSurfaceNormal(render)
-#            if self.log.isEnabledFor(logging.DEBUG):
-#                self.log.debug("%s, %s", p, n)
-            
-            face = self.renderer.findFaceFromNormal(n)
-#            if self.log.isEnabledFor(logging.DEBUG):
-#                self.log.debug("%d", face)
-            
-            # get the coordinates of the hit point in the local coordinate
-            # system of the respective cubemap face
-            x, y = self.renderer.getFaceLocalCoords(face, p)
-#            if self.log.isEnabledFor(logging.DEBUG):
-#                self.log.debug("%f, %f", x, y)
-            
-            return (face, x, y)
+            if not returnAll:
+                self.collisionsQueue.sortEntries()
+                cEntry = self.collisionsQueue.getEntry(0)
+                if cEntry.hasInto():
+                    return cEntry.getIntoNodePath()
+                else:
+                    return None
+            else:
+                nodepaths = []
+                for i in xrange(self.collisionsQueue.getNumEntries()):
+                    cEntry = self.collisionsQueue.getEntry(i)
+                    if cEntry.hasInto():
+#                        self.log.debug('adding collision into-nodepath: %s' % str(cEntry.getIntoNodePath()))
+                        nodepaths.append(cEntry.getIntoNodePath())
+                return nodepaths
+        
+        
             

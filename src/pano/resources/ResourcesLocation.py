@@ -21,7 +21,7 @@ THE SOFTWARE.
 
 '''
 
-from constants import PanoConstants
+from pano.constants import PanoConstants
 
 class AbstractResourceLocation:
     """
@@ -35,7 +35,18 @@ class AbstractResourceLocation:
         self.desc = descrption
 
         # specifies which resources types will be looked up in this location
-        self.resTypes = [ resTypes ]
+        if type(resTypes) == list or type(resTypes) == tuple:
+            self.resTypes = []
+            self.resTypes.extend(resTypes)
+        else:
+            self.resTypes = resTypes
+
+        # indicates if the resources within this resource location should get pre-loaded
+        self.preload = False
+
+        # indicates if the resources withing thies resource location should remain
+        # loaded during the lifetime of the application
+        self.sticky = False
 
         # if True then the location will be checked for any modified resources
         self.hotswap = hotswap
@@ -50,8 +61,23 @@ class AbstractResourceLocation:
     def getDescription(self):
         return self.descrption
 
+
     def setDescription(self, descrption):
         self.descrption = descrption
+
+
+    def getPreload(self):
+        return self.preload
+
+
+    def setPreload(self, value):
+        self.preload = value
+
+    def setSticky(self, value):
+        self.sticky = value
+        
+    def isSticky(self):
+        return self.sticky
 
     def getResourcesTypes(self):
         return self.resTypes 

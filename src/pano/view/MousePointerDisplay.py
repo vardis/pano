@@ -29,7 +29,7 @@ from pandac.PandaModules import CullBinManager
 from pandac.PandaModules import Point3
 from direct.task.Task import Task
 
-from constants import PanoConstants
+from pano.constants import PanoConstants
 
 class MousePointerDisplay:
     def __init__(self, game):
@@ -60,7 +60,7 @@ class MousePointerDisplay:
         self.pointerImage = None                               
         
     def initialize(self):        
-        self.pointerParentNP = aspect2d.attachNewNode('mousePointer')
+        self.pointerParentNP = render2d.attachNewNode('mousePointer')
         
         # create a GUI Layer for the pointer
         CullBinManager.getGlobalPtr().addBin(PanoConstants.MOUSE_CULL_BIN_NAME, CullBinManager.BTUnsorted, PanoConstants.MOUSE_CULL_BIN_VAL)
@@ -75,13 +75,13 @@ class MousePointerDisplay:
         self.mouseHidden = False
         self.pointerParentNP.show()
  
-            
-    """
-    Hides the mouse pointer.
-    For image based pointers, the associated OnScreenImage is destroyed with a call to the member function destroy().
-    While for model based pointers the associated model node is simply removed from the scenegraph. 
-    """
-    def hide(self):        
+                
+    def hide(self):
+        """
+        Hides the mouse pointer.
+        For image based pointers, the associated OnScreenImage is destroyed with a call to the member function destroy().
+        While for model based pointers the associated model node is simply removed from the scenegraph. 
+        """        
         self.mouseHidden = True
         self.pointerParentNP.hide()
             
@@ -163,11 +163,11 @@ class MousePointerDisplay:
             if base.mouseWatcherNode.hasMouse():
                 x=base.mouseWatcherNode.getMouseX()
                 y=base.mouseWatcherNode.getMouseY()
-                                                        
+                                                         
             self.mousePointer = OnscreenImage(
                                               parent=self.pointerParentNP, 
                                               image = texPath, 
-                                              pos = aspect2d.getRelativePoint(render2d, Point3(x - 0.05, 0, y)), 
+                                              pos = Point3(x, 0, y), 
                                               scale = scale if scale is not None else self.defaultScale 
                                               )
             
@@ -187,7 +187,7 @@ class MousePointerDisplay:
             if self.mousePointer is not None and not self.mouseHidden  and base.mouseWatcherNode.hasMouse() and not self.game.isPaused():
                 x=base.mouseWatcherNode.getMouseX()
                 y=base.mouseWatcherNode.getMouseY()            
-                self.mousePointer.setPos(aspect2d.getRelativePoint(render2d, Point3(x - 0.05, 0, y)))
+                self.mousePointer.setPos(Point3(x, 0, y))
             
         return Task.cont
 

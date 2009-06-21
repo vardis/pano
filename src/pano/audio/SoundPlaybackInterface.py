@@ -21,32 +21,49 @@ THE SOFTWARE.
 
 '''
 
+import logging
+
+from pandac.PandaModules import FilterProperties
+
+from pano.model.Sound import Sound
+
 
 class SoundPlaybackInterface():
     """
     Interface for playback operations on sounds, it provides basic sound control
     """
     
-    def __init__(self, pandaSound):
+    def __init__(self, pandaSound, positional = False):
+        self.log = logging.getLogger('pano.SoundPlaybackInterface')
         self.pandaSound = pandaSound
+        self.pandaSound.setFinishedEvent('sound_finished')
         self.prevRate = 1.0
         self.pauseTime = 0.0
         self.paused = False
-        
-    def play(self, loop=False):
+        self.stopped = False
+        self.positional = positional
+        self.filters = FilterProperties()
+
+    def play(self, loop=None):
         """
         Plays the sound if it was stopped, plays from beginning if the sound was already playing or resumes a paused sound.
         The parameter loop can be False to indicate no looping, True for endless looping, or a positive integer that indicates
         the loop count.
-        """
-        self.setLoop(loop)
-        
+        """                
         # checks for pause->resume transition
         if self.isPaused():                    
             self.pandaSound.setPlayRate(self.prevRate)
             self.pandaSound.setTime(self.pauseTime)
+        else:
+            if loop is None:
+                if self.pandaSound.getLoop():
+                    loop = self.pandaSound.getLoopCount()                    
+                    if loop <= 0:
+                        loop = True
+                else:
+                    loop = False
+            self.setLoop(loop)  # calls play for us
             
-        self.pandaSound.play()
         self.paused = False
     
     def isLooping(self):
@@ -62,14 +79,20 @@ class SoundPlaybackInterface():
         if type(loop) == bool:            
             self.pandaSound.setLoop(loop)
         elif type(loop) == int:
-            self.pandaSound.setLoop(True)
-            self.pandaSound.setLoopCount(loop)        
+            if loop > 0:
+                self.pandaSound.setLoop(True)
+                if loop > 1:
+                    self.pandaSound.setLoopCount(loop)
+            else:
+                self.pandaSound.setLoop(False)   
+        self.pandaSound.play()     
     
     def stop(self):
         """
         Stops the sound.
         """
         self.pandaSound.stop()
+        self.stopped = True
     
     def pause(self):
         """
@@ -78,13 +101,7 @@ class SoundPlaybackInterface():
         self.prevRate = self.pandaSound.getPlayRate()
         self.pauseTime = self.pandaSound.getTime()
         self.pandaSound.stop()        
-        self.paused = True 
-    
-    def isPaused(self):
-        """
-        Returns True if the sound is paused or False if otherwise.
-        """
-        return self.paused
+        self.paused = True         
     
     def setVolume(self, volume):
         """
@@ -102,6 +119,10 @@ class SoundPlaybackInterface():
         """
         Sets the sound's balance.
         """
+        if balance < -1.0:
+            balance = -1.0
+        elif balance > 1.0:
+            balance = 1.0
         self.pandaSound.setBalance(balance)
     
     def getBalance(self):
@@ -145,5 +166,60 @@ class SoundPlaybackInterface():
         Returns True if the sound is currently playing or False if otherwise.
         """        
         return self.pandaSound.status() == 2
+
+    def isStopped(self):
+        '''
+        @return: True if the sound has explicitly been stop through a call to stop().
+        '''
+        return self.stopped
+    
+    def isPaused(self):
+        """
+        Returns True if the sound is paused or False if otherwise.
+        """
+        return self.paused
     
     
+    def isFinished(self):
+        '''
+        @return: True if the sound finished playing.
+        '''
+        return self.pandaSound.status() == 1 and not self.stopped and not self.paused 
+
+    def configureFilters(self, filters):
+        '''
+        Configures the DSP filters for this sound.
+        @param filters: A list of filter instances.
+        '''
+        self.filters.clear()
+        for f in filters:
+            if f.type == Sound.FT_Chorus:
+                self.filters.addChorus(f.dryMix, f.wet1, f.wet2, f.wet3, f.delay, f.rate, f.depth, f.feedback)
+            elif f.type == Sound.FT_Reverb:
+                self.filters.addReverb(f.dryMix, f.wetmix, f.room_size, f.damp, f.width)
+            elif f.type == Sound.FT_PitchShift:
+                self.filters.addPitchshift(f.pitch, f.fft_size, f.overlap)
+            elif f.type == Sound.FT_Flange:
+                self.filters.addFlange(f.drymix, f.wetmix, f.depth, f.rate)
+            elif f.type == Sound.FT_Compress:
+                self.filters.addCompress(f.threshold, f.attack, f.release, f.gain)
+            elif f.type == Sound.FT_HighPass:
+                self.filters.addHighpass(f.cutoff_freq, f.reasonance_q)
+            elif f.type == Sound.FT_LowPass:
+                self.filters.addLowpass(f.cutoff_freq, f.reasonance_q)
+            elif f.type == Sound.FT_Distort:
+                self.filters.addDistort(f.level)
+            elif f.type == Sound.FT_Normalize:
+                self.filters.addNormalize(f.fade_time, f.threshold, f.max_amp)
+            elif f.type == Sound.FT_Parameq:
+                self.filters.addParameq(f.center_freq, f.bandwidth, f.gain)
+            elif f.type == Sound.FT_Echo:
+                self.filters.addEcho(f.drymix, f.wetmix, f.delay, f.decay_ration)
+            else:
+                self.log.error('Unknown filter type %s' % f.type)
+
+        # apply the filters
+        self.pandaSound.configureFilters(self.filters)
+                
+
+

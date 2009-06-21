@@ -31,6 +31,9 @@ class ConfigVars:
         self.vec3Re = re.compile(r'\s*(\S+)\s+(\S+)\s+(\S+)\s*')
         self.vec4Re = re.compile(r'\s*(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s*')  
         
+    def hasVar(self, name):
+        return self.cvars.has_key(name)
+        
     def add(self, var, value):
         self.cvars[var] = value
         

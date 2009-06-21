@@ -21,22 +21,26 @@ THE SOFTWARE.
 
 '''
 
+import ConfigParser
 from ConfigParser import SafeConfigParser
 
-from constants import PanoConstants
-from errors.ParseException import ParseException
-from model.Node import Node
-from model.Hotspot import Hotspot
+from pano.constants import PanoConstants
+from pano.errors.ParseException import ParseException
+from pano.model.Node import Node
+from pano.model.Hotspot import Hotspot
 
 class NodeParser:
     
-    NODE_SECTION     = 'Node'
-    NODE_OPT_DESC    = 'description'
-    NODE_OPT_CUBEMAP = 'cubemap'
-    NODE_OPT_IMAGE   = 'image'
-    NODE_OPT_EXTENSION = 'extension'    
-    NODE_OPT_SCRIPT  = 'script'
-    NODE_OPT_LOOKAT  = 'lookat'
+    NODE_SECTION        = 'Node'
+    NODE_OPT_DESC       = 'description'
+    NODE_OPT_CUBEMAP    = 'cubemap'
+    NODE_OPT_IMAGE      = 'image'
+    NODE_OPT_BGCOLOR    = 'bg_color'
+    NODE_OPT_EXTENSION  = 'extension'
+    NODE_OPT_SCRIPT     = 'script'
+    NODE_OPT_LOOKAT     = 'lookat'
+    NODE_OPT_PARENT     = 'parent2d'
+    NODE_OPT_PLAYLIST   = 'music_playlist'
     
     HOTSPOT_OPT_LOOKTEXT     = 'look_text'
     HOTSPOT_OPT_FACE         = 'face'    
@@ -77,22 +81,38 @@ class NodeParser:
             
             # read node's options
             if cfg.has_option(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_DESC):
-                node.setDescription(cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_DESC))
+                node.description = cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_DESC)
                 
             if cfg.has_option(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_CUBEMAP):
-                node.setCubemap(cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_CUBEMAP))
+                node.cubemap = cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_CUBEMAP)
                 
             if cfg.has_option(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_IMAGE):
-                node.setImage(cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_IMAGE))
+                node.image = cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_IMAGE)
+                
+            if cfg.has_option(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_BGCOLOR):
+                bgColorStr = cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_BGCOLOR)    
+                node.bgColor = [x.strip() for x in bgColorStr.split(',')]                        
                 
             if cfg.has_option(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_SCRIPT):
-                node.setScriptName(cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_SCRIPT))
+                node.scriptName = cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_SCRIPT)
                 
             if cfg.has_option(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_LOOKAT):
-                node.setLookAt(cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_LOOKAT))
+                node.lookat = cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_LOOKAT)
                 
             if cfg.has_option(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_EXTENSION):
-                node.setExtension(cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_EXTENSION))
+                node.extension = cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_EXTENSION)
+
+            if cfg.has_option(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_PARENT):
+                parent = cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_PARENT)
+                if parent == 'render2d':
+                    node.parent2d = Node.PT_Render2D
+                elif parent == 'aspect2d':
+                    node.parent2d = Node.PT_Aspect2D
+                else:
+                    node.parent2d = None
+
+            if cfg.has_option(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_PLAYLIST):
+                node.musicPlaylist = cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_PLAYLIST)
         
             for s in cfg.sections():
                 if s.startswith('hotspot_'):
@@ -101,10 +121,10 @@ class NodeParser:
                     if cfg.has_option(s, NodeParser.HOTSPOT_OPT_FACE):
                         face = cfg.get(s, NodeParser.HOTSPOT_OPT_FACE)
                         assert self.__facesCodes.has_key(face), 'invalid face name: ' + face                    
-                        hp.setFace(self.__facesCodes[face])
+                        hp.face = self.__facesCodes[face]
                         
                     if cfg.has_option(s, NodeParser.HOTSPOT_OPT_LOOKTEXT):
-                        hp.setDescription(cfg.get(s, NodeParser.HOTSPOT_OPT_LOOKTEXT))
+                        hp.description = cfg.get(s, NodeParser.HOTSPOT_OPT_LOOKTEXT)
                         
                     if cfg.has_option(s, NodeParser.HOTSPOT_OPT_XO):
                         hp.setXo(cfg.getint(s, NodeParser.HOTSPOT_OPT_XO))
@@ -127,31 +147,31 @@ class NodeParser:
                     if cfg.has_option(s, NodeParser.HOTSPOT_OPT_ACTION):
                         actionStr = cfg.get(s, NodeParser.HOTSPOT_OPT_ACTION)
                         argList = [x.strip() for x in actionStr.split(',')]
-                        hp.setAction(argList.pop(0))
-                        hp.setActionArgs(argList)                            
+                        hp.action = argList.pop(0)
+                        hp.actionArgs = argList                            
                         
                     if cfg.has_option(s, NodeParser.HOTSPOT_OPT_ACTIONARGS):
-                        hp.setActionArgs(cfg.get(s, NodeParser.HOTSPOT_OPT_ACTIONARGS))
+                        hp.actionArgs = cfg.get(s, NodeParser.HOTSPOT_OPT_ACTIONARGS)
                         
                     if cfg.has_option(s, NodeParser.HOTSPOT_OPT_ACTIVE):
-                        hp.setActive(cfg.getboolean(s, NodeParser.HOTSPOT_OPT_ACTIVE))
+                        hp.active = cfg.getboolean(s, NodeParser.HOTSPOT_OPT_ACTIVE)
                         
                     if cfg.has_option(s, NodeParser.HOTSPOT_OPT_CURSOR):
-                        hp.setCursor(cfg.get(s, NodeParser.HOTSPOT_OPT_CURSOR))
+                        hp.cursor = cfg.get(s, NodeParser.HOTSPOT_OPT_CURSOR)
                         
                     if cfg.has_option(s, NodeParser.HOTSPOT_OPT_SPRITE):
-                        hp.setSprite(cfg.get(s, NodeParser.HOTSPOT_OPT_SPRITE))
+                        hp.sprite = cfg.get(s, NodeParser.HOTSPOT_OPT_SPRITE)
                         
                     if cfg.has_option(s, NodeParser.HOTSPOT_OPT_ITEMINTERACT):
-                        hp.setItemInteractive(cfg.getboolean(s, NodeParser.HOTSPOT_OPT_ITEMINTERACT)) 
+                        hp.itemInteractive = cfg.getboolean(s, NodeParser.HOTSPOT_OPT_ITEMINTERACT) 
                         
                     node.addHotspot(hp)
                 
-        except (ConfigParser.MissingSectionHeaderError, ParsingError):
-            raise ParseException(error='error.parse.invalid', resFile=node.getName() + '.node')
+        except (ConfigParser.MissingSectionHeaderError, ConfigParser.ParsingError):
+            raise ParseException(error='error.parse.invalid', resFile=node.name + '.node')
         
         except IOError, e:
-            raise ParseException(error='error.parse.io', resFile=node.getName() + '.node', args=(str(e)))
+            raise ParseException(error='error.parse.io', resFile=node.name + '.node', args=(str(e)))
         
         else:
             return node

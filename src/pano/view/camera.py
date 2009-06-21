@@ -23,8 +23,8 @@ THE SOFTWARE.
 
 import logging
 
-from cvars import ConfigVars
-from constants import PanoConstants
+from pano.cvars import ConfigVars
+from pano.constants import PanoConstants
 
 class CameraMouseControl:
     """
@@ -76,12 +76,25 @@ class CameraMouseControl:
         # the camera we are controlling
         self.camera = camera
         
+        # if true then we are controlling the camera
         self.active = False
+                
         
     def initialize(self):
         self.active = False
-        self.mouseHSpeed = self.game.getConfig().getFloat(PanoConstants.CVAR_CAM_HSPEED)
+        self.mouseHSpeed = self.game.getConfig().getFloat(PanoConstants.CVAR_CAM_HSPEED)                    
         self.mouseVSpeed =  self.game.getConfig().getFloat(PanoConstants.CVAR_CAM_VSPEED)
+        
+        # set arbitrary default values if missing        
+        if self.mouseHSpeed is None:
+            if self.log.isEnabledFor(logging.DEBUG):
+                self.log.debug('Missing configuration for mouse horizontal speed, defaulting to 45.0')
+            self.mouseHSpeed = 45.0
+            
+        if self.mouseVSpeed is None:
+            if self.log.isEnabledFor(logging.DEBUG):
+                self.log.debug('Missing configuration for mouse vertical speed, defaulting to 45.0')
+            self.mouseVSpeed = 45.0
         
     def getCamera(self):
         '''

@@ -26,9 +26,9 @@ import math, logging
 
 from direct.task.Task import Task
 
-from constants import PanoConstants
-from model.Playlist import Playlist
-from messaging import Messenger
+from pano.constants import PanoConstants
+from pano.model.Playlist import Playlist
+from pano.messaging import Messenger
 
 class MusicPlayer:
     def __init__(self, game):
@@ -101,10 +101,10 @@ class MusicPlayer:
         # stop current sound
         if self.sound is not None:
             self.sound.stop()
-        
-        print 'active track ', self.activeTrack
-        soundPath = self.game.getResources().getResourceFullPath(PanoConstants.RES_TYPE_MUSIC, self.activeTrack[2])
-        print 'sound path ', soundPath
+                
+        self.log.debug('active track %s ' % repr(self.activeTrack))
+        soundPath = self.game.getResources().getResourceFullPath(PanoConstants.RES_TYPE_MUSIC, self.activeTrack[2])        
+        self.log.debug('sound path %s' % soundPath)
         self.sound = loader.loadSfx(soundPath)
         if self.sound is not None:
             self.sound.play()

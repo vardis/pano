@@ -26,11 +26,11 @@ import logging
 
 from direct.interval.IntervalGlobal import *
 
-from constants import PanoConstants
-from control.fsm import FSMState
-from control.ExploreState import ExploreState
+from pano.constants import PanoConstants
+from pano.control.fsm import FSMState
+from pano.control.ExploreState import ExploreState
 
-from view.VideoPlayer import VideoPlayer
+from pano.view.VideoPlayer import VideoPlayer
 
 class IntroState(FSMState):
     '''
@@ -84,7 +84,7 @@ class IntroState(FSMState):
         
         if self.videos is None or len(self.videos) == 0:
             self.log.debug('No videos defined, switching to explore state')
-            self.getGame().getState().changeState(PanoConstants.STATE_EXPLORE)
+            self.getGame().getState().scheduleStateChange(PanoConstants.STATE_EXPLORE)
             return
         
         # wait for transition to end
@@ -108,7 +108,8 @@ class IntroState(FSMState):
                     # played through all the list, we are done
                     self._stopPlayback()
                     self.log.debug('all videos done') 
-                    self.getGame().getState().changeState(PanoConstants.STATE_EXPLORE)
+                    self.getGame().getState().scheduleStateChange(PanoConstants.STATE_EXPLORE)
+                                      
     
     def onInputAction(self, action):
         if action == "interrupt":
@@ -145,7 +146,7 @@ class IntroState(FSMState):
         self.videoPlayer.playFullScreen(videoFile, videoFile)
         anim = self.videoPlayer.getAnimInterface()
         if anim is None:
-            log.error('Could not playback video ' + videoFile)
+            self.log.error('Could not playback video ' + videoFile)
         else:
             anim.play()
             

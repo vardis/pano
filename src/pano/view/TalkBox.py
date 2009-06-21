@@ -26,7 +26,7 @@ import logging
 from pandac.PandaModules import VBase3, TextNode, NodePath
 from direct.gui.DirectGui import DirectButton, DirectLabel
 
-from constants import PanoConstants
+from pano.constants import PanoConstants
 
 class TalkBox:    
     
@@ -153,7 +153,7 @@ class TalkBox:
     #        for t in ('text1','text2'):
     #            DB._DirectGuiBase__componentInfo[t][0].setColorScale(0.5, 1.0, 0.5, 1)
                             
-            self.timeout = timeout * 1000.0
+            self.timeout = timeout * 1000.0 if timeout is not None else None
             self.show()
     
     def show(self):

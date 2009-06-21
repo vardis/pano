@@ -26,9 +26,9 @@ THE SOFTWARE.
 import os, cPickle
 import datetime, logging
 
-from constants import PanoConstants
-from errors.PanoExceptions import *
-from messaging import Messenger
+from pano.constants import PanoConstants
+from pano.errors.PanoExceptions import *
+from pano.messaging import Messenger
 
 class PersistenceContext:
     def __init__(self, name):

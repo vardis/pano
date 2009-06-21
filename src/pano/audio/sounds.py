@@ -24,9 +24,16 @@ THE SOFTWARE.
 
 import weakref
 import logging
+import math
 
-from constants import PanoConstants
-from SoundPlaybackInterface import SoundPlaybackInterface
+from direct.showbase import Audio3DManager
+from pandac.PandaModules import NodePath
+
+from pano.constants import PanoConstants
+from pano.util import PandaUtil
+from pano.model.Sound import Sound 
+from pano.audio.SoundPlaybackInterface import SoundPlaybackInterface
+
 
 class SoundsPlayer():
     """
@@ -44,21 +51,61 @@ class SoundsPlayer():
         self.game = game
         self.audio3d = None # manager of positional sounds
         self.sounds = []    # list of weak references to sound objects
-        self.volume = 1.0   # default volume level
-        self.cutOff = None  # default cut-off distance
+        self.unfinishedSounds = [] # list of strong references to sounds still playing
+        self.volume = 1.0   # default volume level   
+        self.rate = 1.0     # default rate of playback     
         self.balance = 0.0  # default balance, -1.0: left, 0.0: center, 1.0: right
+        self.enabled = True # indicates if sounds are enabled in a global scale
+
+        # the following are valid only for positional sounds
+        self.dropOffFactor = 1.0    # the rate that sounds attenuate by distance
+        self.distanceFactor = 1.0   # the scale of measuring units, the default is a scale of 1.0 to match units with meters
+        self.dopplerFactor = 1.0    # the Doppler factor
         
-    def initialize(self):
-        pass
-#        self.audio3d = Audio3DManager.Audio3DManager(base.sfxManagerList[0], camera)
+    def initialize(self):        
+        self.audio3d = Audio3DManager.Audio3DManager(base.sfxManagerList[0], self.game.getView().getCamera())
+
 
     def  update(self, millis):
-        # remove dead references to sounds
+        
+        # drop any dead references to sounds
         prevLen = len(self.sounds)
         self.sounds = [snd for snd in self.sounds if snd() is not None]
         rem = prevLen - len(self.sounds)
         if rem > 0:
-            self.log.debug('Removed %d dead references!' % rem)
+            self.log.debug('Removed %d dead references' % rem)
+        
+        # drop finished sounds
+        prevLen = len(self.sounds)    
+        self.sounds = [snd for snd in self.sounds if not snd().isFinished()]
+        rem = prevLen - len(self.sounds)
+        if rem > 0:
+            self.log.debug('Removed %d finished sounds' % rem)
+
+        positionalSounds = [snd() for snd in self.sounds if snd().positional != Sound.POS_None]
+        for sp in positionalSounds:
+            if sp.positional == Sound.POS_Hotspot:
+                hp = self.game.getView().activeNode.hotspots.get(sp.node)
+                if hp is not None:
+                    hpos = self.game.getView().panoRenderer.getHotspotWorldPos(hp)
+                    np = NodePath('audio3d_' + sp.name)
+                    np.setPos(hpos[0], hpos[1], hpos[2])
+                    self.audio3d.attachSoundToObject(sp, np)
+                else:
+                    self.log.error('Could not find hotspot %s to attach positional sound %s' % (sp.node, sp.name))
+
+            elif snd.positionalType == Sound.POS_Node:
+                np = PandaUtil.findSceneNode(sp.node)
+                if np is not None:
+                    self.audio3d.attachSoundToObject(sp.pandaSound, np)
+                else:
+                    self.log.error('Could not find node %s to attach positional sound %s' % (snd.pos, snd.name))
+
+        if self.audio3d is not None:
+            self.audio3d.setDropOffFactor(self.dropOffFactor)
+            self.audio3d.setDistanceFactor(self.distanceFactor)
+            self.audio3d.setDopplerFactor(self.dopplerFactor)
+
         
     def playSound(self, sndName, loop=None, rate=None):
         """
@@ -67,58 +114,83 @@ class SoundsPlayer():
         
         Returns: a Sound object or None if playback failed
         """
-        snd = self.game.getResources().loadSound(sndName)        
-                
-        loopVal = loop if loop is not None else snd.getLoop()
-        rateVal = rate if rate is not None else snd.getPlayRate()        
-        
-        return self.playSoundFile(snd.getSoundFile(), loopVal, rateVal)                    
+        if self.enabled:
+            snd = self.game.getResources().loadSound(sndName)        
+                    
+            loopVal = loop if loop is not None else snd.loop
+            rateVal = rate if rate is not None else snd.playRate
+            if rateVal is None:
+                rateVal = self.rate
     
-    def playSoundFile(self, filename, loop=False, rate=1.0):
+            is3D = snd.positional != Sound.POS_None
+            spi = self.playSoundFile(snd.soundFile, loopVal, rateVal, is3D)
+            spi.configureFilters(snd.getActiveFilters())
+    
+            # 3d sounds with an absolute position can be specified here just once
+            # for other positional types we specify them in the update method
+            if is3D and snd.positional == Sound.POS_Absolute:
+                np = NodePath('audio3d_' + snd.name)
+                np.setPos(snd.node[0], snd.node[1], snd.node[2])
+                self.audio3d.attachSoundToObject(snd, np)
+    
+            return spi
+
+    
+    def playSoundFile(self, filename, loop=False, rate=1.0, is3D = False):
         """
         Plays the specified sound file with the defaul settings.
         
         Returns: a Sound object or None if playback failed
         """
-        fp = self.game.getResources().getResourceFullPath(PanoConstants.RES_TYPE_SFX, filename)
-        sound = loader.loadSfx(fp)
-        spi = SoundPlaybackInterface(sound)
-        spi.setLoop(loop)
-        spi.setPlayRate(rate)
-        spi.setVolume(self.volume)
-        spi.setBalance(self.balance)
-        spi.play()                
-        
-        self.sounds.append(weakref.ref(spi))
-        return spi
+        if self.enabled:
+            fp = self.game.getResources().getResourceFullPath(PanoConstants.RES_TYPE_SFX, filename)
+            try:
+                if is3D:
+                    sound = self.audio3d.loadSfx(fp)
+                else:
+                    sound = loader.loadSfx(fp)
+            except Exception:
+                self.log.exception('An error occured while attempting to load sound %s' % filename)
+                return None
+                
+            spi = SoundPlaybackInterface(sound, is3D)
+            spi.setLoop(loop)
+            spi.setPlayRate(rate)
+            spi.setVolume(self.volume)
+            spi.setBalance(self.balance)
+            spi.play()                
+            
+            self.sounds.append(weakref.ref(spi))
+            return spi
     
     def stopAll(self):
         """
         Stops all currently playing or paused sounds.
         """
         for spi in self.sounds:
-            o = spi()
-            if o is not None:
-                o.stop()
+            if spi() is not None:
+                spi().stop()
     
     def pauseAll(self):
         """
         Pauses all currently playing sounds.
         """
         for spi in self.sounds:
-            spi.pause()
+            if spi() is not None:
+                spi().pause()
     
     def resumeAll(self):
         """
         Resumes all currently paused sounds.
         """
         for spi in self.sounds:
-            spi.play()
+            if spi() is not None:
+                spi().play()
     
     def isSoundPlaying(self, sndName):
         """
         Returns True if the sound described the specified sound resource
-        is being playbacked.
+        is being played.
         """
         pass
     
@@ -127,42 +199,69 @@ class SoundsPlayer():
         Sets the global volume level.
         Individual sounds can playback at a different volume level.
         """
-        assert 0.0 <= volume and volume <= 1.0, 'valid range for sound volume is 0...1'
+        if volume < 0.0:
+            volume = 0.0
+        elif volume > 1.0:
+            volume = 1.0
+            
         self.volume = volume
     
     def getVolume(self):
         """
         Returns the global volume level.
         """
-        return self.volume
+        return self.volume    
     
-    def setCutOffDistance(self, dist):
-        """
-        Sets the default distance beyond which all 3d sounds will be cut off.
-        Individual sounds may be set to a different cut-off distance.
-        """
-        pass
     
-    def getCutOffDistance(self):
-        """
-        Returns the default global cut-off distance.
-        """
-        pass
+    def getPlayRate(self):
+        '''
+        Returns the currently default rate of playback.
+        '''
+        return self.rate
     
-    def setBalance(self, balance):
-        """
-        Sets the default global sound balance.
-        Individual sounds can be set to a different balance.
-        The parameter can take values between -1.0, which denotes full left balance, and
-        1.0, which denotes full right balance.
-        """
-        assert -1.0 <= volume and volume <= 1.0, 'valid range for sound balance is -1...1'
-        self.balance = balance
-    
+    def setPlayRate(self, value):
+        '''
+        Sets the currently default rate of playback.
+        '''        
+        self.rate = value
+
+
     def getBalance(self):
-        """
-        Returns the default global sound balance.
-        """
+        '''
+        Returns the currently default sound balance.
+        '''
         return self.balance
+
+    
+    def setBalance(self, value):
+        '''
+        Changes the balance of a sound. The range is between -1.0 to 1.0. Hard left is -1.0 and hard right is 1.0. 
+        '''
+        if value < -1.0:
+            value = -1.0
+        elif value > 1.0:
+            value = 1.0
+        self.balance = value
+
+    def enableSounds(self):
+        '''
+        Enables playback of sounds. Sounds are enabled by default.
+        '''
+        self.enabled = True
+        base.enableSoundEffects(True)
+
+    def disableSounds(self):
+        '''
+        Disables sounds playback. 
+        '''
+        self.enabled = False
+        base.enableSoundEffects(False)
+
+    def isEnabled(self):
+        '''
+        @return: True if sounds are enabled and False if otherwise.
+        '''
+        return self.enabled
+
     
     
