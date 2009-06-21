@@ -34,13 +34,14 @@ from pandac.PandaModules import Filename
 from pandac.PandaModules import Notify
 from pandac.PandaModules import MultiplexStream
 
-from constants import PanoConstants 
-from fsm import FSMState
-from model.Node import Node
-from model.Hotspot import Hotspot
-from ExploreState import ExploreState
-from IntroState import IntroState
-from resources.DirectoryResourcesLocation import DirectoryResourcesLocation 
+from pano.constants import PanoConstants 
+from pano.control.fsm import FSMState
+from pano.model.Node import Node
+from pano.model.Hotspot import Hotspot
+from pano.control.ExploreState import ExploreState
+from pano.control.IntroState import IntroState
+from pano.resources.DirectoryResourcesLocation import DirectoryResourcesLocation
+from pano.resources.ResourcesTypes import ResourcesTypes 
 
 class InitGameState(FSMState):
     '''
@@ -64,6 +65,7 @@ class InitGameState(FSMState):
 
         # add resource locations
         configs_to_types = {
+                              PanoConstants.CVAR_RESOURCES_ALL : PanoConstants.RES_TYPE_ALL,
                               PanoConstants.CVAR_RESOURCES_NODES : PanoConstants.RES_TYPE_NODES,
                               PanoConstants.CVAR_RESOURCES_TEXTURES : PanoConstants.RES_TYPE_TEXTURES,
                               PanoConstants.CVAR_RESOURCES_FONTS : PanoConstants.RES_TYPE_FONTS,
@@ -80,7 +82,8 @@ class InitGameState(FSMState):
                               PanoConstants.CVAR_RESOURCES_ITEMS : PanoConstants.RES_TYPE_ITEMS,
                               PanoConstants.CVAR_RESOURCES_SCRIPTS : PanoConstants.RES_TYPE_SCRIPTS,
                               PanoConstants.CVAR_RESOURCES_TEXTS : PanoConstants.RES_TYPE_TEXTS,
-                              PanoConstants.CVAR_RESOURCES_BINARIES : PanoConstants.RES_TYPE_BINARIES
+                              PanoConstants.CVAR_RESOURCES_BINARIES : PanoConstants.RES_TYPE_BINARIES,
+                              PanoConstants.CVAR_RESOURCES_SHADERS : PanoConstants.RES_TYPE_SHADERS
                               }
 
         res = self.getGame().getResources()
@@ -90,11 +93,12 @@ class InitGameState(FSMState):
                 for path in [str.strip(s) for s in locations.split(',')]:
                     # path can have a name prefixed and separated by a ':', e.g. my_textures:data/textures
                     loc = None
+                    res_types = ResourcesTypes.listAllTypes() if config == PanoConstants.CVAR_RESOURCES_ALL else [configs_to_types[config]]
                     if ':' in path:
-                        resName, resPath = path.split(':')
-                        loc = DirectoryResourcesLocation(directory=resPath, name=resName, description='', resTypes=configs_to_types[config])
+                        resName, resPath = path.split(':')                                                                            
+                        loc = DirectoryResourcesLocation(directory=resPath, name=resName, description='', resTypes=res_types)
                     else:                    
-                        loc = DirectoryResourcesLocation(directory=path, name=path, description='', resTypes=configs_to_types[config])
+                        loc = DirectoryResourcesLocation(directory=path, name=path, description='', resTypes=res_types)
                     res.addResourcesLocation(loc)                
         
     def configure(self):
@@ -132,6 +136,8 @@ class InitGameState(FSMState):
         
         # sets window settings and hides the system mouse
         game = self.getGame()
+        game.setInitialNode(game.getConfig().get(PanoConstants.CVAR_INIT_NODE))
+        
         winProps = { 
                     PanoConstants.WIN_MOUSE_POINTER : False,
                     PanoConstants.WIN_SIZE : (game.getConfig().getInt(PanoConstants.CVAR_WIN_WIDTH), game.getConfig().getInt(PanoConstants.CVAR_WIN_HEIGHT)),
@@ -169,10 +175,7 @@ class InitGameState(FSMState):
         
     def update(self, millis):
         self.millis += millis
-        if self.millis > 2:
-            self.getGame().getState().changeState(PanoConstants.STATE_INTRO)
-#            self.getGame().getState().changeState(PanoConstants.STATE_EXPLORE)
-#            self.getGame().getState().changeState(PanoConstants.STATE_CREDITS)
+        self.getGame().getState().scheduleStateChange(PanoConstants.STATE_INTRO)        
 
     def logPlatformInformation(self):
         di = base.pipe.getDisplayInformation()

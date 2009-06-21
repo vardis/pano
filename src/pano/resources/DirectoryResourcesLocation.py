@@ -21,8 +21,8 @@ THE SOFTWARE.
 
 '''
 
-from ResourcesLocation import AbstractResourceLocation
-from ResourcesTypes import ResourcesTypes
+from pano.resources.ResourcesLocation import AbstractResourceLocation
+from pano.resources.ResourcesTypes import ResourcesTypes
 import dircache
 import fnmatch
 import logging

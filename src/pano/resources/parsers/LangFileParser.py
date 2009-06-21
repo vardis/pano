@@ -33,7 +33,7 @@ class LangFileParser():
         self.log = logging.getLogger('pano.langParser')
     
     def parse(self, langFile, istream):
-                
+        self.log.debug('Parsing file %s' % langFile.name)
         name = langFile.getName()
         langFile.setLanguage(name[name.index('_')+1:])
         cfg = SafeConfigParser()        

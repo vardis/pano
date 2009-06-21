@@ -31,175 +31,70 @@ class Hotspot(object):
     """
     
     def __init__(self, name='', description='', face=None, x=0, y = 0, width = 0, height=0, action=None):
-        self.__name = name
-        self.__description = description
-        self.__face = face
+        self.name = name
+        self.description = description
+        self.face = face
         
         # upper left corner coordinates
-        self.__xo = float(x)
-        self.__yo = float(y)
+        self.xo = float(x)
+        self.yo = float(y)
         
         # lower right corner coordinates
-        self.__xe = float(x + width)
-        self.__ye = float(y + height)
+        self.xe = float(x + width)
+        self.ye = float(y + height)
         
-        self.__width = width
-        self.__height = height
-        self.__action = action
-        self.__actionArgs = ()
-        self.__cursor = None
-        self.__active = True
-        self.__sprite = None
+        self.width = width
+        self.height = height
+        self.action = action
+        self.actionArgs = ()
+        self.cursor = None
+        self.active = True
+        self.sprite = None
         self.itemInteractive = False        
 
-    def getName(self):
-        return self.__name
-
-
-    def getDescription(self):
-        return self.__description
-
-
-    def getFace(self):
-        return self.__face
-
-
     def getXo(self):
-        return self.__xo
-
+        return self.xo
+    
+    def setXo(self, value):
+        self.xo = float(value)        
+        self.setXe(value + self.width)
 
     def getYo(self):
-        return self.__yo
-
-
-    def getXe(self):
-        return self.__xe
-
-
-    def getYe(self):
-        return self.__ye
-
-
-    def getWidth(self):
-        return self.__width
-
-
-    def getHeight(self):
-        return self.__height
-
-
-    def getAction(self):
-        return self.__action
-    
-    def hasAction(self):
-        return self.__action is not None
-
-    def getActionArgs(self):
-        return self.__actionArgs
-
-
-    def setName(self, value):
-        self.__name = value
-
-
-    def setDescription(self, value):
-        self.__description = value
-
-
-    def setFace(self, value):
-        self.__face = value
-
-
-    def setXo(self, value):
-        self.__xo = float(value)        
-        self.setXe(value + self.__width)
+        return self.yo
 
     def setYo(self, value):
-        self.__yo = float(value)
-        self.setYe(value + self.__height)
+        self.yo = float(value)
+        self.setYe(value + self.height)
+
+    def getXe(self):
+        return self.xe
 
     def setXe(self, value):
-        self.__xe = float(value)
-        self.__width = self.__xe = self.__xo
+        self.xe = float(value)
+        self.width = self.xe = self.xo
 
+    def getYe(self):
+        return self.ye
 
     def setYe(self, value):
-        self.__ye = float(value)
-        self.__height= self.__ye = self.__yo
+        self.ye = float(value)
+        self.height= self.ye = self.yo
         
+    def getWidth(self):
+        return self.width
 
     def setWidth(self, value):
-        self.__width = value
-        self.__xe = self.__xo + self.__width
+        self.width = value
+        self.xe = self.xo + self.width
 
+    def getHeight(self):
+        return self.height
 
     def setHeight(self, value):
-        self.__height = value
-        self.__ye = self.__yo + self.__height
+        self.height = value
+        self.ye = self.yo + self.height
 
-
-    def setAction(self, value):
-        self.__action = value
-
-
-    def setActionArgs(self, value):
-        self.__actionArgs = value
-
-
-    def getCursor(self):
-        return self.__cursor
-
-
-    def isActive(self):
-        return self.__active
-
-
-    def getSprite(self):
-        return self.__sprite
-
-
-    def setCursor(self, value):
-        self.__cursor = value
-
-
-    def setActive(self, value):
-        self.__active = value
-
-
-    def setSprite(self, value):
-        self.__sprite = value
-
-    def isItemInteractive(self):
-       return self.itemInteractive
-
-    def setItemInteractive(self, flag):
-       self.itemInteractive = flag
-
-    cursor = property(getCursor, setCursor, None, "Cursor's Docstring")
-
-    active = property(isActive, setActive, None, "Active's Docstring")
-
-    sprite = property(getSprite, setSprite, None, "Sprite's Docstring")
-
-    name = property(getName, setName, None, "Name's Docstring")
-
-    description = property(getDescription, setDescription, None, "Description's Docstring")
-
-    face = property(getFace, setFace, None, "Face's Docstring")
-
-    xo = property(getXo, setXo, None, "Xo's Docstring")
-
-    yo = property(getYo, setYo, None, "Yo's Docstring")
-
-    xe = property(getXe, setXe, None, "Xe's Docstring")
-
-    ye = property(getYe, setYe, None, "Ye's Docstring")
-
-    width = property(getWidth, setWidth, None, "Width's Docstring")
-
-    height = property(getHeight, setHeight, None, "Height's Docstring")
-
-    action = property(getAction, setAction, None, "Action's Docstring")
-
-    actionArgs = property(getActionArgs, setActionArgs, None, "ActionArgs's Docstring")
+    def hasAction(self):
+        return self.action is not None
+        
     

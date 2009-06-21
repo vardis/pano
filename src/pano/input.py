@@ -28,7 +28,7 @@ import math
 
 from direct.showbase import DirectObject
 
-from model.ActionMappings import ActionMappings
+from pano.model.ActionMappings import ActionMappings
 
 class InputActionMappings(DirectObject.DirectObject):
     """

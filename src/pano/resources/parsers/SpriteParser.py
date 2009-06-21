@@ -48,31 +48,31 @@ class SpriteParser:
             cfg.readfp(istream)
             
             if cfg.has_option(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_EGGFILE):
-                sprite.setEggFile(cfg.get(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_EGGFILE))
+                sprite.eggFile = cfg.get(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_EGGFILE)
                 
             if cfg.has_option(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_IMAGE):
-                sprite.setImage(cfg.get(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_IMAGE))
+                sprite.image = cfg.get(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_IMAGE)
             
             if cfg.has_option(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_FPS):
-                sprite.setFrameRate(cfg.getfloat(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_FPS))
+                sprite.frameRate = cfg.getfloat(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_FPS)
                 
             if cfg.has_option(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_WIDTH):
-                sprite.setWidth(cfg.getint(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_WIDTH))
+                sprite.width = cfg.getint(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_WIDTH)
                 
             if cfg.has_option(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_HEIGHT):
-                sprite.setHeight(cfg.getint(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_HEIGHT))
+                sprite.height = cfg.getint(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_HEIGHT)
                 
             if cfg.has_option(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_VIDEO):
-                sprite.setVideo(cfg.get(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_VIDEO))
+                sprite.video = cfg.get(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_VIDEO)
                 
             if cfg.has_option(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_AUDIO):
-                sprite.setAudio(cfg.get(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_AUDIO))
+                sprite.audio = cfg.get(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_AUDIO)
             
         except (MissingSectionHeaderError, ParsingError):
-            raise ParseException(error='error.parse.invalid', resFile=sprite.getName() + '.spr')
+            raise ParseException(error='error.parse.invalid', resFile=sprite.name + '.spr')
         
         except IOError, e:
-            raise ParseException(error='error.parse.io', resFile=sprite.getName() + '.spr', args=(str(e)))
+            raise ParseException(error='error.parse.io', resFile=sprite.name + '.spr', args=(str(e)))
         
         else:
             return sprite
