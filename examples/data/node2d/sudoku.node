@@ -1,0 +1,7 @@
+[Node]
+description = the game board
+image = Sudoku.tif
+bg_color = 0.0, 0.0, 0.0, 1.0
+parent2d = render2d
+
+

@@ -1,0 +1,8 @@
+# the select pointer should be used to select hotspots in the game environment
+
+[Pointer]
+# model_file   = example.egg     
+texture      = select.png
+enable_alpha = true
+scale = 0.1
+
