@@ -22,10 +22,9 @@ THE SOFTWARE.
 '''
 
 
-import sys
 import logging
 
-from actions import builtinActions 
+from pano.actions import builtinActions 
 
 class GameActions:
     

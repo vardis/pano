@@ -21,11 +21,15 @@ class applicationFinderClass:
   def __init__( self ):
     self.foundApplications = dict()
     for rootPath in os.environ['PATH'].split(os.pathsep):
-      dirFiles = os.listdir(rootPath)
-      for aFile in dirFiles:
-        filepath = os.path.join(rootPath, aFile)
-        os.path.isfile(filepath)
-        self.foundApplications[aFile] = filepath
+      try:
+        dirFiles = os.listdir(rootPath)
+        for aFile in dirFiles:
+          filepath = os.path.join(rootPath, aFile)
+          os.path.isfile(filepath)
+          self.foundApplications[aFile] = filepath
+      except Exception, e:
+          print e
+          
   def __getitem__( self, filename ):
     if self.foundApplications.has_key( filename ):
       return self.foundApplications[filename]

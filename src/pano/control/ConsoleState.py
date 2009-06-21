@@ -24,9 +24,9 @@ THE SOFTWARE.
 
 import logging
 
-from constants import PanoConstants 
-from fsm import FSMState
-from actions.builtinActions import ShowDebugConsoleAction, HideDebugConsoleAction
+from pano.constants import PanoConstants 
+from pano.control.fsm import FSMState
+from pano.actions.builtinActions import ShowDebugConsoleAction, HideDebugConsoleAction
 
 class ConsoleState(FSMState):
     

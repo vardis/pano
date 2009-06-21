@@ -24,20 +24,23 @@ THE SOFTWARE.
 import logging
 
 from pandac.PandaModules import WindowProperties
+from pandac.PandaModules import Texture
 from pandac.PandaModules import NodePath
 from direct.showbase.Transitions import Transitions
 from direct.interval.IntervalGlobal import *
+from direct.filter.FilterManager import FilterManager
 
-from errors.PanoExceptions import GraphicsError
-from NodeRenderer import NodeRenderer
-from constants import PanoConstants
-from camera import CameraMouseControl
-from MousePointerDisplay import MousePointerDisplay
-from NodeRaycaster import NodeRaycaster
-from model.Node import Node
-from TalkBox import TalkBox
-from inventoryView import InventoryView
-from view.VideoPlayer import VideoPlayer
+from pano.errors.PanoExceptions import GraphicsError
+from pano.view.NodeRenderer import NodeRenderer
+from pano.view.Node2DRenderer import Node2DRenderer
+from pano.constants import PanoConstants
+from pano.view.camera import CameraMouseControl
+from pano.view.MousePointerDisplay import MousePointerDisplay
+from pano.model.Node import Node
+from pano.view.TalkBox import TalkBox
+from pano.view.inventoryView import InventoryView
+from pano.view.VideoPlayer import VideoPlayer
+from pano.view.PostProcessManager import PostProcessManager
 
 class GameView:    
     def __init__(self, gameRef = None, title = ''):
@@ -57,10 +60,7 @@ class GameView:
         
         # performs the rendering of the nodes
         self.panoRenderer = NodeRenderer(self.game.resources)
-        
-        # detects the hotspots that the user selects with the mouse
-        self.raycaster = NodeRaycaster(self.panoRenderer)
-        
+                
         # renders the mouse pointer and updates its position according to the mouse        
         self.mousePointer = MousePointerDisplay(gameRef)
         
@@ -70,7 +70,7 @@ class GameView:
         # the view component of the inventory, i.e. renders the inventory model that we pass to it
         self.inventory = InventoryView(gameRef)
         
-        self.__talkBox = TalkBox(gameRef)
+        self.talkBox = TalkBox(gameRef)
         
         # the Node instance that we are displaying         
         self.activeNode = None
@@ -85,24 +85,31 @@ class GameView:
         self.videoPlayer = None
         self.videoCallback = None
         
+        # for post processing effects
+        self.postProcess = PostProcessManager(self.game)
+#        self.postProcess = None
+#        self.screenQuad = None
+      
+        
     def initialize(self):
         '''
-        Initialise self and all components on which we are depended.
+        Initialize self and all components on which we are depended.
         '''
         self.windowProperties = base.win.getProperties()
         base.setFrameRateMeter(self.game.getConfig().getBool(PanoConstants.CVAR_DEBUG_FPS))
+        
         self.panoRenderer.initialize()
         self.mousePointer.initialize()
+        self.postProcess.initialize()
         
         # enable rotation of camera by mouse
         self.cameraControl.setCamera(self.panoRenderer.getCamera())
         self.cameraControl.initialize()        
         self.cameraControl.enable()
         
-        self.raycaster.initialize()
-        self.__talkBox.initialize()
+        self.talkBox.initialize()
         self.inventory.initialize(self.game.getInventory())
-        self.transition = Transitions(loader)
+        self.transition = Transitions(loader)                                
                 
                 
     def update(self, millis):
@@ -123,12 +130,11 @@ class GameView:
         self.panoRenderer.render(millis)
         self.talkBox.update(millis)
         self.inventory.update(millis)
+        self.postProcess.update(millis)
 
     def getTalkBox(self):
-        return self.__talkBox
+        return self.talkBox
 
-    def setTalkBox(self, value):
-        self.__talkBox = value
 
     def getInventoryView(self):
         return self.inventory
@@ -137,35 +143,61 @@ class GameView:
         self.activeNode = node
         if type(node) == str:
             self.activeNode = self.game.getResources().loadNode(node)
+
+        if self.activeNode.is3D() and type(self.panoRenderer) != NodeRenderer:
+            self.panoRenderer.dispose()
+            self.panoRenderer = NodeRenderer(self.game.resources)
+            self.panoRenderer.initialize()            
+            if self.log.isEnabledFor(logging.DEBUG):
+                self.log.debug('Choosed NodeRenderer')
+
+        elif self.activeNode.is2D() and type(self.panoRenderer) != Node2DRenderer:
+            self.panoRenderer.dispose()
+            self.panoRenderer = Node2DRenderer(self.game.resources)
+            self.panoRenderer.initialize()            
+            if self.log.isEnabledFor(logging.DEBUG):
+                self.log.debug('Choosed Node2DRenderer')            
         
         self.panoRenderer.displayNode(self.activeNode)
-        
+
+
     def clearScene(self):
         self.panoRenderer.clearScene()
+
         
     def raycastNodeAtMouse(self):
+        '''
+        Performs a raycasting from the current mouse position and returns the hotspot found
+        at that location.
+        @return: A Hotspot instance if a hotspot was found or None.
+        '''
         #This gives up the screen coordinates of the mouse
         if base.mouseWatcherNode.hasMouse():
             mpos = base.mouseWatcherNode.getMouse()
-            return self.raycaster.raycastMouse(mpos.getX(), mpos.getY())
+            return self.panoRenderer.raycastHotspots(mpos.getX(), mpos.getY())
         else:
             return None
-        
+
+
     def getActiveNode(self):
         return self.activeNode
-                
+
+
     def getMousePointer(self):
         """
         Returns a reference to a MousePointer object that controls the mouse pointer.
         """
         return self.mousePointer
-    
+
+
     def getCameraController(self):
         return self.cameraControl
-    
+
+
     def getWindowProperties(self):
         return self.windowProperties
-    
+
+
     def setWindowProperties(self, props = {}):
         wp = WindowProperties()
         if props.has_key(PanoConstants.WIN_ORIGIN):
@@ -193,7 +225,8 @@ class GameView:
         self.windowProperties = wp
         if self.window is not None:
             base.win.requestProperties(self.windowProperties)
-    
+
+
     def openWindow(self):        
         if base.win is not None:
             base.openMainWindow(props = self.windowProperties, gsg=base.win.getGsg())        
@@ -201,13 +234,16 @@ class GameView:
             base.openMainWindow(props = self.windowProperties, type='onscreen')        
         self.window = base.win
         messenger.send("window-event", [self.window])
-    
+
+
     def closeWindow(self):
         base.closeWindow(self.window)    
-        
+
+
     def getWindow(self):
         return self.window    
-        
+
+
     def fadeIn(self, seconds):
         """
         Fades in the camera view in the specified duration in seconds.
@@ -284,8 +320,8 @@ class GameView:
             # this converts into the [-1.0...1.0] range
             rp = render2d.getRelativePoint(aspect2d, Point3(p[0], 0, p[1]))
             # scale to viewport and add, y also needs reversing
-            x = ((rp[0] + 1.0) / 2.0) * wp.getXSize()
-            y = -1.0*((rp[0] + 1.0) / 2.0) * wp.getYSize()
+            x = ((rp[0] + 1.0) / 2.0) * self.windowProperties.getXSize()
+            y = -1.0*((rp[0] + 1.0) / 2.0) * self.windowProperties.getYSize()
             retList.append((x, y))
         return retList
 
@@ -343,7 +379,7 @@ class GameView:
         self.videoPlayer.playFullScreen(videoFile)
         self.activeVideo = self.videoPlayer.getAnimInterface()
         if self.activeVideo is None:
-            log.error('Could not playback video ' + videoFile)
+            self.log.error('Could not playback video ' + videoFile)
         else:
             self.videoCallback = endCallback
             self.activeVideo.play()
@@ -355,7 +391,9 @@ class GameView:
             self.videoPlayer = None
             self.videoCallback()
 
-    talkBox = property(getTalkBox, setTalkBox, None, "TalkBox's Docstring")
-        
+    def getPostProcess(self):
+        return self.postProcess
+    
+
     
     

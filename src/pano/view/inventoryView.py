@@ -29,8 +29,8 @@ from direct.gui.DirectGui import DirectButton
 from pandac.PandaModules import TransparencyAttrib
 from pandac.PandaModules import TextNode, NodePath
 
-from constants import PanoConstants
-from model.inventory import Inventory
+from pano.constants import PanoConstants
+from pano.model.inventory import Inventory
 
 class SlotsLayout:
     """
@@ -278,13 +278,16 @@ class InventoryView:
         self.node = aspect2d.attachNewNode(InventoryView.INVENTORY_SCENE_NODE)
         self.iconsNode = self.node.attachNewNode(InventoryView.ICONS_NODE)
         
-        cfg = self.game.getConfig()             
+        cfg = self.game.getConfig()
+        if not self._validateConfig(cfg):
+            self.log.error('Missing or invalid inventory configuration')
+            return
+        
         view = self.game.getView()
         
         if self.backdropImageObject is not None:
             self.backdropImageObject.destroy()
-            self.backdropImageObject = None
-        self.backdropImage = cfg.get(PanoConstants.CVAR_INVENTORY_BACKDROP)
+            self.backdropImageObject = None        
         
         self.pos = cfg.getVec2(PanoConstants.CVAR_INVENTORY_POS)
         if self.pos is None:
@@ -295,8 +298,9 @@ class InventoryView:
         if self.textPos is None:
             self.textPos = cfg.getVec2(PanoConstants.CVAR_INVENTORY_REL_POS)
             self.textPos = view.relativeToAbsolute(self.textPos)
-                        
+                                
         self.pos, self.textPos = view.convertScreenToAspectCoords([self.pos, self.textPos])
+        
             
         self.size = cfg.getVec2(PanoConstants.CVAR_INVENTORY_SIZE, (1.0, 1.0))
             
@@ -304,18 +308,28 @@ class InventoryView:
         self.opacity = cfg.getFloat(PanoConstants.CVAR_INVENTORY_OPACITY)
         self.fontName = cfg.get(PanoConstants.CVAR_INVENTORY_FONT)
         self.fontColor = cfg.getVec4(PanoConstants.CVAR_INVENTORY_FONT_COLOR)
+        if self.fontColor is None:
+            self.fontColor = (1.0, 1.0, 1.0, 1.0)
+            
         self.fontBgColor = cfg.getVec4(PanoConstants.CVAR_INVENTORY_FONT_BG_COLOR)
+        if self.fontBgColor is None:
+            self.fontBgColor = (0.0, 0.0, 0.0, 0.0)
+            
         self.mousePointer = cfg.get(PanoConstants.CVAR_INVENTORY_POINTER)
+                
+        layout = cfg.get(PanoConstants.CVAR_INVENTORY_SLOTS)                    
+        self._parseLayout(layout)
         
-        layout = cfg.get(PanoConstants.CVAR_INVENTORY_SLOTS)                
-        self._parseLayout(layout)            
-        self._createBackdrop(show = False)
+        slotsCount = self.slotsLayout.getNumSlots()
+        self.log.debug('Setting slots count to %i' % slotsCount)
         
         self.inventory = inventory
-        slotsCount = self.slotsLayout.getNumSlots()
-        self.log.debug('Set slots count to %i' % slotsCount)
-        self.inventory.setSlotsCount(slotsCount)
+        self.inventory.setSlotsCount(slotsCount)   
         
+        self.backdropImage = cfg.get(PanoConstants.CVAR_INVENTORY_BACKDROP)    
+        if self.backdropImage is not None:         
+            self._createBackdrop(show = False)
+                
         # force an initial rendering of the icons
         self.updateIcons = True
         
@@ -395,6 +409,15 @@ class InventoryView:
         self.slotsLayout.disableDebugRendering(self.game)
         self.debugLayout = False            
     
+    def _validateConfig(self, config):        
+        return (config.hasVar(PanoConstants.CVAR_INVENTORY_BACKDROP) 
+            and (config.hasVar(PanoConstants.CVAR_INVENTORY_POS) or config.hasVar(PanoConstants.CVAR_INVENTORY_REL_POS))
+            and (config.hasVar(PanoConstants.CVAR_INVENTORY_TEXT_POS) or config.hasVar(PanoConstants.CVAR_INVENTORY_REL_POS))
+            and config.hasVar(PanoConstants.CVAR_INVENTORY_SIZE)
+            and config.hasVar(PanoConstants.CVAR_INVENTORY_FONT)
+            and config.hasVar(PanoConstants.CVAR_INVENTORY_POINTER)
+            and config.hasVar(PanoConstants.CVAR_INVENTORY_SLOTS))
+    
     def _createBackdrop(self, show = True):
         """
         Setups rendering for the inventory's backdrop image.
@@ -419,7 +442,7 @@ class InventoryView:
             image = imagePath, 
             pos = (self.pos[0], 0.0, self.pos[1]), 
             sort = 0)
-        print dir(self.backdropImageObject)
+        
         self.backdropImageObject.setTransparency(TransparencyAttrib.MAlpha)
         self.backdropImageObject.setBin("fixed", 41)
         

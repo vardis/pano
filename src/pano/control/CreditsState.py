@@ -29,9 +29,9 @@ from direct.gui.DirectGui import *
 import direct.directbase.DirectStart
 from direct.interval.LerpInterval import LerpPosInterval
 
-from constants import PanoConstants
-from control.fsm import FSMState
-from util.PandaUtil import PandaUtil
+from pano.constants import PanoConstants
+from pano.control.fsm import FSMState
+from pano.util.PandaUtil import PandaUtil
 
 class CreditsState(FSMState):
     '''

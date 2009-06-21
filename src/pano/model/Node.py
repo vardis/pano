@@ -24,6 +24,11 @@ THE SOFTWARE.
 
 
 class Node:
+
+    # constants for the parent of 2D nodes
+    PT_Aspect2D = 1
+    PT_Render2D = 2
+
     """
     Represents the model of a game node, i.e. a static panoramic view of the
     game environment from a specific viewpoint.
@@ -34,12 +39,41 @@ class Node:
         """
         self.name = name
         self.description = desc
+
+        # for 3D nodes this specifies the basename (without the extension) of the six textures applied
+        # to the cubemap
         self.cubemap = None
+
+        # the image to use as a background for 2D nodes
         self.image = None
+        
+        # a 4 element list defining the background color for 2D nodes, instead of a background image 
+        self.bgColor = None
+
+        # used for overriding the file extension of the cubemap's image (default is .png)
         self.extension = None
+
+        # the hotspots of this node, in { 'name' : <Hotspots instance> } format
         self.hotspots = hotspots if hotspots is not None else {}
-        self.scriptName = scriptName if scriptName is not None else name            
+
+        # filename of the script to associate with this node
+        self.scriptName = scriptName if scriptName is not None else name
+
+        # specifies the initial camera orientation, see pano.view.GameView.setCameraLookAt for more info.
         self.lookat = lookat
+
+        # the name of the music playlist to activate upon displaying this node
+        self.musicPlaylist = None
+
+        # determines which node to use as the scene root, aspect2d or render2d
+        self.parent2d = Node.PT_Aspect2D
+
+
+    def is2D(self):
+        return self.cubemap is None and (self.image is not None or self.bgColor is not None)
+
+    def is3D(self):
+        return self.cubemap is not None and self.image is None
 
     def getCubemap(self):
         return self.cubemap
@@ -81,7 +115,7 @@ class Node:
         self.hotspots = value
 
     def addHotspot(self, hotspot):
-        self.hotspots[hotspot.getName()] = hotspot
+        self.hotspots[hotspot.name] = hotspot
         
     def getHotspot(self, name):
         return self.hotspots.get(name)
@@ -90,13 +124,7 @@ class Node:
         return self.scriptName
     
     def setScriptName(self, scriptName):
-        self.scriptName = scriptName
-        
-    def getLookAt(self):
-        return self.lookat
-    
-    def setLookAt(self, lookat):
-        self.lookat = lookat
+        self.scriptName = scriptName    
         
     def getExtension(self):
         return self.extension

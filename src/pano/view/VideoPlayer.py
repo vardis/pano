@@ -24,14 +24,15 @@ THE SOFTWARE.
 
 import logging
 
+from pandac.PandaModules import MovieTexture
 from pandac.PandaModules import AudioSound
 from pandac.PandaModules import CardMaker
 from pandac.PandaModules import NodePath
 from pandac.PandaModules import Texture
 from pandac.PandaModules import TextureStage
 
-from constants import PanoConstants
-from resources.ResourceLoader import ResourceLoader
+from pano.constants import PanoConstants
+from pano.resources.ResourceLoader import ResourceLoader
 
 class VideoPlayer:
     def __init__(self, name, resources):
@@ -53,7 +54,9 @@ class VideoPlayer:
         
         self._releaseResources()
         
-        self.videoTex = loader.loadTexture(self.resources.getResourceFullPath(PanoConstants.RES_TYPE_VIDEOS, video))
+#        self.videoTex = loader.loadTexture(self.resources.getResourceFullPath(PanoConstants.RES_TYPE_VIDEOS, video))
+        self.videoTex = MovieTexture('name')
+        self.videoTex.read(self.resources.getResourceFullPath(PanoConstants.RES_TYPE_VIDEOS, video))
         
         self.texCard = CardMaker("Full screen Video Card for " + video);
         self.texCard.setFrameFullscreenQuad()
@@ -106,7 +109,7 @@ class VideoPlayer:
         self.animInterface = None
         self.totalTime = 0.0
             
-    def renderToTexture(resources, geom, video, audio):
+    def renderToGeom(resources, geom, video, audio):
         
         videoTex = loader.loadTexture(resources.getResourceFullPath(PanoConstants.RES_TYPE_VIDEOS, video))
         
@@ -135,6 +138,32 @@ class VideoPlayer:
         else:
             return videoTex                
         
+        
+    def renderToTexture(resources, video, audio):
+        
+        videoTex = loader.loadTexture(resources.getResourceFullPath(PanoConstants.RES_TYPE_VIDEOS, video))
+        
+        if videoTex is None:
+            self.log.error("Couldn't load video " + video)
+            return None        
+    
+        if (videoTex.getType().getName() != "MovieTexture"):
+            self.log.error("MovieTexture support is not enabled, cannot proceed.")
+            return None
+                
+        videoTex.setWrapU(Texture.WMClamp)
+        videoTex.setWrapV(Texture.WMClamp)  
+        if videoTex.getTexturesPower2():            
+            geom.setTexScale(TextureStage.getDefault(), videoTex.getTexScale()) 
+        
+        if audio is not None:
+            vidSound = loader.loadSfx(resources.getResourceFullPath(PanoConstants.RES_TYPE_MUSIC, audio))
+            videoTex.synchronizeTo(vidSound)
+            return vidSound
+        else:
+            return videoTex
+        
+    renderToGeom = staticmethod(renderToGeom)
     renderToTexture = staticmethod(renderToTexture)
             
         

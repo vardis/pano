@@ -27,8 +27,8 @@ import re
 from direct.gui.OnscreenImage import OnscreenImage
 from pandac.PandaModules import TransparencyAttrib
 
-from constants import PanoConstants
-from messaging import Messenger
+from pano.constants import PanoConstants
+from pano.messaging import Messenger
 
 class InventorySlot:
     """

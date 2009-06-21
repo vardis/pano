@@ -25,22 +25,23 @@ THE SOFTWARE.
 
 import logging
 
-from constants import PanoConstants
-from fsm import FSMState
+from pano.constants import PanoConstants
+from pano.control.fsm import FSMState
 
 class BaseNodeScript(FSMState):
     '''
     Contains logic for controlling user interaction within a game node.
     '''
 
-    def __init__(self, game, name):
+    def __init__(self, game, name, node):
         FSMState.__init__(self, game, name)
         self.log = logging.getLogger('pano.baseNodeScript')
+        self.node = node
         
     def preDisplay(self):
         pass
         
-    def registerMessages(self):        
+    def registerMessages(self):                
         return [PanoConstants.EVENT_HOTSPOT_ACTION, PanoConstants.EVENT_HOTSPOT_LOOKAT]
     
     def onMessage(self, msg, *args):

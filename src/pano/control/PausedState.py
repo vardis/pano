@@ -27,8 +27,8 @@ import logging
 from pandac.PandaModules import TextNode
 from direct.gui.OnscreenText import OnscreenText
 
-from constants import PanoConstants
-from control.fsm import FSMState
+from pano.constants import PanoConstants
+from pano.control.fsm import FSMState
 
 class PausedState(FSMState):
         
