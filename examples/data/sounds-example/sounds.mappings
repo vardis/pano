@@ -1,0 +1,16 @@
+[mappings]
+1 = play_blah
+2 = play_cling
+3 = play_zipper
+p = pause_sounds
+r = resume_sounds
+l = increase_loop
+shift-l = decrease_loop
++ = increase_rate
+- = decrease_rate
+[ = decrease_volume
+] = increase_volume
+d = disable_sounds
+e = enable_sounds
+b = increase_balance
+shift-b = decrease_balance
