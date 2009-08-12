@@ -62,7 +62,7 @@ class NodeRenderer:
 
     EPSILON_POS = 0.0001
 
-    def __init__(self, resources):           
+    def __init__(self, resources, spriteEngine):           
 
         self.log = logging.getLogger('pano.cubemapRenderer')        
         
@@ -97,6 +97,13 @@ class NodeRenderer:
         #Stores the textures of the faces. E.g.:
         #frontTexture = self.faceTextures[CBM_FRONT_FACE]        
         self.facesGeomNodes = {}
+        
+        # for every hotspot we store its bounds in the local space of each face
+        self.hotspotsFaceBounds = {}
+        
+        # for every hotspot we store a PNMImage which has been declared to act as an interaction mask.
+        # i.e. places where the image is black define a non-interactive region
+        self.hotspotsImageMasks = {}
         
         # the normal of each face, indexed by the face constant (e.g. PanoConstants.CBM_TOP_FACE) 
         self.faceNormals = {
@@ -135,6 +142,8 @@ class NodeRenderer:
                 
         # used for detecting the hotspot under a window coordinate
         self.raycaster = None
+        
+        self.spritesEngine = spriteEngine
         
 
     def initialize(self):        
@@ -254,6 +263,9 @@ class NodeRenderer:
         self.spritesParent.removeNode()
         self.spritesParent = self.sceneRoot.attachNewNode(PanoConstants.NODE_SPRITES_PARENT)        
         
+        self.hotspotsFaceBounds = {}
+        self.hotspotsImageMasks = {}
+        
         self.cmap.hide()                   
         
         
@@ -312,7 +324,7 @@ class NodeRenderer:
         """
         Builds the 4x4 matrices that transform a point from the world coordinates system to the faces' image space.
         The image space has:
-            a. Its origin at the centre of a face.
+            a. Its origin at the top left corner of the face.
             b. The positive x axis running from left to right along the face.
             c. The positive y axis running from top to bottom along the face.
             d. Extends between [0.0, 1.0] inside the boundary of the face. 
@@ -352,9 +364,12 @@ class NodeRenderer:
             self.renderHotspot(hp)        
             self.createHotspotCollisionGeom(hp)
             self.renderHotspotDebugGeom(hp)
-              
-        print self.sceneRoot.ls()       
-        
+            
+            if hp.clickMask is not None:
+                img = self.resources.loadImage(hp.clickMask)
+                if img:
+                    self.hotspotsImageMasks[hp.name] = img
+                      
                     
     def getHotspotSprite(self, hotspot):
         """
@@ -457,16 +472,19 @@ class NodeRenderer:
         and scale in the scene.
         '''
         dim = self.getFaceTextureDimensions(hp.face)            
-                
+        
         # get world space coords of top left corner
         t1 = hp.xo / dim[0]
         t2 = hp.yo / dim[1]
-        wo = self.getWorldPointFromFacePoint(hp.face, (t1, t2))
+        wo = self.getWorldPointFromFacePoint(hp.face, (t1, t2))        
         
         # get world space coords of bottom right corner
-        t1 = hp.xe / dim[0]
-        t2 = hp.ye / dim[1]
+        t3 = hp.xe / dim[0]
+        t4 = hp.ye / dim[1]
         we = self.getWorldPointFromFacePoint(hp.face, (t1, t2))
+        
+        # store the face local bounds, useful for raycasting
+        self.hotspotsFaceBounds[hp.name] = [t1, t2, t3, t4]
         
         box = self.resources.loadModel('box.egg') 
         box.setName('debug_' + hp.name)
@@ -566,7 +584,7 @@ class NodeRenderer:
         @param newSprite: The name of the new sprite to use for rendering.  
         '''
         if self.log.isEnabledFor(logging.DEBUG):
-            self.log.debug("Replacing hotspot's %s sprite with %s" % (hp.name, newSprite))
+            self.log.debug("Replacing hotspot's %s sprite with %s" % (hotspot.name, newSprite))
         self.removeHotspot(hotspot)
         self.renderHotspot(hotspot, newSprite)
         self.renderHotspotDebugGeom(hotspot) 
@@ -591,8 +609,8 @@ class NodeRenderer:
     def raycastHotspots(self, x, y):
         '''
         Returns the hotspot under the given window coordinates.
-        @param x: The x window coordinate.
-        @param y: The y window coordinate.
+        @param x: The x window coordinate in render space.
+        @param y: The y window coordinate in render space.
         @return: A list of Hotspot instances that were found under the window point. The hotspots are ordered
         by their depth from the camera. 
         '''                
@@ -600,10 +618,24 @@ class NodeRenderer:
         hotspots = []
         results = self.raycaster.raycastWindow(x, y, True)        
         if results is not None:
-            for np in results:                
+            for np, pt in results:                
                 hp = self.node.getHotspot(np.getName())
-                if hp is not None:                    
-                    hotspots.append(hp)                    
+                if hp is not None:
+                                                            
+                    # we have a hotspot but perhaps its click mask, if any, will reject that point
+                    # the mask should have the same dimensions with the hotspot's rectangular interaction area
+                    maskImg = self.hotspotsImageMasks.get(hp.name)
+                    if maskImg is not None:
+                        bounds = self.hotspotsFaceBounds[hp.name]
+                        facePoint = self.getFaceLocalCoords(hp.face, pt)                        
+                        hotspotRelativePoint = [(facePoint[0] - bounds[0]) / (bounds[2] - bounds[0]), (facePoint[1] - bounds[1]) / (bounds[3] - bounds[1])]
+                        hotspotRelativePoint[0] *= maskImg.getXSize()
+                        hotspotRelativePoint[1] *= maskImg.getYSize()
+                        col = maskImg.getXel(int(hotspotRelativePoint[0]), int(hotspotRelativePoint[1]))                    
+                        if col[0] == 0.0 and col[1] == 0.0 and col[2] == 0.0:                            
+                            continue                        
+                            
+                    hotspots.append(hp)
                  
         self.collisionsGeomsParent.hide()
         
@@ -640,9 +672,9 @@ class NodeRenderer:
 
     def getWorldPointFromFacePoint(self, face, p):
         """
-        The point p is given in the coordinate system that has its origin at the center of the face
-        and extends from -1.0 to 1.0 from left to right for the x-axis and from top to bottom for the 
-        y-axis.
+        The point p is given in the local 2D coordinate system of the specified face. This local space extends 
+        in [0..1] in the vertical and horizontal axis, thus the method returns a tuple of x, y values in the
+        [0..1] range.
         Returns a VBase3 with the world space coordinates.
         """
         dim = self.getFaceTextureDimensions(face)

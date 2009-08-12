@@ -167,9 +167,9 @@ class Cache(dict):
         return math.floor(0.9*self.size)
 
     def _evictLRU(self):
-         l = [(item.accessTime, item) for item in self.values()]
-         l.sort()   # lru items appear first in the list
-         for i in xrange(self._getEvictSize()):
-             del self[ l[i][1].name ]
+        l = [(item.accessTime, item) for item in self.values()]
+        l.sort()   # lru items appear first in the list
+        for i in xrange(self._getEvictSize()):
+            del self[ l[i][1].name ]
 
 

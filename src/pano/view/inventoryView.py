@@ -28,9 +28,16 @@ from direct.gui.OnscreenImage import OnscreenImage
 from direct.gui.DirectGui import DirectButton
 from pandac.PandaModules import TransparencyAttrib
 from pandac.PandaModules import TextNode, NodePath
+from pandac.PandaModules import LineSegs
+from pandac.PandaModules import Vec3, VBase3 
 
 from pano.constants import PanoConstants
+from pano.util.PandaUtil import PandaUtil
+from pano.resources.ResourcesTypes import ResourcesTypes
+from pano.messaging import Messenger
 from pano.model.inventory import Inventory
+from pano.model.Sprite import Sprite
+
 
 class SlotsLayout:
     """
@@ -86,7 +93,6 @@ class SlotsLayout:
         """
         pass
     
-from pandac.PandaModules import LineSegs 
 
 class GridSlotsLayout(SlotsLayout):
     """
@@ -118,7 +124,7 @@ class GridSlotsLayout(SlotsLayout):
             self.slotsLayout.append(((s_pos_x, s_pos_y), (self.slotWidth, self.slotHeight)))
         
         # get the origins aspect coordinates, we need this in order to transform lengths    
-        self.originRelativeX, self.originRelativeY = self.game.getView().convertScreenToAspectCoords([(0,0)])[0]
+        self.originRelativeX, self.originRelativeY = PandaUtil.screenPointToAspect2d(0,0)
                 
     def drawBorder(self, bounds,color):
         LS=LineSegs()
@@ -140,7 +146,7 @@ class GridSlotsLayout(SlotsLayout):
             return self.slotsLayout[num] 
         
     def getRelativeSlotPosSize(self, num):                
-        pos, size  = self.game.getView().convertScreenToAspectCoords(self.getSlotPosSize(num))
+        pos, size  = PandaUtil.convertScreenToAspectCoords(self.getSlotPosSize(num))
         return (pos, (size[0] - self.originRelativeX, size[1] - self.originRelativeY))
         
     def getSlotAtScreenPos(self, x, y):
@@ -171,10 +177,10 @@ class GridSlotsLayout(SlotsLayout):
         
         self.debugNode = aspect2d.attachNewNode(self.DEBUG_NODE)
                         
-        w, h = game.getView().convertScreenToAspectCoords([(self.slotWidth, self.slotHeight)])[0]
+        w, h = PandaUtil.screenPointToAspect2d(self.slotWidth, self.slotHeight)
         w -= self.originRelativeX
         h -= self.originRelativeY
-        sw, sh = game.getView().convertScreenToAspectCoords([(self.offsetX, self.offsetY)])[0]
+        sw, sh = PandaUtil.screenPointToAspect2d(self.offsetX, self.offsetY)
         sw -= self.originRelativeX
         sh -= self.originRelativeY
         
@@ -219,10 +225,15 @@ class GenericSlotsLayout(SlotsLayout):
     def removeSlot(self, slot):
         pass
 
+
 class InventoryView:
     """
     Renders the inventory screen.
     """
+    
+    ButtonStateNormal = 1
+    ButtonStatePressed = 2
+    ButtonStateHover = 3
     
     POINTER_NAME = "inventory_pointer"
     INVENTORY_SCENE_NODE = "inventory_sceneNode"
@@ -234,6 +245,7 @@ class InventoryView:
     def __init__(self, game):
         self.log = logging.getLogger('pano.inventoryView')
         self.game = game
+        self.msn = Messenger(self)  # the messenger is used to broadcast user events related to the interface 
         self.inventory = None   # the inventory to render
         
         self.node = None           # the root scenegraph node for inventory rendering nodes
@@ -256,6 +268,19 @@ class InventoryView:
         self.fontColor = (1.0, 1.0, 1.0, 1.0)    # colour of the text for an item's description      
         self.fontBgColor = (0.0, 0.0, 0.0, 1.0)  # background colour of the text
         
+        # scrolling and paging buttons are DirectButton instances          
+        self.nextPageButton        = None
+        self.prevPageButton        = None        
+        self.scrollNextButton      = None
+        self.scrollPrevButton      = None
+        
+        # specifies the range of items to be rendered in the next frame as a list [start_item_index, end_item_index]
+        # used for scrolling and paging
+        self.itemsRange = None
+        
+        # number of items displayed per page
+        self.pageSize = 0
+        
         # provides the layout of the slots
         self.slotsLayout = None     
         
@@ -265,6 +290,7 @@ class InventoryView:
         self.mousePointer = InventoryView.POINTER_NAME
         
         self.debugLayout = False        
+        
 
     def initialize(self, inventory):
         """
@@ -275,9 +301,10 @@ class InventoryView:
             self.node.removeNode()
 #            self.node.detachNode()
             
-        self.node = aspect2d.attachNewNode(InventoryView.INVENTORY_SCENE_NODE)
+        self.node      = aspect2d.attachNewNode(InventoryView.INVENTORY_SCENE_NODE)
         self.iconsNode = self.node.attachNewNode(InventoryView.ICONS_NODE)
         
+        # from here on we just initialize the member fields according to the cvars...
         cfg = self.game.getConfig()
         if not self._validateConfig(cfg):
             self.log.error('Missing or invalid inventory configuration')
@@ -299,14 +326,14 @@ class InventoryView:
             self.textPos = cfg.getVec2(PanoConstants.CVAR_INVENTORY_REL_POS)
             self.textPos = view.relativeToAbsolute(self.textPos)
                                 
-        self.pos, self.textPos = view.convertScreenToAspectCoords([self.pos, self.textPos])
+        self.pos, self.textPos = PandaUtil.convertScreenToAspectCoords([self.pos, self.textPos])
         
             
         self.size = cfg.getVec2(PanoConstants.CVAR_INVENTORY_SIZE, (1.0, 1.0))
             
         self.textScale = cfg.getFloat(PanoConstants.CVAR_INVENTORY_TEXT_SCALE, 0.07)
-        self.opacity = cfg.getFloat(PanoConstants.CVAR_INVENTORY_OPACITY)
-        self.fontName = cfg.get(PanoConstants.CVAR_INVENTORY_FONT)
+        self.opacity   = cfg.getFloat(PanoConstants.CVAR_INVENTORY_OPACITY)
+        self.fontName  = cfg.get(PanoConstants.CVAR_INVENTORY_FONT)
         self.fontColor = cfg.getVec4(PanoConstants.CVAR_INVENTORY_FONT_COLOR)
         if self.fontColor is None:
             self.fontColor = (1.0, 1.0, 1.0, 1.0)
@@ -323,18 +350,30 @@ class InventoryView:
         slotsCount = self.slotsLayout.getNumSlots()
         self.log.debug('Setting slots count to %i' % slotsCount)
         
+        # by default render all items, the controller state can later overridde this
+        self.itemsRange = [0, slotsCount]
+        
+        if cfg.hasVar(PanoConstants.CVAR_INVENTORY_PAGESIZE):
+            self.pageSize = cfg.getInt(PanoConstants.CVAR_INVENTORY_PAGESIZE)
+        else:
+            self.pageSize = slotsCount
+        
         self.inventory = inventory
         self.inventory.setSlotsCount(slotsCount)   
         
         self.backdropImage = cfg.get(PanoConstants.CVAR_INVENTORY_BACKDROP)    
         if self.backdropImage is not None:         
             self._createBackdrop(show = False)
+            
+        # create the scrolling and paging gui buttons            
+        self._createButtons(cfg)
                 
         # force an initial rendering of the icons
         self.updateIcons = True
         
         # start as  hidden
         self.node.hide()
+        
         
     def update(self, millis):
         """
@@ -350,22 +389,49 @@ class InventoryView:
         should redraw it.
         """
         self.updateIcons = True                
+    
         
     def show(self):
         """
         Shows the inventory.
         """
         self.node.show()
+        if self.nextPageButton:
+            self.nextPageButton.show()
+            
+        if self.prevPageButton:
+            self.prevPageButton.show()
+            
+        if self.scrollNextButton:
+            self.scrollNextButton.show()
+            
+        if self.scrollPrevButton:
+            self.scrollPrevButton.show()
+            
         if self.debugLayout:
             self.enableDebugRendering()        
+    
     
     def hide(self):
         """
         Hides the inventory.
         """
         self.node.hide()
+        if self.nextPageButton:
+            self.nextPageButton.hide()
+            
+        if self.prevPageButton:
+            self.prevPageButton.hide()
+        
+        if self.scrollNextButton:
+            self.scrollNextButton.hide()
+            
+        if self.scrollPrevButton:
+            self.scrollPrevButton.hide()
+            
         if self.debugLayout:
             self.disableDebugRendering()
+    
     
     def isVisible(self):
         """
@@ -373,33 +439,42 @@ class InventoryView:
         """
         return (self.node is not None) and (not self.node.isHidden())
     
+    
     def getMousePointerName(self):
         return self.mousePointer
     
+    
     def getSlotAtScreenPos(self, x, y):
         return self.slotsLayout.getSlotAtScreenPos(x, y)
+    
         
     def getBackdropImage(self):
         return self.backdropImage
     
+    
     def setBackdropImage(self, imageName):
         self.backdropImage = imageName
         self._createBackdrop()    
+    
         
     def getText(self):
         return self.text
     
+    
     def setText(self, text):
         self.text = text
         self._updateText()
+    
         
     def clearText(self):
         self.text = ""
         if self.itemTextNode is not None:
             self.itemTextNode.hide()            
+    
         
     def getNode(self):
         return self.node
+    
     
     def enableDebugRendering(self):
         self.slotsLayout.enableDebugRendering(self.game)
@@ -427,12 +502,10 @@ class InventoryView:
         """
         if self.backdropImageObject is not None:
             self.backdropImageObject.destroy()
-#            self.backdropImageObject.detachNode()
             self.backdropImageObject = None
         
         if self.backdropNode is not None:
             self.backdropNode.removeNode()
-#            self.backdropNode.detachNode()
             
         imagePath = self.game.getResources().getResourceFullPath(PanoConstants.RES_TYPE_TEXTURES, self.backdropImage)        
             
@@ -444,7 +517,7 @@ class InventoryView:
             sort = 0)
         
         self.backdropImageObject.setTransparency(TransparencyAttrib.MAlpha)
-        self.backdropImageObject.setBin("fixed", 41)
+        self.backdropImageObject.setBin("fixed", PanoConstants.RENDER_ORDER_INVENTORY)
         
         if not show:
             self.backdropNode.hide()
@@ -480,7 +553,8 @@ class InventoryView:
              sortOrder = 10,
              pressEffect=0
              )
-        self.itemText.setBin("fixed", 45)
+        self.itemText.setBin("fixed", PanoConstants.RENDER_ORDER_INVENTORY_ITEMS)
+    
     
     def _parseLayout(self, layoutName):
         layoutName = layoutName.strip()
@@ -497,6 +571,7 @@ class InventoryView:
         # a default to avoid None
         else:
             self.slotsLayout = GridSlotsLayout(self.game, 100, 100, 5, 5, 50, 50)
+    
             
     def _renderItemsIcons(self):
         
@@ -505,8 +580,15 @@ class InventoryView:
             icon.destroy()            
         self.itemIcons = []
         
-        for i in xrange(self.inventory.getSlotsCount()):
-            s = self.inventory.getSlotByNum(i)
+        startItem = 0
+        endItem = self.inventory.getSlotsCount()
+        if self.itemsRange is not None:
+            startItem = self.itemsRange[0]
+            endItem = self.itemsRange[1]
+            
+        for i in xrange(endItem - startItem):
+            itemNum = startItem + i
+            s = self.inventory.getSlotByNum(itemNum)
             if not s.isFree():
                 # get slot position and size in aspect2d space
                 p, sz = self.slotsLayout.getRelativeSlotPosSize(s.getNum())
@@ -519,8 +601,138 @@ class InventoryView:
                                          scale=0.2                                      
                                          )
                 iconNode.setTransparency(TransparencyAttrib.MAlpha)
-                iconNode.setBin("fixed", 45)
+                iconNode.setBin("fixed", PanoConstants.RENDER_ORDER_INVENTORY_ITEMS)
                 self.itemIcons.append(iconNode)
                 
+    
+    def _createButtons(self, cfg):
+        '''
+        Creates DirectGui elements for displaying the paging and scrolling buttons.
+        The sprite names are read from the configuration.
+        The create DirectButtons use sprites as images.
+        @param cfg: a ConfigVars instance
+        '''
+        # button to display next page of items
+        nxPgBtnSprite        = cfg.get(PanoConstants.CVAR_INVENTORY_NEXTPAGE_SPRITE)
+        nxPgBtnPressedSprite = cfg.get(PanoConstants.CVAR_INVENTORY_NEXTPAGE_PRESSED_SPRITE)
+        nxPgBtnHoverSprite   = cfg.get(PanoConstants.CVAR_INVENTORY_NEXTPAGE_HOVER_SPRITE)
+        nxPgBtnPos           = cfg.getVec2(PanoConstants.CVAR_INVENTORY_NEXTPAGE_POS)
+                
+        # button to display previous page of items
+        pvPgBtnSprite        = cfg.get(PanoConstants.CVAR_INVENTORY_PREVPAGE_SPRITE)
+        pvPgBtnPressedSprite = cfg.get(PanoConstants.CVAR_INVENTORY_PREVPAGE_PRESSED_SPRITE)
+        pvPgBtnHoverSprite   = cfg.get(PanoConstants.CVAR_INVENTORY_PREVPAGE_HOVER_SPRITE)
+        pvPgBtnPos           = cfg.getVec2(PanoConstants.CVAR_INVENTORY_PREVPAGE_POS)
+        
+        # button to scroll to next items 
+        scrNxBtnSprite        = cfg.get(PanoConstants.CVAR_INVENTORY_SCROLLNEXT_SPRITE)
+        scrNxBtnPressedSprite = cfg.get(PanoConstants.CVAR_INVENTORY_SCROLLNEXT_PRESSED_SPRITE)
+        scrNxBtnHoverSprite   = cfg.get(PanoConstants.CVAR_INVENTORY_SCROLLNEXT_HOVER_SPRITE)
+        scrNxBtnPos           = cfg.getVec2(PanoConstants.CVAR_INVENTORY_SCROLLNEXT_POS)
+        
+        # button to scroll to previous items 
+        scrPvBtnSprite        = cfg.get(PanoConstants.CVAR_INVENTORY_SCROLLPREV_SPRITE)
+        scrPvBtnPressedSprite = cfg.get(PanoConstants.CVAR_INVENTORY_SCROLLPREV_PRESSED_SPRITE)
+        scrPvBtnHoverSprite   = cfg.get(PanoConstants.CVAR_INVENTORY_SCROLLPREV_HOVER_SPRITE)
+        scrPvBtnPos           = cfg.getVec2(PanoConstants.CVAR_INVENTORY_SCROLLPREV_POS)
+                
+        sprites = self.game.getView().getSpritesFactory() 
+        origin = aspect2d.getRelativePoint(screen2d, VBase3(0, 0, 0))
+                        
+        # for every button define property name, position, callback, list of sprites for normal, pressed and hover state
+        pagingButtons = [
+                         ('nextPageButton', nxPgBtnPos, self._nextPageCallback, 
+                                                           [
+                                                           (nxPgBtnSprite, 'next_page_sprite'), 
+                                                           (nxPgBtnPressedSprite,'next_page_pressed_sprite'), 
+                                                           (nxPgBtnHoverSprite,'next_page_hover_sprite')
+                                                           ]), 
+                         ('prevPageButton', pvPgBtnPos, self._previousPageCallback, 
+                                                           [
+                                                           (pvPgBtnSprite, 'previous_page_sprite'), 
+                                                           (pvPgBtnPressedSprite,'previous_page_pressed_sprite'), 
+                                                           (pvPgBtnHoverSprite,'previous_page_hover_sprite')
+                                                           ]),
+                        ('scrollNextButton', scrNxBtnPos, self._scrollNextCallback, 
+                                                           [
+                                                           (scrNxBtnSprite, 'scroll_next_sprite'), 
+                                                           (scrNxBtnPressedSprite,'scroll_next_pressed_sprite'), 
+                                                           (scrNxBtnHoverSprite,'scroll_next_hover_sprite')
+                                                           ]),
+                        ('scrollPrevButton', scrPvBtnPos, self._scrollPreviousCallback, 
+                                                           [
+                                                           (scrPvBtnSprite, 'scroll_previous_sprite'), 
+                                                           (scrPvBtnPressedSprite,'scroll_previous_pressed_sprite'), 
+                                                           (scrPvBtnHoverSprite,'scroll_previous_hover_sprite')
+                                                           ]),
+                         ]
+        
+        
+        for buttonName, buttonPos, buttonCallback, spritesList in pagingButtons:
+            buttonGeoms = [None, None, None, None]            
+            btnScrBounds = [0,0,0]
+            i = 0
+            for spriteFile, spriteName in spritesList:
+                print 'adding sprite %s' % spriteName
+                if spriteFile is not None:
+                    spr = None
+                    if spriteFile.rindex('.') >= 0:
+                        ext = spriteFile[spriteFile.rindex('.'):]
+                        print ext
+                        if ResourcesTypes.isExtensionOfType(ext, PanoConstants.RES_TYPE_IMAGES):
+                            spr = Sprite(spriteName)
+                            spr.image = spriteFile
+                    else:
+                        spr = self.game.getResources().loadSprite(spriteFile)
                     
+                    if spr:
+                        buttonGeoms[i] = sprites.createSprite(spr).nodepath
+                        buttonGeoms[i].setScale(1.0)
+                        btnScrBounds = aspect2d.getRelativePoint(screen2d, VBase3(spr.width, 1.0, spr.height)) - origin
+                        btnScrBounds[2] *= -1
+                    
+                i += 1
+    
+            if buttonGeoms[0] is not None:
+                b = DirectButton(geom = (
+                                         buttonGeoms[0], 
+                                         buttonGeoms[1] if buttonGeoms[1] else buttonGeoms[0], 
+                                         buttonGeoms[2] if buttonGeoms[2] else buttonGeoms[0], 
+                                         buttonGeoms[3] if buttonGeoms[3] else buttonGeoms[0]), 
+                                         relief=None)
+                b['geom_pos'] = (0,0,0)
+                b.setTransparency(1)
+                
+                # if position is omitted from the configuration, put the button on the upper left corner
+                if buttonPos is not None:
+                    b.setPos(aspect2d.getRelativePoint(screen2d, VBase3(buttonPos[0], 1.0, buttonPos[1])))
+                else:
+                    b.setPos(origin[0], 1.0, origin[2])
+                    
+                b.setScale(btnScrBounds[0], 1.0, btnScrBounds[2])
+                b.setFrameSize((0, btnScrBounds[0], 1.0, btnScrBounds[2]))
+                b['command'] = buttonCallback
+                b['extraArgs'] = (self.msn,)
+                b.hide()
+            else:
+                b = None
+            
+            setattr(self, buttonName, b)
+            
+            
+    def _nextPageCallback(self, messenger):
+        '''
+        Callback for next page button which only sends the appropriate message.
+        '''
+        messenger.sendMessage(PanoConstants.EVENT_ITEMS_NEXT_PAGE)
+    
+    def _previousPageCallback(self, messenger):
+        messenger.sendMessage(PanoConstants.EVENT_ITEMS_PREV_PAGE)
+            
+    def _scrollNextCallback(self, messenger):        
+        messenger.sendMessage(PanoConstants.EVENT_ITEMS_SCROLL_NEXT)
+    
+    def _scrollPreviousCallback(self, messenger):
+        messenger.sendMessage(PanoConstants.EVENT_ITEMS_SCROLL_PREV)
+        
     

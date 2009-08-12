@@ -21,10 +21,12 @@ THE SOFTWARE.
 
 '''
 
+import StringIO
 from ConfigParser import SafeConfigParser
+from ConfigParser import MissingSectionHeaderError, ParsingError
 
-from errors.ParseException import ParseException
-from model.MousePointer import MousePointer
+from pano.errors.ParseException import ParseException
+
 
 class PointerParser:    
     """
@@ -48,14 +50,14 @@ class PointerParser:
     def __init__(self):
         pass
     
-    def parse(self, pointer, istream):
+    def parse(self, pointer, fileContents):
         """
         Parses a .pointer file whose contents will be read by the given input stream
         """
         cfg = SafeConfigParser()
-        
+        strFp = StringIO.StringIO(fileContents)
         try:
-            cfg.readfp(istream)
+            cfg.readfp(strFp)
             section = cfg.sections()[0]
             assert section is not None and section == 'Pointer', 'pointer file must contain the "Pointer" section header'
                     

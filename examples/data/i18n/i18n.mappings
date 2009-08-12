@@ -1,0 +1,4 @@
+[mappings]
+arrow_right  = next_language
+escape      = acExit
+

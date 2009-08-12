@@ -1,0 +1,13 @@
+[labels]
+continent.europe = Europe
+continent.africa = Africa
+continent.asia = Asia
+continent.namerica = North America
+continent.samerica = South America
+continent.oceania = Oceania
+continent.east = Middle East
+
+shape.circle=The blue circle
+shape.zigzag=The green zigzag
+shape.roundedrec=The orange rounded rectangle
+shape.rectangle=The red rectangle

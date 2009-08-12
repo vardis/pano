@@ -28,25 +28,57 @@ class PanoConstants:
     Every constant related to our framework will be stored in this class.
     """
     
-    # names of events
+    ###################################################
+    # game lifecylcle events
+    ###################################################
     EVENT_GAME_UPDATE = "game.update"
     EVENT_GAME_EXIT = "game.exit"
     EVENT_GAME_PAUSED = "game.paused"
     EVENT_GAME_RESUMED = "game.resumed"
-    EVENT_ITEMS_CLEARED = "inventory.items.cleared"
-    EVENT_ITEM_ADDED = "inventory.item.added"
-    EVENT_ITEM_REMOVED = "inventory.item.removed"
+    ###################################################
+    
+    
+    ###################################################
+    # inventory related events
+    ###################################################
+    EVENT_ITEMS_CLEARED      = "inventory.items.cleared"
+    EVENT_ITEM_ADDED         = "inventory.item.added"
+    EVENT_ITEM_REMOVED       = "inventory.item.removed"
     EVENT_ITEM_COUNT_CHANGED = "inventory.count.changed"
-    EVENT_ITEMS_RESTORED = "inventory.items.restored"
-    EVENT_ITEMS_COMBINED = "inventory.items.combined"   # args[0]: first item, args[1]: second item
+    EVENT_ITEMS_RESTORED     = "inventory.items.restored"
+    EVENT_ITEMS_COMBINED     = "inventory.items.combined"   # args[0]: first item, args[1]: second item
+    EVENT_ITEMS_SCROLL_NEXT  = "inventory.items.scroll.next"
+    EVENT_ITEMS_SCROLL_PREV  = "inventory.items.scroll.prev"
+    EVENT_ITEMS_NEXT_PAGE    = "inventory.items.page.next"
+    EVENT_ITEMS_PREV_PAGE    = "inventory.items.page.prev"
+    ###################################################
+    
+    
+    ###################################################
+    # save, load events
+    ###################################################
     EVENT_SAVELOAD_ERROR = "saveload.error"
     EVENT_SAVE_COMPLETED = "save.complete"
     EVENT_LOAD_COMPLETED = "load.complete"
+    ###################################################
+    
+    
+    ###################################################
+    # Nodes related events
+    ###################################################
     EVENT_CHANGE_NODE = "node.change"
     EVENT_RESTORE_NODE = "node.restore"
+    ###################################################
+    
+    
+    ###################################################
+    # hotspots related events
+    ###################################################
     EVENT_HOTSPOT_ACTION = "hotspot.action"
     EVENT_HOTSPOT_ITEM_INTERACTION = "hotspot.item.interact"
-    EVENT_HOTSPOT_LOOKAT = "hotspot.lookat"    
+    EVENT_HOTSPOT_LOOKAT = "hotspot.lookat"
+    ###################################################
+        
     
     # tasks' names
     TASK_GAME_LOOP = 'game_loop_task'
@@ -89,6 +121,8 @@ class PanoConstants:
     CVAR_RESOURCES_TEXTS = 'resources_texts'
     CVAR_RESOURCES_BINARIES = 'resources_binaries'
     CVAR_RESOURCES_SHADERS = 'resources_shaders'
+    CVAR_RESOURCES_HMAPS = "resources_hmaps"
+    CVAR_RESOURCES_IMAGES = "resources_images"
     
     # cvars related to preloading
     CVAR_PRELOAD_POINTERS = 'preloads_pointers'
@@ -111,6 +145,8 @@ class PanoConstants:
     CVAR_PRELOAD_TEXTS = 'preloads_texts'
     CVAR_PRELOAD_BINARIES = 'preloads_binaries'
     CVAR_PRELOAD_SHADERS = 'preloads_shaders'
+    CVAR_PRELOAD_HMAPS = 'preload_hmaps'
+    CVAR_PRELOAD_IMAGES = 'preload_images'
 
     # names of vars related to the credits state
     CVAR_CREDITS_BACKGROUND   = 'credits_background'
@@ -154,7 +190,30 @@ class PanoConstants:
     CVAR_INVENTORY_TEXT_REL_POS = 'inventory_item_text_rel_pos'
     CVAR_INVENTORY_TEXT_SCALE = 'inventory_item_text_scale'
     CVAR_INVENTORY_OPACITY = 'inventory_opacity'
-    CVAR_INVENTORY_SLOTS = 'inventory_slots_provider'
+    CVAR_INVENTORY_SLOTS = 'inventory_slots_provider'    
+    
+    CVAR_INVENTORY_PAGESIZE = 'inventory_page_size'
+    
+    CVAR_INVENTORY_NEXTPAGE_SPRITE = 'inventory_next_page_button_sprite'
+    CVAR_INVENTORY_NEXTPAGE_PRESSED_SPRITE = 'inventory_next_page_button_pressed_sprite'
+    CVAR_INVENTORY_NEXTPAGE_HOVER_SPRITE = 'inventory_next_page_button_hover_sprite'
+    CVAR_INVENTORY_NEXTPAGE_POS = 'inventory_next_page_button_pos'    
+    
+    CVAR_INVENTORY_PREVPAGE_SPRITE = 'inventory_prev_page_button_sprite'    
+    CVAR_INVENTORY_PREVPAGE_PRESSED_SPRITE = 'inventory_prev_page_button_pressed_sprite'
+    CVAR_INVENTORY_PREVPAGE_HOVER_SPRITE = 'inventory_prev_page_button_hover_sprite'
+    CVAR_INVENTORY_PREVPAGE_POS = 'inventory_prev_page_button_pos'
+    
+    CVAR_INVENTORY_SCROLLNEXT_SPRITE = 'inventory_scroll_next_button_sprite'
+    CVAR_INVENTORY_SCROLLNEXT_PRESSED_SPRITE = 'inventory_scroll_next_button_pressed_sprite'
+    CVAR_INVENTORY_SCROLLNEXT_HOVER_SPRITE = 'inventory_scroll_next_button_hover_sprite'
+    CVAR_INVENTORY_SCROLLNEXT_POS = 'inventory_scroll_next_button_pos'    
+    
+    CVAR_INVENTORY_SCROLLPREV_SPRITE = 'inventory_scroll_prev_button_sprite'    
+    CVAR_INVENTORY_SCROLLPREV_PRESSED_SPRITE = 'inventory_scroll_prev_button_pressed_sprite'
+    CVAR_INVENTORY_SCROLLPREV_HOVER_SPRITE = 'inventory_scroll_prev_button_hover_sprite'
+    CVAR_INVENTORY_SCROLLPREV_POS = 'inventory_scroll_prev_button_pos'
+        
     
     # keys' names used to lookup window properties in a dictionary
     WIN_ORIGIN = 'win_origin'
@@ -190,6 +249,8 @@ class PanoConstants:
     RES_TYPE_TEXTS = 16
     RES_TYPE_BINARIES = 17
     RES_TYPE_SHADERS = 18
+    RES_TYPE_HMAPS = 19
+    RES_TYPE_IMAGES = 20
     RES_TYPE_ALL = 100
     
     #Constants for the predefined mouse pointers
@@ -260,14 +321,20 @@ class PanoConstants:
     
     # render ordering
     RENDER_ORDER_CUBEMAP     = 1    
-    RENDER_ORDER_BACKGROUND_IMAGE = 1
+    RENDER_ORDER_BACKGROUND_IMAGE = RENDER_ORDER_CUBEMAP + 1
     RENDER_ORDER_SPRITES     = RENDER_ORDER_BACKGROUND_IMAGE + 1
     
-    # leave a gap of 10 orders for layeriing sprites
+    # leave a gap of 10 orders for layering sprites
     NUM_SPRITES_ZORDERS       = 10
     
-    RENDER_ORDER_MENU        = RENDER_ORDER_SPRITES + NUM_SPRITES_ZORDERS + 1
+    RENDER_ORDER_INVENTORY = RENDER_ORDER_SPRITES + NUM_SPRITES_ZORDERS + 1
+    RENDER_ORDER_INVENTORY_ITEMS = RENDER_ORDER_INVENTORY + 1 
+    RENDER_ORDER_INVENTORY_CONTROLS = RENDER_ORDER_INVENTORY_ITEMS + 1
+    RENDER_ORDER_INVENTORY_TOOLTIPS = RENDER_ORDER_INVENTORY_CONTROLS + 1 
+    
+    RENDER_ORDER_MENU        = RENDER_ORDER_INVENTORY_TOOLTIPS + 1
     RENDER_ORDER_DEBUG_GEOMS = RENDER_ORDER_MENU + 1    
-    RENDER_ORDER_CONSOLE     = 5
+    RENDER_ORDER_MOUSE_POINTER = RENDER_ORDER_DEBUG_GEOMS + 1 
+    RENDER_ORDER_CONSOLE     = RENDER_ORDER_DEBUG_GEOMS
     
     

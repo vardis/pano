@@ -217,5 +217,5 @@ class InputActionMappings(DirectObject.DirectObject):
             except Queue.Full:
                 self.log.error("Event queue is full, failed to put new event.")
         else:
-            log.warning("Dropped event %s because event queue was full." % e)
+            self.log.warning("Dropped event %s because event queue was full." % e)
     

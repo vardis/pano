@@ -1,38 +1,38 @@
-2009-05-30 15:24:20,342 DEBUG    pano.statesFactory  	registering state initState for class <class 'control.InitGameState.InitGameState'>
-2009-05-30 15:24:20,342 DEBUG    pano.statesFactory  	registering state exploreState for class <class 'control.ExploreState.ExploreState'>
-2009-05-30 15:24:20,342 DEBUG    pano.statesFactory  	registering state pausedState for class <class 'control.PausedState.PausedState'>
-2009-05-30 15:24:20,342 DEBUG    pano.statesFactory  	registering state consoleState for class <class 'control.ConsoleState.ConsoleState'>
-2009-05-30 15:24:20,342 DEBUG    pano.statesFactory  	registering state introState for class <class 'control.IntroState.IntroState'>
-2009-05-30 15:24:20,375 DEBUG    pano.statesFactory  	registering state inventoryState for class <class 'control.InventoryState.InventoryState'>
-2009-05-30 15:24:20,375 DEBUG    pano.statesFactory  	registering state creditsState for class <class 'control.CreditsState.CreditsState'>
-2009-05-30 15:24:20,375 DEBUG    pano.initState      	entered in initState
-2009-05-30 15:24:20,375 DEBUG    pano.initState      	entered initial state
-2009-05-30 15:24:20,375 DEBUG    pano.view           	hiding mouse pointer
-2009-05-30 15:24:20,421 INFO     pano.initState      	********************
-2009-05-30 15:24:20,421 INFO     pano.initState      	Platform Information
-2009-05-30 15:24:20,421 INFO     pano.initState      	********************
-2009-05-30 15:24:20,500 INFO     pano.initState      	**Platform ID: Windows-XP-5.1.2600
-2009-05-30 15:24:20,500 INFO     pano.initState      	**CPU ID: GenuineIntel 	 Intel(R) Core(TM)2 CPU          4400  @ 2.00GHz
-2009-05-30 15:24:20,500 INFO     pano.initState      	**Physical memory: 2146480128 total, 1084669952 available
-2009-05-30 15:24:20,500 INFO     pano.initState      	**Display driver: 
-2009-05-30 15:24:20,500 INFO     pano.initState      	**Shader model: 4
-2009-05-30 15:24:20,500 INFO     pano.initState      	**Texture memory: 1044381696
-2009-05-30 15:24:20,500 INFO     pano.initState      	**Python version: 2.5.2, build: ('r252:60911', 'Feb 21 2008 13:11:45')
-2009-05-30 15:24:20,562 ERROR    pano.resourceLoader 	Failed to locate resource global.mappings
-2009-05-30 15:24:20,578 DEBUG    pano.cubemapRenderer	None
-2009-05-30 15:24:20,578 DEBUG    pano.postProcessMgr 	Registering filter factory Common filters factory
-2009-05-30 15:24:20,578 DEBUG    pano.camera         	Missing configuration for mouse horizontal speed, defaulting to 45.0
-2009-05-30 15:24:20,578 DEBUG    pano.camera         	Missing configuration for mouse vertical speed, defaulting to 45.0
-2009-05-30 15:24:20,578 ERROR    pano.inventoryView  	Missing or invalid inventory configuration
-2009-05-30 15:24:20,703 DEBUG    pano.introState     	video intro delay: 0.000000
-2009-05-30 15:24:20,703 ERROR    pano.resourceLoader 	Failed to locate resource intro.mappings
-2009-05-30 15:24:20,703 DEBUG    pano.introState     	No videos defined, switching to explore state
-2009-05-30 15:24:20,717 DEBUG    pano.inputMap       	cleared mappings
-2009-05-30 15:24:20,717 DEBUG    pano.exploreState   	entered in exploreState
-2009-05-30 15:24:20,717 ERROR    pano.resourceLoader 	Failed to locate resource explore.mappings
-2009-05-30 15:24:20,717 DEBUG    pano.exploreState   	Executing script file .\example_sounds.py
-2009-05-30 15:24:20,717 DEBUG    pano.exploreState   	restoring state for nodescript SoundsExample
-2009-05-30 15:24:21,421 DEBUG    pano.view           	Chosed Node2DRenderer
-2009-05-30 15:24:21,421 DEBUG    SoundsExample       	entered in SoundsExample
-2009-05-30 15:24:21,421 DEBUG    pano.inputMap       	set mappings to Mappings sounds, values: {u'1': u'play_blah', u'b': u'increase_balance', u'e': u'enable_sounds', u'd': u'disable_sounds', u'+': u'increase_rate', u'-': u'decrease_rate', u'l': u'increase_loop', u'shift-l': u'decrease_loop', u'p': u'pause_sounds', u'3': u'play_zipper', u'r': u'resume_sounds', u'2': u'play_cling', u'[': u'decrease_volume', u']': u'increase_volume', u'shift-b': u'decrease_balance'}
-2009-05-30 15:24:28,030 DEBUG    pano.soundsPlayer   	Removed 1 finished sounds
+2009-07-12 18:20:39,280 DEBUG    pano.statesFactory  	registering state initState for class <class 'control.InitGameState.InitGameState'>
+2009-07-12 18:20:39,296 DEBUG    pano.statesFactory  	registering state exploreState for class <class 'control.ExploreState.ExploreState'>
+2009-07-12 18:20:39,296 DEBUG    pano.statesFactory  	registering state pausedState for class <class 'control.PausedState.PausedState'>
+2009-07-12 18:20:39,296 DEBUG    pano.statesFactory  	registering state consoleState for class <class 'control.ConsoleState.ConsoleState'>
+2009-07-12 18:20:39,296 DEBUG    pano.statesFactory  	registering state introState for class <class 'control.IntroState.IntroState'>
+2009-07-12 18:20:39,296 DEBUG    pano.statesFactory  	registering state inventoryState for class <class 'control.InventoryState.InventoryState'>
+2009-07-12 18:20:39,296 DEBUG    pano.statesFactory  	registering state creditsState for class <class 'control.CreditsState.CreditsState'>
+2009-07-12 18:20:39,296 DEBUG    pano.initState      	entered in initState
+2009-07-12 18:20:39,296 DEBUG    pano.initState      	entered initial state
+2009-07-12 18:20:39,296 INFO     pano.initState      	********************
+2009-07-12 18:20:39,296 INFO     pano.initState      	Platform Information
+2009-07-12 18:20:39,296 INFO     pano.initState      	********************
+2009-07-12 18:20:39,312 INFO     pano.initState      	**Platform ID: Windows-XP-5.1.2600-SP3
+2009-07-12 18:20:39,312 INFO     pano.initState      	**CPU ID: GenuineIntel 	 Intel(R) Core(TM)2 CPU          4400  @ 2.00GHz
+2009-07-12 18:20:39,312 INFO     pano.initState      	**Physical memory: 2146480128 total, 1023803392 available
+2009-07-12 18:20:39,312 INFO     pano.initState      	**Display driver: 
+2009-07-12 18:20:39,328 INFO     pano.initState      	**Shader model: 4
+2009-07-12 18:20:39,328 INFO     pano.initState      	**Texture memory: 1045430272
+2009-07-12 18:20:39,328 INFO     pano.initState      	**Python version: 2.6.2, build: ('r262:71605', 'Apr 14 2009 22:40:02')
+2009-07-12 18:20:39,342 DEBUG    pano.view           	hiding mouse pointer
+2009-07-12 18:20:39,500 ERROR    pano.resourceLoader 	Failed to locate resource global.mappings
+2009-07-12 18:20:39,515 DEBUG    pano.cubemapRenderer	None
+2009-07-12 18:20:39,515 DEBUG    pano.postProcessMgr 	Registering filter factory Common filters factory
+2009-07-12 18:20:39,515 DEBUG    pano.camera         	Missing configuration for mouse horizontal speed, defaulting to 45.0
+2009-07-12 18:20:39,515 DEBUG    pano.camera         	Missing configuration for mouse vertical speed, defaulting to 45.0
+2009-07-12 18:20:39,515 ERROR    pano.inventoryView  	Missing or invalid inventory configuration
+2009-07-12 18:20:39,592 DEBUG    pano.introState     	video intro delay: 0.000000
+2009-07-12 18:20:39,592 ERROR    pano.resourceLoader 	Failed to locate resource intro.mappings
+2009-07-12 18:20:39,592 DEBUG    pano.introState     	No videos defined, switching to explore state
+2009-07-12 18:20:39,592 DEBUG    pano.inputMap       	cleared mappings
+2009-07-12 18:20:39,592 DEBUG    pano.exploreState   	entered in exploreState
+2009-07-12 18:20:39,608 DEBUG    pano.inputMap       	set mappings to Mappings explore, values: {u'p': u'acPause', u'mouse1': u'acMouseAction', u'mouse3': u'acMouseLook', u'escape': u'acExit'}
+2009-07-12 18:20:39,625 DEBUG    pano.exploreState   	Executing script file example_sounds.py
+2009-07-12 18:20:39,625 DEBUG    pano.exploreState   	restoring state for nodescript SoundsExample
+2009-07-12 18:20:40,312 DEBUG    pano.view           	Choosed Node2DRenderer
+2009-07-12 18:20:40,312 DEBUG    SoundsExample       	entered in SoundsExample
+2009-07-12 18:20:40,312 DEBUG    pano.inputMap       	set mappings to Mappings explore, values: {u'shift-l': u'decrease_loop', u'b': u'increase_balance', u'e': u'enable_sounds', u'd': u'disable_sounds', u']': u'increase_volume', u'+': u'increase_rate', u'-': u'decrease_rate', u'l': u'increase_loop', u'1': u'play_blah', u'p': u'pause_sounds', u'3': u'play_zipper', u'r': u'resume_sounds', u'shift-b': u'decrease_balance', u'escape': u'acExit', u'2': u'play_cling', u'[': u'decrease_volume', u'mouse1': u'acMouseAction', u'mouse3': u'acMouseLook'}
+2009-07-12 18:20:40,796 WARNING  pano.exploreState   	No playlist found, there will be no music

@@ -31,6 +31,8 @@ from pano.model.Sprite          import Sprite
 from pano.model.Playlist        import Playlist
 from pano.model.ActionMappings  import ActionMappings
 from pano.model.InventoryItem   import InventoryItem
+from pano.model.HotspotsMaps    import QuadTreeMap
+from pano.model.HotspotsMaps    import ImageMap
 
 class ResourcesTypes:
     """
@@ -54,7 +56,9 @@ class ResourcesTypes:
             PanoConstants.RES_TYPE_SCRIPTS : ('.py'),
             PanoConstants.RES_TYPE_TEXTS : ('.txt', '.py'),
             PanoConstants.RES_TYPE_BINARIES : ('.bin'),
-            PanoConstants.RES_TYPE_SHADERS : ('.sha')
+            PanoConstants.RES_TYPE_SHADERS : ('.sha'),
+            PanoConstants.RES_TYPE_HMAPS : ('.qmap', '.imap'),            
+            PanoConstants.RES_TYPE_IMAGES : ('.jpg', '.bmp', '.tga', '.tif', '.png', '.dds')
     }
     
     resTypesNames = { 
@@ -75,7 +79,10 @@ class ResourcesTypes:
             PanoConstants.RES_TYPE_SCRIPTS : 'Script',
             PanoConstants.RES_TYPE_TEXTS : 'Text file',
             PanoConstants.RES_TYPE_BINARIES : 'Binary file',
-            PanoConstants.RES_TYPE_SHADERS : 'Shader'
+            PanoConstants.RES_TYPE_SHADERS : 'Shader',
+            PanoConstants.RES_TYPE_HMAPS : "Hotspots map",            
+            PanoConstants.RES_TYPE_IMAGES : "Image"
+    
     }
 
     def listAllTypes():
@@ -86,6 +93,7 @@ class ResourcesTypes:
         Returns a list of file extensions that are supported for the specified
         resource type. e.g. if resType specifies textures then the returned list
         could be ('.jpg', '.bmp', 'tga')
+        @param resType: A constant that identifies the resource type.
         """
         if ResourcesTypes.resTypesExtensions.has_key(resType):
             return list(ResourcesTypes.resTypesExtensions[resType])
@@ -98,6 +106,10 @@ class ResourcesTypes:
             return None
         
     def isExtensionOfType(extension, resType):
+        '''
+        @param extension: The filename extension
+        @param resType: A constant that identifies the resource type.
+        '''
         if ResourcesTypes.resTypesExtensions.has_key(resType):
             exts = ResourcesTypes.resTypesExtensions[resType]
             return extension in exts
@@ -105,6 +117,9 @@ class ResourcesTypes:
             return False
 
     def isParsedResource(resType):
+        '''
+        @param resType: A constant that identifies the resource type.
+        '''
         return resType in (
             PanoConstants.RES_TYPE_NODES,                        
             PanoConstants.RES_TYPE_FONTS,
@@ -118,6 +133,9 @@ class ResourcesTypes:
                            )
         
     def isStreamResource(resType):
+        '''
+        @param resType: A constant that identifies the resource type.
+        '''
         return resType in (
             PanoConstants.RES_TYPE_SCRIPTS,                                    
             PanoConstants.RES_TYPE_TEXTS,
@@ -125,19 +143,40 @@ class ResourcesTypes:
                            )
         
     def isPandaResource(resType):
+        '''
+        @param resType: A constant that identifies the resource type.
+        '''
         return resType in (                                
             PanoConstants.RES_TYPE_MODELS,
             PanoConstants.RES_TYPE_TEXTURES,            
             PanoConstants.RES_TYPE_SFX,
             PanoConstants.RES_TYPE_MUSIC,
             PanoConstants.RES_TYPE_VIDEOS,
-            PanoConstants.RES_TYPE_SHADERS       
+            PanoConstants.RES_TYPE_SHADERS,
+            PanoConstants.RES_TYPE_IMAGES       
                            )
+        
+    def isOpaqueResource(resType):
+        '''
+        Opaque resources provide the following methods for reading and writting their contents:
+            read(fileObject)  - reads from a file like object, 
+            readStream(str)   - reads from a string stream, 
+            write(fileObject) - write to a file like object, 
+            str writeStream() - writes to a string stream
             
+        @param resType: A constant that identifies the resource type.
+        '''
+        return resType in (
+            PanoConstants.RES_TYPE_HMAPS,       
+                           )
+                
     def constructParsedResource(resType, name):
         '''
         Constructs a resource object of the given type and name.
         Note that the resource type must correspond to a parsed resource.
+        
+        @param resType: A constant that identifies the resource type.
+        @param name: The name to be assigned to the constructed resource. 
         '''
         constructors = {
                         PanoConstants.RES_TYPE_NODES : Node,                        
@@ -154,6 +193,12 @@ class ResourcesTypes:
         assert constructors.has_key(resType)        
         return constructors[resType](name)
 
+    def constructOpaqueResource(resType, name, filename):
+        if resType == PanoConstants.RES_TYPE_HMAPS:  
+            if filename.endswith('qmap'):          
+                return QuadTreeMap(name)
+            elif filename.endswith('imap'):
+                return ImageMap(name)
 
     def typeToStr(resType):
         '''
@@ -169,5 +214,7 @@ class ResourcesTypes:
     isPandaResource = staticmethod(isPandaResource)
     isStreamResource = staticmethod(isStreamResource)
     isParsedResource = staticmethod(isParsedResource)
+    isOpaqueResource = staticmethod(isOpaqueResource)
     constructParsedResource = staticmethod(constructParsedResource)
+    constructOpaqueResource = staticmethod(constructOpaqueResource)
         

@@ -94,8 +94,8 @@ class PersistenceManager:
         try:
             fp = open(filename, 'r')
             return self.deserializeContext(fp.read())
-        except IOError,e:
-            self.log.exception('Failed to read context: %s from file' % (ctx.getName(), filename))
+        except IOError:
+            self.log.exception('Failed to read context: %s from file' % filename)
         finally:
             if fp is not None:
                 fp.close()

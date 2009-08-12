@@ -23,7 +23,7 @@ THE SOFTWARE.
 
 from pano.constants import PanoConstants
 
-class AbstractResourceLocation:
+class AbstractResourceLocation(object):
     """
     A location from where resources will be found and loaded.
     This class serves as a base for classes that will implement
@@ -109,10 +109,19 @@ class AbstractResourceLocation:
         """
         return []
 
-    def openResource(self, name):
+    def getResourceAsString(self, filename, fullPath = False):
         """
-        Opens a data stream for the resource identified by the given name.
-        Derived class should implement this function.
+        Returns a string that represents the file's contents. Derived class should implement this function.
+        @param filename: The resource filename.
+        @param fullPath: Specifies if the filename parameter denotes a full path or a base filename. 
+        """    
+        return None
+    
+    def getResourceAsByteArray(self, filename, fullPath = False):
+        """
+        Returns an array of bytes that represent the file's contents. Derived class should implement this function.
+        @param filename: The resource filename.
+        @param fullPath: Specifies if the filename parameter denotes a full path or a base filename.
         """
         return None
 

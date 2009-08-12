@@ -21,8 +21,6 @@ THE SOFTWARE.
 
 '''
 
-
-import weakref
 import logging
 import math
 
@@ -50,7 +48,7 @@ class SoundsPlayer():
         self.log = logging.getLogger('pano.soundsPlayer')
         self.game = game
         self.audio3d = None # manager of positional sounds
-        self.sounds = []    # list of weak references to sound objects
+        self.sounds = []    # list of references to sound objects
         self.unfinishedSounds = [] # list of strong references to sounds still playing
         self.volume = 1.0   # default volume level   
         self.rate = 1.0     # default rate of playback     
@@ -62,27 +60,20 @@ class SoundsPlayer():
         self.distanceFactor = 1.0   # the scale of measuring units, the default is a scale of 1.0 to match units with meters
         self.dopplerFactor = 1.0    # the Doppler factor
         
+        
     def initialize(self):        
         self.audio3d = Audio3DManager.Audio3DManager(base.sfxManagerList[0], self.game.getView().getCamera())
 
 
-    def  update(self, millis):
-        
-        # drop any dead references to sounds
-        prevLen = len(self.sounds)
-        self.sounds = [snd for snd in self.sounds if snd() is not None]
-        rem = prevLen - len(self.sounds)
-        if rem > 0:
-            self.log.debug('Removed %d dead references' % rem)
-        
+    def  update(self, millis):        
         # drop finished sounds
         prevLen = len(self.sounds)    
-        self.sounds = [snd for snd in self.sounds if not snd().isFinished()]
+        self.sounds = [snd for snd in self.sounds if not snd.isFinished()]
         rem = prevLen - len(self.sounds)
         if rem > 0:
             self.log.debug('Removed %d finished sounds' % rem)
 
-        positionalSounds = [snd() for snd in self.sounds if snd().positional != Sound.POS_None]
+        positionalSounds = [snd for snd in self.sounds if snd.positional != Sound.POS_None]
         for sp in positionalSounds:
             if sp.positional == Sound.POS_Hotspot:
                 hp = self.game.getView().activeNode.hotspots.get(sp.node)
@@ -160,32 +151,29 @@ class SoundsPlayer():
             spi.setBalance(self.balance)
             spi.play()                
             
-            self.sounds.append(weakref.ref(spi))
+            self.sounds.append(spi)
             return spi
     
     def stopAll(self):
         """
         Stops all currently playing or paused sounds.
         """
-        for spi in self.sounds:
-            if spi() is not None:
-                spi().stop()
+        for spi in self.sounds:            
+            spi.stop()
     
     def pauseAll(self):
         """
         Pauses all currently playing sounds.
         """
         for spi in self.sounds:
-            if spi() is not None:
-                spi().pause()
+            spi.pause()
     
     def resumeAll(self):
         """
         Resumes all currently paused sounds.
         """
-        for spi in self.sounds:
-            if spi() is not None:
-                spi().play()
+        for spi in self.sounds:            
+            spi.play()
     
     def isSoundPlaying(self, sndName):
         """

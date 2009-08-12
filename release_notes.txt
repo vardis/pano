@@ -1,0 +1,42 @@
+==================================================================================================
+Version 0.3
+==================================================================================================
+
+New Features
+------------
+*Resource archives through multifile resource locations that allows resources to be located in an archive 
+ and distributed as a single file.
+*Hotspot maps for 2d nodes using quadtree image representations (pano.model.quadImg.QImageMap) or plain images. 
+*Definition of clickable area of a hotspot through images. This separates the viewing area of a hotspot 
+ with its interactive part as they do not necessarily match.
+*New built-in node screen2d allows to use screen coordinates for placing and sizing nodepaths
+*Paging and scrolling for inventory 
+*Examples for: music playlists, 2d nodes, multifiles, hotspot maps, multifiles, sounds playback
+ 
+Changes
+-------
+*The sound player no longer uses weak references for sounds, instead it removes all finished sounds by
+ scanning all sounds in its update method.
+*NodeScript are loaded as text files using the resource loader.
+*All options in configuration files must be in lower case because the current parsing framework lowers 
+ the case of the property names.
+*Added the method getResourcesLocation to retrieve registered locations by name.
+*Added the method MousePointerDisplay.getPosition that returns the current position of the pointer.
+*Added render orders in PanoConstants and replaced custom bins with specific render order constants
+*Added Inventory.getNumUniqueItems
+*simplified GameView.convertAspectToScreenCoords and GameView.convertScreenToAspectCoords moved to PandaUtil
+ and simplified through screen2d
+
+Fixes
+-----
+*Minor fixes in Node2DRenderer when the aspect parent was chosen, manifested when running the sounds example.
+*Line delimiters are automatically converted to Unix-style for node scripts, as the Python parser demands.
+*The BOM marker is detected and stripped when loading text resources.
+*2d rendered was setting up the aspect ration incorrectl
+*explore state will display a hotspot's description only if one is set
+*added updateResourcesLocation which was missing
+
+==================================================================================================
+
+
+ 

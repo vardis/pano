@@ -67,6 +67,10 @@ class Node:
 
         # determines which node to use as the scene root, aspect2d or render2d
         self.parent2d = Node.PT_Aspect2D
+        
+        # filename of the image or quad tree image to be used as a hotspots map in connection
+        # with self.hotspotsColorKeys
+        self.hotspotsMapFilename = None                    
 
 
     def is2D(self):

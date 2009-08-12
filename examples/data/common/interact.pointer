@@ -1,0 +1,8 @@
+# the interact pointer should be used to interact with hotspots 
+
+[Pointer]
+# model_file   = example.egg     
+texture      = select_ON.png
+enable_alpha = true
+scale = 0.1
+

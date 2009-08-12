@@ -21,8 +21,6 @@ THE SOFTWARE.
 
 '''
 
-
-
 import logging
 
 from direct.interval.IntervalGlobal import *
@@ -102,7 +100,8 @@ class ExploreState(FSMState):
             if self.log.isEnabledFor(logging.DEBUG):                    
                 self.log.debug('Looked at hotspot %s, (%s)', self.activeHotspot.name, self.activeHotspot.description)
                 
-            self.game.getView().getTalkBox().showText(self.activeHotspot.description, 3.0)
+            if self.activeHotspot.description:
+                self.game.getView().getTalkBox().showText(self.activeHotspot.description, 3.0)
             self.getMessenger().sendMessage(PanoConstants.EVENT_HOTSPOT_LOOKAT, [self.activeHotspot])
                                 
     def exit(self):             
@@ -140,15 +139,6 @@ class ExploreState(FSMState):
                     if hp.active:
                         self.activeHotspot = hp
                         break 
-#                face, x, y = result        
-#                dim = self.game.getView().panoRenderer.getFaceTextureDimensions(face)
-#                x *= dim[0]
-#                y *= dim[1]                
-                
-#                self.activeHotspot = None
-#                for h in self.activeNode.getHotspots():
-#                    if h.face == face and x >= h.xo and x <= h.xe and y >= h.yo and y <= h.ye and h.active:
-#                        self.activeHotspot = h
                                                                              
                 if self.activeHotspot is not None:
                     # if there is an item selected from the inventory and the hotspot is flagged to interact with items,
@@ -294,20 +284,19 @@ class ExploreState(FSMState):
             return
             
         if self.activeNode.getScriptName() is not None:
-            scriptPath = self.game.getResources().getResourceFullPath(PanoConstants.RES_TYPE_SCRIPTS, self.activeNode.scriptName + '.py')
-            if scriptPath is not None:
-                self.log.debug('Executing script file %s' % scriptPath)
-                d = {}
-                fp = None
-                try:
-                    fp = open(scriptPath, 'r')                    
-                    exec(fp, d, d)
-                except IOError:
-                    self.log.exception('Error reading script file %s' % scriptPath)
-                finally:
-                    if fp is not None:
-                        fp.close()
-                                       
+            scriptFile = self.activeNode.scriptName + '.py'
+            scriptText = self.game.getResources().loadScript(scriptFile)
+            if scriptText is not None:
+                '''
+                IMPORTANT: The script files must use Unix-style line delimiters otherwise Python
+                will complain about syntax errors when there are none... Also if you encode the
+                script in Unicode, then don't include the BOM because it confuses the parser too.
+                The code below will try to convert delimiters automatically while the ResourceLoader
+                tries to automatically strip the BOM from text files.
+                '''
+                self.log.debug('Executing script file %s' % scriptFile)
+                d = {}                
+                exec (scriptText.strip().replace('\r', '\n'), d, d)
                 exec('self.nodeScript  =  d[self.activeNode.getScriptName()] (self.game, self.activeNode)')                            
                 
                 # verify that the node script object extends BaseNodeScript

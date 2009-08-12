@@ -213,6 +213,14 @@ class Inventory:
                 return s
         return None
 
+    def getNumUniqueItems(self):
+        '''
+        Returns the number of items contained in the inventory without taking into account the
+        multiplicity of each item. e.g: if the inventory contains 2 coins and 1 pawn, it will return 2 
+        @return: the number of items
+        '''
+        return len(self.items.keys())
+
     def getActiveItem(self):
         return self.activeItem
     

@@ -227,7 +227,7 @@ class BaseRenderer(object):
         @param newSprite: The name of the new sprite to use for rendering.  
         '''
         if self.log.isEnabledFor(logging.DEBUG):
-            self.log.debug("Replacing hotspot's %s sprite with %s" % (hp.name, newSprite))
+            self.log.debug("Replacing hotspot's %s sprite with %s" % (hotspot.name, newSprite))
         self.removeHotspot(hotspot)
         self.renderHotspot(hotspot, newSprite)
         self.renderHotspotDebugGeom(hotspot) 

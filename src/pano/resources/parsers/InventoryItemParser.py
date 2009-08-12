@@ -22,10 +22,11 @@ THE SOFTWARE.
 '''
 
 import logging
+import StringIO
 from ConfigParser import *
 
-from constants import PanoConstants
-from errors.ParseException import ParseException
+from pano.constants import PanoConstants
+from pano.errors.ParseException import ParseException
 
 class InventoryItemParser:
     """
@@ -44,10 +45,11 @@ class InventoryItemParser:
     def __init__(self):
         self.log = logging.getLogger('pano.itemParser')
 
-    def parse(self, item, istream):                      
+    def parse(self, item, fileContents):                      
         try:
             cfg = SafeConfigParser()
-            cfg.readfp(istream)
+            strFp = StringIO.StringIO(fileContents)
+            cfg.readfp(strFp)
             
             if cfg.has_option(self.ITEM_SECTION, self.SOUND_OPTION):
                 item.setSound(cfg.get(self.ITEM_SECTION, self.SOUND_OPTION))

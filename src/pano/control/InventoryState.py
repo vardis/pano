@@ -25,6 +25,7 @@ THE SOFTWARE.
 import logging
 
 from pano.constants import PanoConstants
+from pano.util.PandaUtil import PandaUtil
 from pano.control.fsm import FSMState
 
 class InventoryState(FSMState):
@@ -37,8 +38,13 @@ class InventoryState(FSMState):
                 PanoConstants.EVENT_ITEM_ADDED,
                 PanoConstants.EVENT_ITEM_COUNT_CHANGED,
                 PanoConstants.EVENT_ITEMS_CLEARED,
-                PanoConstants.EVENT_ITEMS_RESTORED
+                PanoConstants.EVENT_ITEMS_RESTORED,
+                PanoConstants.EVENT_ITEMS_SCROLL_NEXT,
+                PanoConstants.EVENT_ITEMS_SCROLL_PREV,
+                PanoConstants.EVENT_ITEMS_NEXT_PAGE,
+                PanoConstants.EVENT_ITEMS_PREV_PAGE
                 ]
+    
     
     def __init__(self, gameRef = None):
         FSMState.__init__(self, gameRef, PanoConstants.STATE_INVENTORY)
@@ -62,10 +68,12 @@ class InventoryState(FSMState):
 #        self.inventoryView.enableDebugRendering()        
         self.inventoryView.show()
         
+        
     def exit(self):             
         FSMState.exit(self)        
         self.getGame().getInput().popMappings()
         self.inventoryView.hide()
+        
         
     def update(self, millis):
         """
@@ -78,8 +86,11 @@ class InventoryState(FSMState):
                the ON or selected image of the item (i.e. item.getSelectedImage())
             c) When no item is selected, then the default pointer is used (specified by the InventoryView.getMousePointerName())
         """
-        if self.inventoryView.isVisible() and base.mouseWatcherNode.hasMouse():       
-            slotNum = self.inventoryView.getSlotAtScreenPos(base.win.getPointer(0).getX(), base.win.getPointer(0).getY())            
+        if self.inventoryView.isVisible() and base.mouseWatcherNode.hasMouse():
+            pointerPos = self.game.getView().getMousePointer().getPosition()       
+            pointerPos = PandaUtil.render2dPointToScreen(pointerPos[0], pointerPos[1])
+            
+            slotNum = self.inventoryView.getSlotAtScreenPos(pointerPos[0], pointerPos[1])            
             if slotNum is not None:            
                 # if the active slot has changed, update the item description text                
                 slot = self.inventory.getSlotByNum(slotNum)                            
@@ -98,13 +109,42 @@ class InventoryState(FSMState):
                     self.game.getView().getMousePointer().setImageAsPointer(self.inventory.getActiveItem().getImage(), 0.3)
                 self.inventoryView.clearText()
                     
+                    
     def onMessage(self, msg, *args):                
         if msg in self.INVENTORY_MSGS and self.inventoryView is not None:
-            self.log.debug('Received inventory event %s with args %s' % (msg, args[0]))
+            if len(args) > 0:
+                self.log.debug('Received inventory event %s with args %s' % (msg, args[0]))
+            else:
+                self.log.debug('Received inventory event %s' % msg)
+            
+            if msg == PanoConstants.EVENT_ITEMS_SCROLL_NEXT:
+                print 'scrolling to next item'
+                numItems = self.inventory.getNumUniqueItems()
+                if numItems > self.inventoryView.pageSize and (self.inventoryView.itemsRange[1] + 1) <= numItems:
+                    self.inventoryView.itemsRange[0] += 1
+                    self.inventoryView.itemsRange[1] += 1
+                    
+            elif msg == PanoConstants.EVENT_ITEMS_SCROLL_PREV:
+                print 'scrolling to previous item'
+                if self.inventoryView.itemsRange[0] > 0:
+                    self.inventoryView.itemsRange[0] -= 1
+                    self.inventoryView.itemsRange[1] -= 1
+                    
+            elif msg == PanoConstants.EVENT_ITEMS_NEXT_PAGE:
+                numItems = self.inventory.getNumUniqueItems()
+                if numItems > self.inventoryView.pageSize and (self.inventoryView.itemsRange[1] + self.inventoryView.pageSize) <= numItems:
+                    self.inventoryView.itemsRange[0] += self.inventoryView.pageSize
+                    self.inventoryView.itemsRange[1] += self.inventoryView.pageSize
+                    
+            elif msg == PanoConstants.EVENT_ITEMS_PREV_PAGE:                
+                if self.inventoryView.itemsRange[0] >= self.inventoryView.pageSize:
+                    self.inventoryView.itemsRange[0] -= self.inventoryView.pageSize
+                    self.inventoryView.itemsRange[1] -= self.inventoryView.pageSize
+                                
             self.inventoryView.redraw()
+            
     
     def onInputAction(self, action):   
-        self.log.debug('ACTION %s' % action) 
         
         if action == "item_select" and self.inventory.getActiveSlot() is not None:
             self.log.debug('select action and active slot is: %s' % self.inventory.getActiveSlot())

@@ -146,7 +146,7 @@ class MousePointerDisplay:
                 self.setImageAsPointer(self.pointer.getTexture(), self.pointer.getScale())
                 
             self.mousePointer.setTransparency(TransparencyAttrib.MAlpha)            
-            self.mousePointer.setBin(PanoConstants.MOUSE_CULL_BIN_NAME, 0)
+            self.mousePointer.setBin("fixed", PanoConstants.RENDER_ORDER_MOUSE_POINTER)
             self.mousePointer.setDepthTest(False)
             self.mousePointer.setDepthWrite(False)            
             self.mouseHidden = False
@@ -173,7 +173,7 @@ class MousePointerDisplay:
             
             self.pointerImage = image
             self.mousePointer.setTransparency(TransparencyAttrib.MAlpha)            
-            self.mousePointer.setBin(PanoConstants.MOUSE_CULL_BIN_NAME, 0)
+            self.mousePointer.setBin("fixed", PanoConstants.RENDER_ORDER_MOUSE_POINTER)
             self.mousePointer.setDepthTest(False)
             self.mousePointer.setDepthWrite(False)            
             self.mouseHidden = False
@@ -181,6 +181,17 @@ class MousePointerDisplay:
             return True
         else:
             return False
+
+    def getPosition(self):
+        '''
+        Returns the current location of the mouse pointer.
+        @return: A (x, y) tuple containing the coordinates of the pointers in the coordinate of the render node.
+        '''
+        if self.mousePointer is not None:
+            pos = self.mousePointer.getPos(render)            
+            return (pos[0], pos[2])
+        else:
+            return (-1, 1)
             
     def updatePointerLocationTask(self, task):   
         if base.mouseWatcherNode.hasMouse():     

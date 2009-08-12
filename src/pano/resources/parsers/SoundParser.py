@@ -21,7 +21,7 @@ THE SOFTWARE.
 
 '''
 
-
+import StringIO
 import logging
 from ConfigParser import *
 
@@ -76,11 +76,12 @@ class SoundParser:
     def __init__(self):
         self.log = logging.getLogger('pano.soundParser')
     
-    def parse(self, sound, istream):
+    def parse(self, sound, fileContents):
                       
         try:
             cfg = SafeConfigParser()
-            cfg.readfp(istream)
+            strFp = StringIO.StringIO(fileContents)
+            cfg.readfp(strFp)
             
             if cfg.has_option(SoundParser.SOUND_SECTION, SoundParser.SOUND_OPT_FILENAME):
                 sound.soundFile = cfg.get(SoundParser.SOUND_SECTION, SoundParser.SOUND_OPT_FILENAME)

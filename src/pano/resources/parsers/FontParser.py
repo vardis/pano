@@ -22,20 +22,22 @@ THE SOFTWARE.
 '''
 
 import logging
+import StringIO
 from ConfigParser import *
 
-from constants import PanoConstants
-from errors.ParseException import ParseException
+from pano.constants import PanoConstants
+from pano.errors.ParseException import ParseException
 
 class FontParser:
     def __init__(self):
         self.log = logging.getLogger('pano.fontParser')
     
-    def parse(self, font, istream):
+    def parse(self, font, fileContents):
                       
         try:
             cfg = SafeConfigParser()
-            cfg.readfp(istream)
+            strFp = StringIO.StringIO(fileContents)
+            cfg.readfp(strFp)
             
             options = cfg.options('font')
             for opt in options:

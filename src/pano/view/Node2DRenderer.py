@@ -39,12 +39,11 @@ from pandac.PandaModules import Mat4, VBase3, VBase4
 from pano.constants import PanoConstants
 from pano.model.Node import Node
 from pano.model.Sprite import Sprite
-from pano.view.sprites import SpritesEngine
 from pano.view.NodeRaycaster import NodeRaycaster
 
 
 class Node2DRenderer:
-    def __init__(self, resources):
+    def __init__(self, resources, spriteEngine):
         
         self.log = logging.getLogger('pano.render2D')
         
@@ -69,23 +68,26 @@ class Node2DRenderer:
         # used for detecting the hotspot under a window coordinate
         self.raycaster = None
         
-        self.spritesEngine = SpritesEngine()
+        # this caches the node's hotspot map, if any
+        self.hotspotsMap = None
+        
+        self.spritesEngine = spriteEngine
 
 
-    def initialize(self):                
+    def initialize(self):
+                        
+        asp = base.getAspectRatio()        
         lens = OrthographicLens()
-        lens.setFilmSize(2, 2)
+        lens.setFilmSize(2.0, 2.0)
         lens.setNearFar(-1000, 1000)
-        self.getCamera().node().setLens(lens)
+        self.getCamera().node().setLens(lens)        
         
         # creates the root node
         if self.sceneRoot is None:
             self.sceneRoot = render2d.attachNewNode(PanoConstants.NODE2D_ROOT_NODE)
             
         self.raycaster = NodeRaycaster(self)
-        self.raycaster.initialize()
-        
-        self.spritesEngine.initialize(self.resources)
+        self.raycaster.initialize()                
                                                 
 
     def dispose(self):
@@ -117,6 +119,7 @@ class Node2DRenderer:
 
         self.spritesByHotspot = {}
         self.debugSprites = {}
+        self.hotspotsMap = None
         
 
     def displayNode(self, node):
@@ -135,14 +138,19 @@ class Node2DRenderer:
             self.sceneRoot.setScale(1.0, 1.0, 1.0)
             self.sceneRoot.reparentTo(render2d)
         else:
-            asp = self.getCamera().getLens().getAspectRatio()
+#            asp = self.getCamera().node().getLens().getAspectRatio()
+            asp = base.getAspectRatio()
             self.bounds = (-asp, asp, -1.0, 1.0)
-            aspectRatio = base.getAspectRatio()
-            self.sceneRoot.setScale(1.0 / aspectRatio, 1.0, 1.0)
+#            aspectRatio = base.getAspectRatio()
+#            self.sceneRoot.setScale(1.0 / asp, 1.0, 1.0)
             self.sceneRoot.reparentTo(aspect2d)
 
         if self.node.image is not None:
             self._setBackgroundTexture()
+
+        if self.node.hotspotsMapFilename:
+            if self.hotspotsMap is None:
+                self.hotspotsMap = self.resources.loadHotspotsMap(self.node.hotspotsMapFilename)
 
         self._createHotspotsGeoms()
 
@@ -182,6 +190,8 @@ class Node2DRenderer:
             self.bgCard = NodePath(cm.generate())
             self.bgCard.setName('2dnode_image')
             self.bgCard.setTexture(bgTex)
+            bgTex.setMinfilter(Texture.FTNearest)
+            bgTex.setMagfilter(Texture.FTNearest)
             self.bgCard.reparentTo(self.sceneRoot)
             self.bgCard.setBin("fixed", PanoConstants.RENDER_ORDER_BACKGROUND_IMAGE)
         else:
@@ -330,21 +340,38 @@ class Node2DRenderer:
     def raycastHotspots(self, x, y):
         '''
         Returns the hotspot(s) under the given window coordinates.
-        @param x: The x window coordinate.
-        @param y: The y window coordinate.
+        @param x: The x window coordinate of the mouse in render space.
+        @param y: The y window coordinate of the mouse in render space.
         @return: A list of Hotspot instances or None. 
-        '''         
-#        x = 0.2968
-#        y = -0.2968
-#        print 'x, y: ', x, y       
-        screenPoint = sprite2d.getRelativePoint(render2d, Vec3(x, 1.0, y))
+        '''              
+        screenPoint = sprite2d.getRelativePoint(render, Vec3(x, 1.0, y))        
         hotspots = []
-        x = screenPoint.getX()
-        y = screenPoint.getZ()
-        print 'x, y: ', x, y
-        for hp in self.node.getHotspots():                
-            if x >= hp.xo and x <= hp.xe and y >= hp.yo and y <= hp.ye:
+        sx = int(screenPoint.getX())
+        sy = int(screenPoint.getZ())
+        
+        # use the node's hotspots map if exists, otherwise check if the click point
+        # lies inside a hotspot's bounds
+        if self.node.hotspotsMapFilename:
+            # convert the coordinates from -1..1 to 0..1 range
+            x = (x + 1) / 2.0            
+            y = (y + 1) / 2.0
+            hpName = self.hotspotsMap.getHotspot(x, 1.0 - y)
+            hp = self.node.getHotspot(hpName)
+            if hp:                                        
                 hotspots.append(hp)
+        else:
+            # check through bounds
+            for hp in self.node.getHotspots():                
+                if sx >= hp.xo and sx <= hp.xe and sy >= hp.yo and sy <= hp.ye:
+                    maskImg = self.hotspotsImageMasks.get(hp.name)
+                    if maskImg is not None:
+                        imgX = int(maskImg.getXSize() * sx / (hp.xe - hp.xo))
+                        imgY = int(maskImg.getYSize() * sy / (hp.ye - hp.yo))                        
+                        col = maskImg.getXel(imgX, imgY)
+                        if col[0] == 0.0 and col[1] == 0.0 and col[2] == 0.0:                            
+                            continue                        
+                        
+                    hotspots.append(hp)
         return hotspots
     
 
