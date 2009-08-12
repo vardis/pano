@@ -1,0 +1,10 @@
+{
+	"name"      : "shapes",
+	"imageFile" : "shapes.png",
+	"hotspots"  : { 
+		"rectangle" : [255, 0, 0],
+		"circle"        : [0, 0, 255],
+		"zigzag"        : [0, 128, 0],
+		"rounded rec"   : [255, 128, 64]
+	}
+}

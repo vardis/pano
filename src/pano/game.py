@@ -119,8 +119,12 @@ class PanoGame(object):
         self._readBootConfig()
         
         os.chdir(self.config.get(PanoConstants.CVAR_GAME_DIR))
-        with open('Config.prc') as cfgFile:
-            loadPrcFileData('game-config', cfgFile.read())
+        try:
+            with open('Config.prc') as cfgFile:
+                loadPrcFileData('game-config', cfgFile.read())
+        except IOError:
+            self.log.exception('Could not find Config.prc in the game directory')
+                        
             
     def initialise(self, task):                                                        
                         

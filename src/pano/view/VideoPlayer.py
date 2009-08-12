@@ -114,7 +114,7 @@ class VideoPlayer:
         videoTex = loader.loadTexture(resources.getResourceFullPath(PanoConstants.RES_TYPE_VIDEOS, video))
         
         if videoTex is None:
-            self.log.error("Couldn't load video " + video)
+            print "Couldn't load video %s" % video
             return None
         
 #        if (base.sfxManagerList[0].getType().getName() != "OpenALAudioManager"):
@@ -122,7 +122,7 @@ class VideoPlayer:
 #            return None
     
         if (videoTex.getType().getName() != "MovieTexture"):
-            self.log.error("MovieTexture support is not enabled, cannot proceed.")
+            print "MovieTexture support is not enabled, cannot proceed."
             return None
         
         geom.setTexture(videoTex)      
@@ -144,17 +144,18 @@ class VideoPlayer:
         videoTex = loader.loadTexture(resources.getResourceFullPath(PanoConstants.RES_TYPE_VIDEOS, video))
         
         if videoTex is None:
-            self.log.error("Couldn't load video " + video)
+            print "Couldn't load video %s" % video
             return None        
     
         if (videoTex.getType().getName() != "MovieTexture"):
-            self.log.error("MovieTexture support is not enabled, cannot proceed.")
+            print "MovieTexture support is not enabled, cannot proceed."
             return None
                 
         videoTex.setWrapU(Texture.WMClamp)
         videoTex.setWrapV(Texture.WMClamp)  
-        if videoTex.getTexturesPower2():            
-            geom.setTexScale(TextureStage.getDefault(), videoTex.getTexScale()) 
+        #TODO: Check how I can set the texture scale
+#        if videoTex.getTexturesPower2():            
+#            geom.setTexScale(TextureStage.getDefault(), videoTex.getTexScale()) 
         
         if audio is not None:
             vidSound = loader.loadSfx(resources.getResourceFullPath(PanoConstants.RES_TYPE_MUSIC, audio))

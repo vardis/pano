@@ -29,6 +29,7 @@ from direct.task.Task import Task
 from pano.constants import PanoConstants
 from pano.model.Playlist import Playlist
 from pano.messaging import Messenger
+from pano.audio.SoundPlaybackInterface import SoundPlaybackInterface
 
 class MusicPlayer:
     def __init__(self, game):
@@ -49,8 +50,9 @@ class MusicPlayer:
          
     def update(self, task):
         if self.sound is not None:
-            if self.sound.status() == 1 and not(self.paused) and not(self.stopped) and (self.sound.getTime() >= self.sound.length()):
+            if self.sound.isFinished():
                 self.stopped = True
+                self.sound.stop()
                 if self.looping:
                     i = self.playlist.nextIndex(self.activeTrack[0])
                     self.activeTrack = self.playlist.getTrack(i)
@@ -62,15 +64,17 @@ class MusicPlayer:
         """
         Plays the next track.
         """        
-        i = self.playlist.nextIndex()
-        self.playSound(i)
+        if self.activeTrack:            
+            i = self.playlist.nextIndex(self.activeTrack[0])
+            self.playSound(i)
     
     def previousTrack(self):
         """
         Plays the next track.
         """
-        i = self.playlist.previousIndex()
-        self.playSound(i)
+        if self.activeTrack:
+            i = self.playlist.previousIndex(self.activeTrack[0])
+            self.playSound(i)
     
     def firstTrack(self):
         """
@@ -98,14 +102,21 @@ class MusicPlayer:
         """
         Plays the sound located at the specified index within the current playlist.
         """
+        # validate passed index
+        if index < 0 or index >= self.playlist.count():
+            return                
+        
         # stop current sound
         if self.sound is not None:
             self.sound.stop()
                 
+        self.activeTrack = self.playlist.getTrack(index)
         self.log.debug('active track %s ' % repr(self.activeTrack))
         soundPath = self.game.getResources().getResourceFullPath(PanoConstants.RES_TYPE_MUSIC, self.activeTrack[2])        
         self.log.debug('sound path %s' % soundPath)
-        self.sound = loader.loadSfx(soundPath)
+        sound = loader.loadSfx(soundPath)
+        self.sound = SoundPlaybackInterface(sound, False)
+#        self.sound = self.game.getResources().loadSound(self.activeTrack[2])
         if self.sound is not None:
             self.sound.play()
             self.sound.setVolume(self.volume)
@@ -131,10 +142,8 @@ class MusicPlayer:
         self.paused = value        
         if self.sound is not None:
             if value:
-                self.log.debug("Music rate set to 0.0")
-                t = self.sound.getTime()
-                self.sound.stop()
-                self.sound.setTime(t)
+                self.log.debug("Music rate set to 0.0")                
+                self.sound.pause()                
             else:
                 self.log.debug("Music rate set to 1.0")
                 self.sound.play()                                
@@ -157,10 +166,10 @@ class MusicPlayer:
 
 
     def setPlaylist(self, value):        
-        self.playlist = value
-        self.activeTrack = self.playlist.getTrack(0)
+        self.playlist = value        
         self.looping = self.playlist.loop
         self.volume = self.playlist.volume
+        self.playSound(0)        
 
 
     def setVolume(self, value):

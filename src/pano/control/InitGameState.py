@@ -27,8 +27,6 @@ import os, platform
 from ConfigParser import SafeConfigParser
 
 from pandac.PandaModules import getModelPath
-#from pandac.PandaModules import getTexturePath
-#from pandac.PandaModules import getSoundPath
 from pandac.PandaModules import ConfigVariableString
 from pandac.PandaModules import Filename
 from pandac.PandaModules import Notify
@@ -40,7 +38,7 @@ from pano.model.Node import Node
 from pano.model.Hotspot import Hotspot
 from pano.control.ExploreState import ExploreState
 from pano.control.IntroState import IntroState
-from pano.resources.DirectoryResourcesLocation import DirectoryResourcesLocation
+from pano.resources.ResourcesLocationsFactory import ResourcesLocationsFactory
 from pano.resources.ResourcesTypes import ResourcesTypes 
 
 class InitGameState(FSMState):
@@ -57,11 +55,7 @@ class InitGameState(FSMState):
     def setupResourcesLocations(self):
 
         # as the resource paths are relative to the currently working directory, we add '.' to the model path    
-        getModelPath( ).appendPath( os.getcwd( ) )
-        
-        # these don't exist in 1.6+
-#        getTexturePath( ).appendPath( os.getcwd( ) )
-#        getSoundPath( ).appendPath( os.getcwd( ) )        
+        getModelPath( ).appendPath( os.getcwd( ) )        
 
         # add resource locations
         configs_to_types = {
@@ -83,11 +77,13 @@ class InitGameState(FSMState):
                               PanoConstants.CVAR_RESOURCES_SCRIPTS : PanoConstants.RES_TYPE_SCRIPTS,
                               PanoConstants.CVAR_RESOURCES_TEXTS : PanoConstants.RES_TYPE_TEXTS,
                               PanoConstants.CVAR_RESOURCES_BINARIES : PanoConstants.RES_TYPE_BINARIES,
-                              PanoConstants.CVAR_RESOURCES_SHADERS : PanoConstants.RES_TYPE_SHADERS
+                              PanoConstants.CVAR_RESOURCES_SHADERS : PanoConstants.RES_TYPE_SHADERS,
+                              PanoConstants.CVAR_RESOURCES_IMAGES : PanoConstants.RES_TYPE_IMAGES,
+                              PanoConstants.CVAR_RESOURCES_HMAPS : PanoConstants.RES_TYPE_HMAPS
                               }
 
         res = self.getGame().getResources()
-        for config in configs_to_types.keys():
+        for config in configs_to_types.keys():            
             locations = self.game.getConfig().get(config)
             if locations:
                 for path in [str.strip(s) for s in locations.split(',')]:
@@ -95,12 +91,28 @@ class InitGameState(FSMState):
                     loc = None
                     res_types = ResourcesTypes.listAllTypes() if config == PanoConstants.CVAR_RESOURCES_ALL else [configs_to_types[config]]
                     if ':' in path:
-                        resName, resPath = path.split(':')                                                                            
-                        loc = DirectoryResourcesLocation(directory=resPath, name=resName, description='', resTypes=res_types)
+                        resName, resPath = path.split(':')
+                        if not res.isLocationAdded(resName):
+                            loc = ResourcesLocationsFactory.create(resPath, resName, res_types)
+                        else:
+                            loc = res.getResourcesLocation(path)
+                            loc.resTypes.extend(res_types)
+                            res.updateResourcesLocation(resName)
                     else:                    
-                        loc = DirectoryResourcesLocation(directory=path, name=path, description='', resTypes=res_types)
-                    res.addResourcesLocation(loc)                
-        
+                        if not res.isLocationAdded(path):
+                            loc = ResourcesLocationsFactory.create(path, path, res_types)
+                        else:
+                            loc = res.getResourcesLocation(path)
+                            loc.resTypes.extend(res_types)
+                            res.updateResourcesLocation(path)                            
+
+                    if loc is None:
+                        self.log.warning('Resource location %s does not exist' % path)
+                        continue
+                    
+                    res.addResourcesLocation(loc)
+                                    
+         
     def configure(self):
         '''
         Loads the game's configuration file (i.e. game.cfg) and stores all defined variables in the game's configuration
@@ -124,7 +136,7 @@ class InitGameState(FSMState):
             if istream is not None:
                 istream.close()
                 
-        
+         
     def enter(self):
         FSMState.enter(self)
         
@@ -138,6 +150,11 @@ class InitGameState(FSMState):
         game = self.getGame()
         game.setInitialNode(game.getConfig().get(PanoConstants.CVAR_INIT_NODE))
         
+        self.logPlatformInformation() 
+        
+        game.getResources().initialize()                                
+        self.setupResourcesLocations()
+        
         winProps = { 
                     PanoConstants.WIN_MOUSE_POINTER : False,
                     PanoConstants.WIN_SIZE : (game.getConfig().getInt(PanoConstants.CVAR_WIN_WIDTH), game.getConfig().getInt(PanoConstants.CVAR_WIN_HEIGHT)),
@@ -145,26 +162,14 @@ class InitGameState(FSMState):
                     PanoConstants.WIN_TITLE : game.getConfig().get(PanoConstants.CVAR_WIN_TITLE)
         }
         game.getView().setWindowProperties(winProps)
-        game.getView().openWindow()
-            
-        # show in the logs the platform we're running on
-        self.logPlatformInformation()                 
-        
-        # configure resource locations
-        self.setupResourcesLocations()                    
-                
-        # disables Panda's mouse based camera control
-        base.disableMouse()
+        game.getView().openWindow()                                                
         
         if game.getConfig().getBool(PanoConstants.CVAR_DEBUG_CONSOLE):
             game.enableDebugConsole()
             
-        # load global input mappings
-        game.getInput().setGlobalMappings('global')                
-                
-        game.getView().initialize()
         
-        # init components
+        game.getInput().setGlobalMappings('global')                            
+        game.getView().initialize()
         game.getI18n().initialize()        
         game.getMusic().initialize()
         

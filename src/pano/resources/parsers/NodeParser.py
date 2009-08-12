@@ -21,6 +21,7 @@ THE SOFTWARE.
 
 '''
 
+import StringIO
 import ConfigParser
 from ConfigParser import SafeConfigParser
 
@@ -31,17 +32,18 @@ from pano.model.Hotspot import Hotspot
 
 class NodeParser:
     
-    NODE_SECTION        = 'Node'
-    NODE_OPT_DESC       = 'description'
-    NODE_OPT_CUBEMAP    = 'cubemap'
-    NODE_OPT_IMAGE      = 'image'
-    NODE_OPT_BGCOLOR    = 'bg_color'
-    NODE_OPT_EXTENSION  = 'extension'
-    NODE_OPT_SCRIPT     = 'script'
-    NODE_OPT_LOOKAT     = 'lookat'
-    NODE_OPT_PARENT     = 'parent2d'
-    NODE_OPT_PLAYLIST   = 'music_playlist'
-    
+    NODE_SECTION            = 'Node'
+    NODE_OPT_DESC           = 'description'
+    NODE_OPT_CUBEMAP        = 'cubemap'
+    NODE_OPT_IMAGE          = 'image'
+    NODE_OPT_BGCOLOR        = 'bg_color'
+    NODE_OPT_EXTENSION      = 'extension'
+    NODE_OPT_SCRIPT         = 'script'
+    NODE_OPT_LOOKAT         = 'lookat'
+    NODE_OPT_PARENT         = 'parent2d'
+    NODE_OPT_PLAYLIST       = 'music_playlist'
+    NODE_OPT_HOTSPOTS_MAP   = 'hotspots_map'
+        
     HOTSPOT_OPT_LOOKTEXT     = 'look_text'
     HOTSPOT_OPT_FACE         = 'face'    
     HOTSPOT_OPT_XO           = 'xo'
@@ -56,6 +58,7 @@ class NodeParser:
     HOTSPOT_OPT_ACTIONARGS   = 'action_args'
     HOTSPOT_OPT_SPRITE       = 'sprite'
     HOTSPOT_OPT_ITEMINTERACT = 'interacts_items'
+    HOTSPOT_OPT_CLICKMASK    = 'click_mask'
     
     
     def __init__(self):
@@ -68,14 +71,15 @@ class NodeParser:
                              'bottom' : PanoConstants.CBM_BOTTOM_FACE
         }
     
-    def parse(self, node, istream):
+    def parse(self, node, fileContents):
         """
         Parses a .pointer file whose contents will be read by the given input stream
         """
         cfg = SafeConfigParser()
+        strFp = StringIO.StringIO(fileContents)
         
         try:
-            cfg.readfp(istream)
+            cfg.readfp(strFp)
             
             assert cfg.has_section(NodeParser.NODE_SECTION), 'Invalid .node file, a node section hasn''t been defined'            
             
@@ -113,6 +117,10 @@ class NodeParser:
 
             if cfg.has_option(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_PLAYLIST):
                 node.musicPlaylist = cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_PLAYLIST)
+                    
+            if cfg.has_option(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_HOTSPOTS_MAP):                    
+                node.hotspotsMapFilename = cfg.get(NodeParser.NODE_SECTION, NodeParser.NODE_OPT_HOTSPOTS_MAP)                
+                    
         
             for s in cfg.sections():
                 if s.startswith('hotspot_'):
@@ -163,7 +171,10 @@ class NodeParser:
                         hp.sprite = cfg.get(s, NodeParser.HOTSPOT_OPT_SPRITE)
                         
                     if cfg.has_option(s, NodeParser.HOTSPOT_OPT_ITEMINTERACT):
-                        hp.itemInteractive = cfg.getboolean(s, NodeParser.HOTSPOT_OPT_ITEMINTERACT) 
+                        hp.itemInteractive = cfg.getboolean(s, NodeParser.HOTSPOT_OPT_ITEMINTERACT)
+                        
+                    if cfg.has_option(s, NodeParser.HOTSPOT_OPT_CLICKMASK):
+                        hp.clickMask = cfg.get(s, NodeParser.HOTSPOT_OPT_CLICKMASK) 
                         
                     node.addHotspot(hp)
                 

@@ -22,23 +22,25 @@ THE SOFTWARE.
 '''
 
 import logging
+import StringIO
 from ConfigParser import *
 
-from constants import PanoConstants
-from errors.ParseException import ParseException
+from pano.constants import PanoConstants
+from pano.errors.ParseException import ParseException
 
 class LangFileParser():
     
     def __init__(self):
         self.log = logging.getLogger('pano.langParser')
     
-    def parse(self, langFile, istream):
+    def parse(self, langFile, fileContents):
         self.log.debug('Parsing file %s' % langFile.name)
         name = langFile.getName()
         langFile.setLanguage(name[name.index('_')+1:])
-        cfg = SafeConfigParser()        
+        cfg = SafeConfigParser()      
+        strFp = StringIO.StringIO(fileContents)  
         try:
-            cfg.readfp(istream)
+            cfg.readfp(strFp)
             
             options = cfg.options('labels')
             for opt in options:

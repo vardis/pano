@@ -50,7 +50,11 @@ class Hotspot(object):
         self.cursor = None
         self.active = True
         self.sprite = None
-        self.itemInteractive = False        
+        self.itemInteractive = False
+        
+        # the name of the image that will act as a mask for the clickable area of this hotspot
+        # a white pixel indicates a clickable aread while a black a non-clickable area.        
+        self.clickMask = None
 
     def getXo(self):
         return self.xo

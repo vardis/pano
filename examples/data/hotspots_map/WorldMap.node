@@ -1,0 +1,40 @@
+[Node]
+image = world.png
+
+# specifies an image hotspots map
+hotspots_map = world_hotspots.imap
+
+# specifies a quadtree hotspots map
+#hotspots_map = world_hotspots.qmap
+
+parent2d = render2d
+
+[hotspot_Europe]
+look_text = continent.europe
+cursor = interact
+
+[hotspot_Africa]
+look_text = continent.africa
+cursor = interact
+
+[hotspot_Asia]
+look_text = continent.asia
+cursor = interact
+
+[hotspot_North America]
+look_text = continent.namerica
+cursor = interact
+
+[hotspot_South America]
+look_text = continent.samerica
+cursor = interact
+
+[hotspot_Middle East]
+look_text = continent.east
+cursor = interact
+
+[hotspot_Oceania]
+look_text = continent.oceania
+cursor = interact
+
+

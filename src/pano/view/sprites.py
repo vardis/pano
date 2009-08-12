@@ -190,6 +190,7 @@ class SpritesEngine:
         self.sprite2d = self._createSpritesNodeSetup(render2d)
         self.aspect_sprite2d = self._createSpritesNodeSetup(aspect2d)
         __builtins__['sprite2d'] = self.sprite2d
+        __builtins__['screen2d'] = self.sprite2d
         __builtins__['aspect_sprite2d'] = self.aspect_sprite2d
         
         # used to generate unique sprite names
@@ -243,6 +244,8 @@ class SpritesEngine:
             elif sprite.image is not None:
                 card = self.cardMaker.generate()
                 tex = self.resources.loadTexture(sprite.image)
+                sprite.width = tex.getXSize()
+                sprite.height = tex.getYSize()
             else:
                 self.log.error('Could not determine type for sprite: %s' % sprite.name)
                 return None
@@ -290,7 +293,7 @@ class SpritesUtil:
         elif sprite.image is not None:
             nodePath = SpritesUtil.createImageSprite3D(resources, sprite, parentNode)
         else:
-            self.log.error('Could not determine type for sprite: %s' % sprite.name)
+            print 'Could not determine type for sprite: %s' % sprite.name
 
         if nodePath is not None:
             nodePath.setName(nodeName)

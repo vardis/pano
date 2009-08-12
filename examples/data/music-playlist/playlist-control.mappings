@@ -1,0 +1,13 @@
+[mappings]
+p           = pause_music
+r           = resume_music
+arrow_right = next_track
+arrow_left  = previous_track
+home        = first_track
+end         = last_track
+arrow_up    = volume_up
+arrow_down  = volume_down
+l           = toggle_loop
+page_up     = next_playlist
+page_down   = previous_playlist
+escape      = acExit

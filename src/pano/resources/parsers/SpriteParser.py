@@ -21,11 +21,12 @@ THE SOFTWARE.
 
 '''
 
+import StringIO
 import logging
 from ConfigParser import *
 
-from constants import PanoConstants
-from errors.ParseException import ParseException
+from pano.constants import PanoConstants
+from pano.errors.ParseException import ParseException
 
 class SpriteParser:
     
@@ -41,11 +42,12 @@ class SpriteParser:
     def __init__(self):
         self.log = logging.getLogger('pano.spriteParser')
         
-    def parse(self, sprite, istream):
+    def parse(self, sprite, fileContents):
                       
         try:
             cfg = SafeConfigParser()
-            cfg.readfp(istream)
+            strFp = StringIO.StringIO(fileContents)
+            cfg.readfp(strFp)
             
             if cfg.has_option(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_EGGFILE):
                 sprite.eggFile = cfg.get(SpriteParser.SPRITE_SECTION, SpriteParser.SPRITE_OPT_EGGFILE)

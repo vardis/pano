@@ -114,7 +114,7 @@ class ScreenFilter(object):
             self._applyShaderInputs()
             self.enabled = True            
         else:
-            self.log.error('failed to set screen filter BlackAndWhite because shader %s was not found' % filterName)
+            self.log.error('failed to set screen filter BlackAndWhite because shader %s was not found' % self.shader)
     
     
     def disable(self):
@@ -170,13 +170,6 @@ class ScreenFilter(object):
         Returns the screen aligned quad model instance associated with this filter or None if the filter isn't active.
         '''
         return self.screenQuad
-    
-    
-    def getShader(self):
-        '''
-        Returns the Shader instance associated with this filter or None if the filter isn't active.
-        '''
-        return self.screenQuad.getShader() if self.screenQuad is not None else None
     
     
     def setTextureParameter(self, name, filename):

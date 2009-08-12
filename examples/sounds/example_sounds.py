@@ -1,4 +1,26 @@
-﻿
+﻿'''
+    Copyright (c) 2008 Georgios Giannoudovardis, <vardis.g@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+'''
+
 import logging
 
 from direct.gui.OnscreenText import OnscreenText
@@ -146,6 +168,57 @@ class example_sounds(BaseNodeScript):
                                              )
         self.eventText.hide()
         
+        OnscreenText(text = 'Press P, R to pause/resume playing sounds',
+                                             pos = (base.a2dLeft + 0.1, 0.2),
+                                             align = TextNode.ALeft,
+                                             scale = 0.05,
+                                             fg = (1.0, 1.0, 1.0, 1.0),
+                                             shadow = (0.0, 0.0, 0.0, 0.7),
+                                             mayChange = True
+                                             )
+        OnscreenText(text = 'Press L, Shift-L to increase/decrease the loop count',
+                                             pos = (base.a2dLeft + 0.1, 0.1),
+                                             align = TextNode.ALeft,
+                                             scale = 0.05,
+                                             fg = (1.0, 1.0, 1.0, 1.0),
+                                             shadow = (0.0, 0.0, 0.0, 0.7),
+                                             mayChange = True
+                                             )
+        OnscreenText(text = 'Press +, - to increase/decrease playing rate',
+                                             pos = (base.a2dLeft + 0.1, 0.0),
+                                             align = TextNode.ALeft,
+                                             scale = 0.05,
+                                             fg = (1.0, 1.0, 1.0, 1.0),
+                                             shadow = (0.0, 0.0, 0.0, 0.7),
+                                             mayChange = True
+                                             )
+        OnscreenText(text = 'Press [, ] to decrease/increase sound volume',
+                                             pos = (base.a2dLeft + 0.1, -0.1),
+                                             align = TextNode.ALeft,
+                                             scale = 0.05,
+                                             fg = (1.0, 1.0, 1.0, 1.0),
+                                             shadow = (0.0, 0.0, 0.0, 0.7),
+                                             mayChange = True
+                                             )
+        OnscreenText(text = 'Press D, E to disable/enable sounds',
+                                             pos = (base.a2dLeft + 0.1, -0.2),
+                                             align = TextNode.ALeft,
+                                             scale = 0.05,
+                                             fg = (1.0, 1.0, 1.0, 1.0),
+                                             shadow = (0.0, 0.0, 0.0, 0.7),
+                                             mayChange = True
+                                             )
+        OnscreenText(text = 'Press B, Shift-B to increase/decrease balance',
+                                             pos = (base.a2dLeft + 0.1, -0.3),
+                                             align = TextNode.ALeft,
+                                             scale = 0.05,
+                                             fg = (1.0, 1.0, 1.0, 1.0),
+                                             shadow = (0.0, 0.0, 0.0, 0.7),
+                                             mayChange = True
+                                             )
+        
+        
+        
         # add our input mappings to the active mappings, the existing mappings were not deleted
         # but they can be partially overridden by this.
         self.game.getInput().addMappings('sounds')
@@ -236,7 +309,7 @@ class example_sounds(BaseNodeScript):
             For the zipper sound we instead provide a filename and use Sounds.playSoundFile for that purpose.
             We also don't keep a reference to the playback interface so a new sound is created each time.
             '''
-            self.sounds.playSoundFile('zipper_bag_1.wav', rate = self.sounds.getPlayRate(), loop = self.looping)
+            self.sounds.playSoundFile('zipper_bag_1.ogg', rate = self.sounds.getPlayRate(), loop = self.looping)
             
         elif action == "pause_sounds":            
             if self.blahSound is not None:

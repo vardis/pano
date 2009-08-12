@@ -1,0 +1,13 @@
+{
+	"name"      : "world_hotspots",
+	"imageFile" : "world_hotspots.png",
+	"hotspots"  : { 
+		"North America" : [220, 211, 180],
+		"Europe"        : [101, 145, 163],
+		"Africa"        : [255, 204, 102],
+		"Middle East"   : [216, 217, 216],
+		"Asia"          : [255, 200, 190],
+		"South America" : [168, 216, 183],
+		"Oceania"       : [133, 195, 220]
+	}
+}

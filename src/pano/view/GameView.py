@@ -26,6 +26,7 @@ import logging
 from pandac.PandaModules import WindowProperties
 from pandac.PandaModules import Texture
 from pandac.PandaModules import NodePath
+from pandac.PandaModules import VBase3
 from direct.showbase.Transitions import Transitions
 from direct.interval.IntervalGlobal import *
 from direct.filter.FilterManager import FilterManager
@@ -39,6 +40,7 @@ from pano.view.MousePointerDisplay import MousePointerDisplay
 from pano.model.Node import Node
 from pano.view.TalkBox import TalkBox
 from pano.view.inventoryView import InventoryView
+from pano.view.sprites import SpritesEngine
 from pano.view.VideoPlayer import VideoPlayer
 from pano.view.PostProcessManager import PostProcessManager
 
@@ -56,21 +58,7 @@ class GameView:
         self.windowProperties = None
         
         # the window title
-        self.title = title
-        
-        # performs the rendering of the nodes
-        self.panoRenderer = NodeRenderer(self.game.resources)
-                
-        # renders the mouse pointer and updates its position according to the mouse        
-        self.mousePointer = MousePointerDisplay(gameRef)
-        
-        # rotates the camera according to mouse movement
-        self.cameraControl = CameraMouseControl(self.game)
-        
-        # the view component of the inventory, i.e. renders the inventory model that we pass to it
-        self.inventory = InventoryView(gameRef)
-        
-        self.talkBox = TalkBox(gameRef)
+        self.title = title                                        
         
         # the Node instance that we are displaying         
         self.activeNode = None
@@ -85,20 +73,38 @@ class GameView:
         self.videoPlayer = None
         self.videoCallback = None
         
+        self.spritesEngine = SpritesEngine()
+        
+        # performs the rendering of the nodes
+        self.panoRenderer = NodeRenderer(self.game.resources, self.spritesEngine)
+        
         # for post processing effects
         self.postProcess = PostProcessManager(self.game)
-#        self.postProcess = None
-#        self.screenQuad = None
+
+        # renders the mouse pointer and updates its position according to the mouse        
+        self.mousePointer = MousePointerDisplay(gameRef)
+        
+        # rotates the camera according to mouse movement
+        self.cameraControl = CameraMouseControl(self.game)
+        
+        # the view component of the inventory, i.e. renders the inventory model that we pass to it
+        self.inventory = InventoryView(gameRef)
+        
+        self.talkBox = TalkBox(gameRef)
       
         
     def initialize(self):
         '''
         Initialize self and all components on which we are depended.
         '''
+        # disables Panda's mouse based camera control
+        base.disableMouse()
+        
         self.windowProperties = base.win.getProperties()
         base.setFrameRateMeter(self.game.getConfig().getBool(PanoConstants.CVAR_DEBUG_FPS))
         
         self.panoRenderer.initialize()
+        self.spritesEngine.initialize(self.game.getResources())
         self.mousePointer.initialize()
         self.postProcess.initialize()
         
@@ -146,14 +152,14 @@ class GameView:
 
         if self.activeNode.is3D() and type(self.panoRenderer) != NodeRenderer:
             self.panoRenderer.dispose()
-            self.panoRenderer = NodeRenderer(self.game.resources)
+            self.panoRenderer = NodeRenderer(self.game.resources, self.spritesEngine)
             self.panoRenderer.initialize()            
             if self.log.isEnabledFor(logging.DEBUG):
                 self.log.debug('Choosed NodeRenderer')
 
         elif self.activeNode.is2D() and type(self.panoRenderer) != Node2DRenderer:
             self.panoRenderer.dispose()
-            self.panoRenderer = Node2DRenderer(self.game.resources)
+            self.panoRenderer = Node2DRenderer(self.game.resources, self.spritesEngine)
             self.panoRenderer.initialize()            
             if self.log.isEnabledFor(logging.DEBUG):
                 self.log.debug('Choosed Node2DRenderer')            
@@ -171,9 +177,9 @@ class GameView:
         at that location.
         @return: A Hotspot instance if a hotspot was found or None.
         '''
-        #This gives up the screen coordinates of the mouse
+        #This gives up the window coordinates of the mouse in render2d space
         if base.mouseWatcherNode.hasMouse():
-            mpos = base.mouseWatcherNode.getMouse()
+            mpos = base.mouseWatcherNode.getMouse()            
             return self.panoRenderer.raycastHotspots(mpos.getX(), mpos.getY())
         else:
             return None
@@ -275,6 +281,10 @@ class GameView:
         if base.screenshot(namePrefix = filename, defaultFilename = False) is None:
             raise GraphicsError('Call to base.screenshot failed')
         
+        
+    def getSpritesFactory(self):
+        return self.spritesEngine
+        
     def relativeToAbsolute(self, point):
         '''
         Translates the given point from relative coordinates to absolute screen coordinates.
@@ -290,40 +300,7 @@ class GameView:
         '''
         wp = self.getWindowProperties()
         return (float(point[0]) / wp.getXSize(), float(point[1]) / wp.getYSize())
-    
-        
-    def convertScreenToAspectCoords(self, pointsList):
-        '''
-        Converts a list of points defined in absolute window coordinates to aspect relative coordinates.
-        '''
-        wp = self.getWindowProperties()
-        # the two factors below will convert x and y components into the [0.0...2*base.a2dRight] and [0...2*base.a2dTop] 
-        # ranges respectively
-        aspectXScale = (1.0 / wp.getXSize()) * (base.a2dRight - base.a2dLeft)
-        aspectYScale = (1.0 / wp.getYSize()) * (base.a2dTop - base.a2dBottom)
-        retList = []
-        for p in pointsList: 
-            # subtract maximum values to scale into [base.a2dLeft...base.a2dRight] and [base.a2dBottom...base.a2dTop]
-            # and reverse y direction too            
-            x = p[0]*aspectXScale - base.a2dRight
-            y = -1.0*(p[1]*aspectYScale - base.a2dTop)
-            retList.append((x, y))
-        return retList
-    
-    def convertAspectToScreenCoords(self, pointsList):
-        """
-        Converts a list of points defined in the aspect2d coordinate space, to the screen coordinate space.
-        Returns a list of transformed points.
-        """
-        retList = []
-        for p in pointsList:
-            # this converts into the [-1.0...1.0] range
-            rp = render2d.getRelativePoint(aspect2d, Point3(p[0], 0, p[1]))
-            # scale to viewport and add, y also needs reversing
-            x = ((rp[0] + 1.0) / 2.0) * self.windowProperties.getXSize()
-            y = -1.0*((rp[0] + 1.0) / 2.0) * self.windowProperties.getYSize()
-            retList.append((x, y))
-        return retList
+            
 
     def setCameraLookAt(self, lookat, duration = 0.0, blendType = PanoConstants.BLEND_TYPE_ABRUPT):
         '''

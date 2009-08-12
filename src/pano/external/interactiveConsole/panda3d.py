@@ -73,7 +73,7 @@ class panda3dIOClass( DirectObject.DirectObject ):
     
     # vardis 27-02-2009: Added special cull bin in order to render on top of everything
     CullBinManager.getGlobalPtr().addBin(PanoConstants.CONSOLE_CULL_BIN_NAME, CullBinManager.BTUnsorted, PanoConstants.CONSOLE_CULL_BIN_VAL)
-    self.consoleFrame.setBin(PanoConstants.CONSOLE_CULL_BIN_NAME, 0)
+    self.consoleFrame.setBin("fixed", PanoConstants.RENDER_ORDER_CONSOLE)
     
     self.windowEvent( base.win )
     

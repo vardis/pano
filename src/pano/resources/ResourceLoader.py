@@ -26,9 +26,13 @@ from __future__ import with_statement
 import os.path
 import logging
 import codecs
+import StringIO
 
 from pandac.PandaModules import NodePath
 from pandac.PandaModules import Shader
+from pandac.PandaModules import VirtualFileSystem
+from pandac.PandaModules import Filename
+from pandac.PandaModules import PNMImage
 
 from pano.constants import PanoConstants
 from pano.util.Cache import Cache
@@ -91,6 +95,32 @@ class ResourceLoader(object):
         self.stickyLoads = 0
 
 
+    def initialize(self):
+        pass
+
+    def dispose(self):
+        for loc in self.resLocations:
+            loc.dispose()
+            
+
+    def isLocationAdded(self, name):
+        '''
+        Returns True if the resources location, identifier by the given name, has already
+        been added to the resource loader.
+        @param param: The name of the resource location, should be unique for each.
+        '''
+        return self.locationsByName.get(name) is not None
+    
+    
+    def getResourcesLocation(self, name):
+        '''
+        Returns the resources location identified by the given name.
+        @param param: The name of the resource location.
+        @return: An object that extends pano.resources.AbstractResourceLocation or None if no location was found.
+        '''
+        return self.locationsByName.get(name)
+    
+
     def addResourcesLocation(self, resLoc):
         '''
         Adds a resources location to the list of location that will be indexed and searched for supported
@@ -109,21 +139,52 @@ class ResourceLoader(object):
 
         # prepare it for lookups
         resLoc.indexResources()
-
-
-    def removeResourcesLocation(self, resLoc):
+        
+        
+    def updateResourcesLocation(self, locationName):
         '''
-        Removes a resource location from the list of known locations. 
-        @param resLoc: An object that extends pano.resources.AbstractResourceLocation.
+        Updates information regarding a registered resources location. 
+        It is necessary to call this if additional resource types get included in the resources location.
+        @param locationName: The name of the resources location.
         '''
+        resLoc = self.locationsByName[locationName]
+        assert resLoc is not None, 'updateResourcesLocation called for unknown resources location'
+        
+        # first remove the locaion from self.resLocations
+        for li in self.resLocations.values():
+            if resLoc in li:
+                li.remove(resLoc)
+        
+        # then add it to every list that corresponds to a resource type supported by this location        
         resTypes = resLoc.getResourcesTypes()
         for type in resTypes:
             if self.resLocations.has_key(type):
                 locList = self.resLocations[type]
-                locList.remove(resLoc)
+                if not resLoc in locList:
+                    locList.append(resLoc)
+            else:
+                self.resLocations[type] = [ resLoc ]
+                
+        resLoc.indexResources()
 
-        if self.locationsByName.has_key(resLoc.name):
-            del self.locationsByName[resLoc.name]
+
+    def removeResourcesLocation(self, locationName):
+        '''
+        Removes a resource location from the list of known locations. 
+        @param resLoc: An object that extends pano.resources.AbstractResourceLocation.
+        '''
+        resLoc = self.locationsByName.get(locationName)
+        if resLoc is not None:
+            resTypes = resLoc.getResourcesTypes()
+            for type in resTypes:
+                if self.resLocations.has_key(type):
+                    locList = self.resLocations[type]
+                    locList.remove(resLoc)
+    
+            if self.locationsByName.has_key(resLoc.name):
+                del self.locationsByName[resLoc.name]
+                
+            resLoc.dispose()
 
 
     def getResourceFullPath(self, resType, filename):
@@ -153,22 +214,6 @@ class ResourceLoader(object):
             for loc in locations:
                 if loc.containsResource(filename):
                     return loc
-        return None
-
-
-    def openResourceStream(self, resType, filename):
-        '''
-        Opens a data stream to the specified resource.
-        @param resType: A constant that identifies the type of the resource.
-        @param filename: The basename of the resource file.
-        @return: A stream used for reading te contents of the resource.
-        '''
-        if self.resLocations.has_key(resType):
-            locations = self.resLocations[resType]
-            if locations is not None:
-                for loc in locations:
-                    if loc.containsResource(filename):
-                        return loc.getResourceStream(filename)
         return None
 
 
@@ -320,6 +365,14 @@ class ResourceLoader(object):
         @return: A pandac.PandaModules.Texture object or None if the file was not found.
         '''
         return self._loadInternal(PanoConstants.RES_TYPE_TEXTURES, filename)
+    
+    def loadImage(self, filename):
+        '''
+        Loads the image specified by the given filename.
+        @param filename: The filename of the image.
+        @return: A pandac.PandaModules.PNMImage object or None if the file was not found.
+        '''
+        return self._loadInternal(PanoConstants.RES_TYPE_IMAGES, filename)
 
 
     def loadModel(self, filename):
@@ -345,6 +398,14 @@ class ResourceLoader(object):
             return self._loadInternal(PanoConstants.RES_TYPE_SHADERS, name)
 
 
+    def loadHotspotsMap(self, filename):        
+        hmap = self._loadInternal(PanoConstants.RES_TYPE_HMAPS, filename)
+        # for image maps we need to load and set the actual image 
+        if filename.endswith('imap'):            
+            hmap.image = self.loadImage(hmap.imageFile)
+        return hmap 
+
+
     def loadText(self, filename, encoding = "utf-8"):
         '''
         Loads the text based resource with the given filename, the decoding of the characters is based on the
@@ -353,7 +414,7 @@ class ResourceLoader(object):
         @param encoding: The encoding to use for interpreting the characters.
         @return: A string object that has the file contents or None if loading failed.
         '''
-        return self._loadCharacterStream(filename, encoding)
+        return self._loadInternal(PanoConstants.RES_TYPE_TEXTS, filename)
 
 
     def loadBinary(self, filename):
@@ -362,13 +423,13 @@ class ResourceLoader(object):
         @param filename: The full path to the file that contains the resource.
         @return: A string object that has the file contents or None if loading failed.
         '''
-        return self._loadBinaryStream(filename)
+        return self._loadInternal(PanoConstants.RES_TYPE_BINARIES, filename)
 
 
     def listResourceLocations(self):
         for loc in self.locationsByName.values():
             self.log.debug(loc)
-
+    
 
     def preloadResources(self, resType):
         '''
@@ -427,8 +488,8 @@ class ResourceLoader(object):
         @param resType: A constant that identifies the type of the resource.
         @param filename: The filename of the resource.
         @param locationName: The name of the resource location containing the resource. This is optional.
-        @return: A pano.resources.Resource instance if preloading is True, the actual resource instance
-        if preloading is False or None if the resource couldn't be found.
+        @return: A pano.resources.Resource instance if preloading is True, or the actual resource instance
+        if preloading is False or finally None if the resource couldn't be found.
         '''
 
         self.requests += 1
@@ -441,6 +502,7 @@ class ResourceLoader(object):
             self.log.error('Failed to locate resource %s' % filename)
             return None
 
+        # get the full path to query the cache, sticky and preload stores
         fullPath = location.getResourceFullPath(filename)
         if fullPath is None:
             self.log.error('Failed to get full path to resource %s' % filename)
@@ -486,7 +548,7 @@ class ResourceLoader(object):
             if extIndex >= 0:
                 resName = resName[:extIndex]
 
-            resData = self._loadParsedResource(resType, resName, fullPath, True)            
+            resData = self._loadParsedResource(resType, resName, fullPath, location)            
 
         else:
             if ResourcesTypes.isPandaResource(resType):
@@ -498,6 +560,11 @@ class ResourceLoader(object):
 
                     elif resType == PanoConstants.RES_TYPE_TEXTURES or resType == PanoConstants.RES_TYPE_VIDEOS:
                         resData = loader.loadTexture(fullPath)
+                        
+                    elif resType == PanoConstants.RES_TYPE_IMAGES:
+                        img = PNMImage()
+                        img.read(fullPath)
+                        resData = img
 
                     elif resType == PanoConstants.RES_TYPE_MUSIC:
                         resData = loader.loadMusic(fullPath)
@@ -508,7 +575,7 @@ class ResourceLoader(object):
                     elif resType == PanoConstants.RES_TYPE_SHADERS:
                         resData = Shader.load(fullPath)
 
-                except Exception, e:
+                except Exception:
                     self.log.exception('Panda loader failed to load resource %s' % fullPath)                    
                     return None
 
@@ -518,9 +585,18 @@ class ResourceLoader(object):
                 # handling of streams, i.e. memory mapped files, compressed streams, decryption, etc.
                 resName = filename                
                 if resType == PanoConstants.RES_TYPE_SCRIPTS or resType == PanoConstants.RES_TYPE_TEXTS:
-                    resData = self._loadCharacterStream(fullPath)
+                    resData = self._loadCharacterStream(fullPath, location)
                 else:
-                    resData = self._loadBinaryStream(fullPath)
+                    resData = self._loadBinaryStream(fullPath, location)
+            
+            elif ResourcesTypes.isOpaqueResource(resType):
+                # opaque resources perform their own loading, we only load the file's contents without caring
+                # about how it looks and pass it to the read() method.
+                resName = os.path.basename(filename) 
+                resData = ResourcesTypes.constructOpaqueResource(resType, resName, filename)
+                opaque = self._loadBinaryStream(fullPath, location)
+                fp = StringIO.StringIO(opaque)
+                resData.read(fp)
 
             if resData is None:
                 self.log.error('Failed to load resource %s' % fullPath)
@@ -543,7 +619,7 @@ class ResourceLoader(object):
         return resource.data if not preloading else resource
 
 
-    def _loadParsedResource(self, resType, resName, filename, fullPath = False):
+    def _loadParsedResource(self, resType, resName, filename, location):
         '''
         Handles loading of all parsed resources such as .pointer, .node, .item, etc. resources.
         Since parsed resources are all text based, we assume that they are encoded in UTF-8 in order
@@ -552,30 +628,18 @@ class ResourceLoader(object):
         @param resType:  The type of the resource.
         @param resName:  The name to give to the newly constructed resource.
         @param filename: The full path to the file that contains the resource.
-        @param fullPath: Indicates if the resource has already been located and the input filename
-                         can be used to load the resource.
+        @param location: The resource location found to contain this file, indicates that the resource 
+        has been located. 
         '''
         assert resType is not None and resType != PanoConstants.RES_TYPE_ALL, 'invalid resource type in loadGeneric'
-        
-        resPath = filename if fullPath else self.getResourceFullPath(resType, filename)
-        if resPath is not None:
-
-            with codecs.open(resPath, 'r', "utf-8") as istream:
-                try:
-                    # it is wrong to get resource streams in this way, in the future the resource location
-                    # will be used to acquire a data stream
-                    istream = codecs.open(resPath, 'r', "utf-8")
-                    resObj = ResourcesTypes.constructParsedResource(resType, resName)
-                    resource = self.parsers[resType].parse(resObj, istream)
-                    return resource
-                except Exception,e:
-                    self.log.exception(e)
-
-        else:
-            raise ResourceNotFound(filename)
+                        
+        fileContents = location.getResourceAsString(filename, True)
+        resObj = ResourcesTypes.constructParsedResource(resType, resName)
+        resource = self.parsers[resType].parse(resObj, fileContents)
+        return resource                    
 
 
-    def _loadCharacterStream(self, filename, encoding = "utf-8"):
+    def _loadCharacterStream(self, filename, location, encoding = "utf-8"):
         '''
         Loads the given filename as a stream of character, the decoding of the characters is based on the
         specified encoding which defaults to utf-8.
@@ -583,26 +647,22 @@ class ResourceLoader(object):
         @param encoding: The encoding to use for interpreting the characters.
         @return: A string object that has the file contents or None if loading failed.
         '''
-        try:
-            resPath = self.getResourceFullPath(PanoConstants.RES_TYPE_TEXTS, filename)
-            with codecs.open(resPath, 'r', encoding) as istream:
-                return istream.read()
-        except Exception, e:
-            self.log.exception(e)
+        fileContents = location.getResourceAsString(filename, True)
+        
+        # remove the BOM character if it exists
+        if fileContents is not None:
+            fileContents = fileContents.lstrip(unicode(codecs.BOM_UTF8, "utf-8"))
+                                               
+        return fileContents
 
 
-    def _loadBinaryStream(self, filename):
+    def _loadBinaryStream(self, filename, location):
         '''
         Loads the given filename as a stream of bytes.
         @param filename: The full path to the file that contains the resource.
         @return: A string object that has the file contents or None if loading failed.
         '''
-        try:
-            resPath = self.getResourceFullPath(PanoConstants.RES_TYPE_BINARIES, filename)
-            with open(resPath, 'r') as istream:
-                return istream.read()
-        except Exception,e:
-            self.log.exception(e)
+        return location.getResourceAsByteArray(filename, True)
 
 
     def _storePreloaded(self, res, filename, location):
@@ -640,7 +700,7 @@ class ResourceLoader(object):
             if res is not None:
                 # detect NodePath who have released their models or other previously attached
                 # resources. These are effectively invalid as they are useless, so pretend we
-                # didn't fint them.
+                # didn't find them.
                 if type(res) == NodePath and res.isEmpty():
                     if self.log.isEnabledFor(logging.INFO):
                         self.log.info('preloaded scenegraph resource was invalid, re-loading from file %s' % filename)

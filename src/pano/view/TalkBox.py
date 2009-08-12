@@ -104,7 +104,7 @@ class TalkBox:
             
         # get localized version of font
         i18n = self.game.getI18n()        
-        localizedFont = i18n.getLocalizedFont(self.__fontName)
+        localizedFont = i18n.getLocalizedFont(self.__fontName)                                        
         fontPath = self.game.getResources().getResourceFullPath(PanoConstants.RES_TYPE_FONTS, localizedFont)                                    
         self.__font = loader.loadFont(fontPath)
         

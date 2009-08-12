@@ -1,0 +1,26 @@
+[Node]
+image = shapes.png
+
+# specifies an image hotspots map
+hotspots_map = shapes.imap
+
+# specifies a quadtree hotspots map
+#hotspots_map = shapes.qmap
+
+parent2d = render2d
+
+[hotspot_circle]
+look_text = shape.circle
+cursor = interact
+
+[hotspot_zigzag]
+look_text = shape.zigzag
+cursor = interact
+
+[hotspot_rectangle]
+look_text = shape.rectangle
+cursor = interact
+
+[hotspot_rounded rec]
+look_text=shape.roundedrec
+cursor = interact

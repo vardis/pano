@@ -21,11 +21,12 @@ THE SOFTWARE.
 
 '''
 
+import StringIO
 import logging
 from ConfigParser import *
 
-from constants import PanoConstants
-from errors.ParseException import ParseException
+from pano.constants import PanoConstants
+from pano.errors.ParseException import ParseException
 
 class PlaylistParser:
     
@@ -39,11 +40,12 @@ class PlaylistParser:
     def __init__(self):
         self.log = logging.getLogger('pano.mplParser')
     
-    def parse(self, playlist, istream):
+    def parse(self, playlist, fileContents):
                       
         try:
             cfg = SafeConfigParser()
-            cfg.readfp(istream)
+            strFp = StringIO.StringIO(fileContents)
+            cfg.readfp(strFp)
             
             trackOptions = cfg.options(PlaylistParser.TRACKS_SECTIONS)
             
